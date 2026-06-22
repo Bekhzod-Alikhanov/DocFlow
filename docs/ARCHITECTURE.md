@@ -35,39 +35,62 @@ src/
                  stocks/flows (model.ts), integrators (RK4/Euler), simulate, registry,
                  presets, equilibria + Jacobian (linalg), bifurcation/hysteresis,
                  monteCarlo, sensitivity (Sobol/LHS), rng.
-  workers/       Web Worker wrapper that runs the heavy analyses (MC, Sobol, sweeps)
-                 off the main thread so the UI stays responsive.
-  state/         Zustand store: scenarios, levers, mode, analysis caches.
-  lib/           Persistence (IndexedDB), URL scenario codec (lz-string), CSV/PNG/PDF export.
-  components/    Sliders, charts (Plotly wrapper), CLD/stock-flow diagram, compare,
-                 tipping explorer, assumptions panel, epistemic banner.
-  modes/         Executive vs Scientific presentation modes (progressive disclosure).
+  workers/       Typed-RPC Web Worker (protocol.ts + engine.worker.ts) and the
+                 useWorkerTask hook. Runs the heavy analyses (MC, Sobol, PRCC,
+                 sweeps, hysteresis) off the main thread with stale-response
+                 suppression so dragging a selector never blocks the UI.
+  state/         Zustand store: the live scenario A (recomputed synchronously on
+                 every change), the frozen comparison scenario B, presentation
+                 mode, and the active analytical view.
+  lib/           Persistence (localStorage, versioned + migratable), URL scenario
+                 codec (share.ts, lz-string), CSV/PNG/PDF export (export.ts),
+                 loop-dominance scoring (loops.ts), the lazy Plotly wrapper
+                 (Plot.tsx → PlotImpl.tsx), theme tokens, and the chart registry.
+  components/    Sliders, the Plotly-backed charts (time series, bifurcation,
+                 heatmap, sensitivity bars, tornado), the hand-drawn causal-loop
+                 diagram, the scenario toolbar, tabs, assumptions panel, banner.
+  views/         Scientific-mode views, lazy-loaded: Workbench, CausalLoopView,
+                 TippingView, SensitivityView, CompareView.
 ```
 
 ## Data flow
 
-1. The store holds the active `Scenario` (params + init + settings).
-2. Lever changes debounce → a deterministic `simulate()` call (instant, main
-   thread) → trajectory + summary → charts.
-3. Heavy analyses (Monte Carlo bands, Sobol sensitivity, 1-/2-lever sweeps) are
-   dispatched to the Web Worker, which imports the same pure engine, so results
-   are identical to a main-thread run and reproducible from the `RunRecord`.
-4. Scenarios persist to IndexedDB and serialize to a complete, re-runnable JSON
-   spec; a compressed form rides in the URL hash for sharing.
+1. The store holds the live scenario A (params + init + settings). Scenario B is
+   an optional frozen snapshot used only by the compare view.
+2. A lever change → a deterministic `simulate()` call (sub-millisecond, main
+   thread) → trajectory + summary → charts and the causal-loop diagram (which
+   reads the already-computed auxiliaries, so it's free).
+3. Heavy analyses (Monte Carlo bands, Sobol/PRCC sensitivity, 1-/2-lever sweeps,
+   hysteresis) are dispatched to the Web Worker over a typed discriminated-union
+   protocol. The worker imports the same pure engine, so results are identical to
+   a main-thread run and reproducible from the `RunRecord`. The `useWorkerTask`
+   hook drops stale replies, so a flurry of selector changes only applies the last.
+4. Scenarios persist to `localStorage` (versioned records stamped with
+   `MODEL_VERSION`) and serialize to a complete, re-runnable JSON spec; a
+   compressed positional form rides in the URL hash for sharing, re-validated via
+   `sanitizeParams` on decode.
 
 ## Tech
 
-- **Build:** Vite 8, React 19, TypeScript (strict), Tailwind v4.
-- **Charts:** Plotly.js (bands, phase portraits, bifurcation heatmaps) via a thin
-  React wrapper (avoids `react-plotly.js` React-19 peer-dep friction).
-- **State:** Zustand. **Persistence:** IndexedDB. **Exports:** jsPDF + canvas.
-- **Tests:** Vitest (Node env for the engine, jsdom for components); coverage via
-  `@vitest/coverage-v8`, engine held to ≥90%.
-- **CI:** GitHub Actions — typecheck (`tsc --strict`), lint, tests + coverage.
+- **Build:** Vite 8, React 19, TypeScript (strict), Tailwind v4. Plotly, jsPDF,
+  and each Scientific view are code-split into lazily-loaded chunks via
+  `React.lazy` + dynamic `import()`, keeping the initial bundle ~77 kB gzipped.
+- **Charts:** Plotly.js (bands, bifurcation, heatmaps, sensitivity bars) via a thin
+  React wrapper (avoids `react-plotly.js` React-19 peer-dep friction), lazily
+  loaded so Plotly stays out of the initial bundle.
+- **State:** Zustand. **Persistence:** `localStorage` (small JSON; versioned +
+  migratable). **Sharing:** lz-string URL-hash codec. **Exports:** jsPDF + canvas.
+- **Concurrency:** one hand-rolled typed-RPC Web Worker (no comlink) for the heavy
+  analyses; the engine runs unchanged inside it.
+- **Tests:** Vitest (Node env for the engine, jsdom for components/hooks via a
+  `// @vitest-environment jsdom` file directive); coverage via
+  `@vitest/coverage-v8`, engine held to ≥90% (currently ~97%). 123 tests.
+- **CI:** GitHub Actions — typecheck (`tsc --strict`), lint, tests + coverage,
+  build.
 
 ## Deploy
 
 `npm run build` emits a static bundle (relative asset paths via `base: './'`) that
-can be served by any static host or opened locally. A single-command Docker
-option (nginx serving the build) is provided for parity with the spec's
-"one command up" goal, but is optional — the app needs no backend.
+can be served by any static host or opened locally — no backend. The repo is wired
+to **Vercel** (see `vercel.json`: Vite framework, `dist` output, SPA rewrite); every
+push to `main` triggers CI and an auto-deploy.

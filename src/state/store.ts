@@ -27,10 +27,28 @@ import {
 
 export type Mode = 'executive' | 'scientific'
 
+/** Secondary view inside Scientific mode (the analytical tab strip). */
+export type ScientificView = 'workbench' | 'cld' | 'tipping' | 'sensitivity' | 'compare'
+
 export interface ScenarioMeta {
   id: string
   name: string
   presetId: string | null
+}
+
+/**
+ * A frozen comparison snapshot (scenario "B"). Unlike the live working scenario,
+ * B is never edited on the slider hot path — it is only (re)computed when set or
+ * captured. This keeps A's drag path untouched and sub-millisecond.
+ */
+export interface ScenarioBSlice {
+  params: Params
+  init: StockState
+  settings: SimSettings
+  scenarioName: string
+  presetId: string | null
+  trajectory: Trajectory
+  summary: SummaryMetrics
 }
 
 interface DocFlowState {
@@ -44,11 +62,15 @@ interface DocFlowState {
 
   // --- presentation ---
   mode: Mode
+  view: ScientificView
   showMonteCarlo: boolean
 
   // --- live deterministic run (derived) ---
   trajectory: Trajectory
   summary: SummaryMetrics
+
+  // --- comparison scenario (frozen snapshot, optional) ---
+  scenarioB: ScenarioBSlice | null
 
   // --- actions ---
   setLever: (id: ParamKey, value: number) => void
@@ -58,11 +80,17 @@ interface DocFlowState {
   loadPreset: (presetId: string) => void
   resetToPreset: () => void
   setMode: (mode: Mode) => void
+  setView: (view: ScientificView) => void
   toggleMonteCarlo: () => void
   setScenarioName: (name: string) => void
   setAnnotations: (text: string) => void
   /** Replace the whole working scenario (used by import / URL / scenario load). */
   loadScenario: (s: { params: Params; init: StockState; settings: SimSettings; presetId: string | null; name?: string; annotations?: string }) => void
+  /** Set the comparison scenario B (runs one simulate); pass null to clear. */
+  setScenarioB: (s: { params: Params; init: StockState; settings: SimSettings; name?: string; presetId?: string | null } | null) => void
+  /** Snapshot the current working scenario A into the comparison slot B. */
+  captureBFromA: () => void
+  clearScenarioB: () => void
 }
 
 function runOf(params: Params, init: StockState, settings: SimSettings) {
@@ -88,9 +116,11 @@ export const useStore = create<DocFlowState>((set, get) => ({
   scenarioName: seed.name,
   annotations: '',
   mode: 'executive',
+  view: 'workbench',
   showMonteCarlo: false,
   trajectory: seed.trajectory,
   summary: seed.summary,
+  scenarioB: null,
 
   setLever: (id, value) => get().setParam(id, value),
 
@@ -136,6 +166,7 @@ export const useStore = create<DocFlowState>((set, get) => ({
   },
 
   setMode: (mode) => set({ mode }),
+  setView: (view) => set({ view }),
   toggleMonteCarlo: () => set((s) => ({ showMonteCarlo: !s.showMonteCarlo })),
   setScenarioName: (scenarioName) => set({ scenarioName }),
   setAnnotations: (annotations) => set({ annotations }),
@@ -150,6 +181,46 @@ export const useStore = create<DocFlowState>((set, get) => ({
       annotations: sc.annotations ?? '',
       ...runOf(sc.params, sc.init, sc.settings),
     }),
+
+  setScenarioB: (sc) => {
+    if (!sc) {
+      set({ scenarioB: null })
+      return
+    }
+    const params = { ...sc.params }
+    const init = { ...sc.init }
+    const settings = { ...sc.settings }
+    const { trajectory, summary } = runOf(params, init, settings)
+    set({
+      scenarioB: {
+        params,
+        init,
+        settings,
+        scenarioName: sc.name ?? 'Scenario B',
+        presetId: sc.presetId ?? null,
+        trajectory,
+        summary,
+      },
+    })
+  },
+
+  captureBFromA: () => {
+    const { params, init, settings, scenarioName, activePresetId, trajectory, summary } = get()
+    // Deep-copy the editable inputs so later edits to A can never mutate B.
+    set({
+      scenarioB: {
+        params: { ...params },
+        init: { ...init },
+        settings: { ...settings },
+        scenarioName: scenarioName || 'Scenario B',
+        presetId: activePresetId,
+        trajectory,
+        summary,
+      },
+    })
+  },
+
+  clearScenarioB: () => set({ scenarioB: null }),
 }))
 
 /** Reset everything to registry defaults (used by tests / a hard reset). */

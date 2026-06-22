@@ -8,14 +8,23 @@ import { useMemo } from 'react'
 import type { Data } from 'plotly.js'
 import { Plot } from '../lib/Plot'
 import { useStore } from '../state/store'
-import { monteCarlo, LEVER_KEYS, STOCK_KEYS, type MonteCarloResult } from '../engine'
+import { monteCarlo, LEVER_KEYS, STOCK_KEYS, type MonteCarloResult, type Trajectory } from '../engine'
 import { STOCK_COLORS } from '../lib/theme'
+import { setPrimaryGd } from '../lib/chartRegistry'
 
 const LABELS: Record<string, string> = {
   U: 'Undocumented', D: 'Documented', TD: 'Tech debt', L: 'Learning', E: 'Exposure', C: 'Culture',
   f_doc: 'Doc. fraction', harm_events: 'Harm events',
 }
 const UNIT_INTERVAL = new Set(['f_doc', 'C'])
+
+/** Extract a series (stock or auxiliary) from a trajectory by key. */
+function seriesValues(traj: Trajectory, key: string): number[] {
+  const isStock = (STOCK_KEYS as readonly string[]).includes(key)
+  return isStock
+    ? traj.states.map((s) => (s as unknown as Record<string, number>)[key])
+    : traj.aux.map((a) => (a as unknown as Record<string, number>)[key])
+}
 
 function hexToRgba(hex: string, a: number): string {
   const h = hex.replace('#', '')
@@ -29,10 +38,13 @@ export function TimeSeriesChart({
   seriesKeys,
   height = 340,
   title,
+  overlay,
 }: {
   seriesKeys: string[]
   height?: number
   title?: string
+  /** A second trajectory (scenario B) drawn dashed/faded for comparison. */
+  overlay?: { trajectory: Trajectory; label: string }
 }) {
   const trajectory = useStore((s) => s.trajectory)
   const params = useStore((s) => s.params)
@@ -52,16 +64,18 @@ export function TimeSeriesChart({
     })
   }, [showMonteCarlo, params, init, settings])
 
+  // Monte Carlo bands and the comparison overlay are mutually exclusive (both
+  // would be visual overload); the overlay wins when present.
+  const effectiveMc = overlay ? null : mc
+
   const data = useMemo<Data[]>(() => {
     const t = trajectory.t
     const traces: Data[] = []
     for (const key of seriesKeys) {
       const onUnitAxis = UNIT_INTERVAL.has(key)
       const color = STOCK_COLORS[key] ?? '#3a4fb0'
-      const isStock = (STOCK_KEYS as readonly string[]).includes(key)
-      const values = isStock
-        ? trajectory.states.map((s) => (s as unknown as Record<string, number>)[key])
-        : trajectory.aux.map((a) => (a as unknown as Record<string, number>)[key])
+      const values = seriesValues(trajectory, key)
+      const mc = effectiveMc
 
       if (mc && mc.bands[key]) {
         const yUpper = mc.bands[key][90]
@@ -102,8 +116,27 @@ export function TimeSeriesChart({
         } as Data)
       }
     }
+
+    if (overlay) {
+      const tb = overlay.trajectory.t
+      for (const key of seriesKeys) {
+        const onUnitAxis = UNIT_INTERVAL.has(key)
+        const color = STOCK_COLORS[key] ?? '#3a4fb0'
+        traces.push({
+          x: tb,
+          y: seriesValues(overlay.trajectory, key),
+          type: 'scatter',
+          mode: 'lines',
+          name: `${LABELS[key] ?? key} · ${overlay.label}`,
+          line: { color, width: 2, dash: 'dash' },
+          opacity: 0.55,
+          yaxis: onUnitAxis ? 'y' : 'y2',
+        } as Data)
+      }
+    }
+
     return traces
-  }, [trajectory, seriesKeys, mc])
+  }, [trajectory, seriesKeys, effectiveMc, overlay])
 
   const anyUnit = seriesKeys.some((k) => UNIT_INTERVAL.has(k))
   const anyOther = seriesKeys.some((k) => !UNIT_INTERVAL.has(k))
@@ -113,6 +146,7 @@ export function TimeSeriesChart({
       <Plot
         ariaLabel={`Time series of ${seriesKeys.map((k) => LABELS[k] ?? k).join(', ')} over months`}
         data={data}
+        onReady={setPrimaryGd}
         layout={{
           title: title ? { text: title, font: { size: 13 } } : undefined,
           xaxis: { title: { text: 'Months' } },

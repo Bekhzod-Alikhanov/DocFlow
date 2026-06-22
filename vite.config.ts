@@ -11,6 +11,11 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
+  build: {
+    // Plotly, jsPDF, and each analytics view are intentionally code-split into
+    // their own lazily-loaded chunks; the >500 kB warning would only flag those.
+    chunkSizeWarningLimit: 5000,
+  },
   test: {
     // Engine tests run in fast Node by default; component tests opt into jsdom
     // via a `// @vitest-environment jsdom` file directive.

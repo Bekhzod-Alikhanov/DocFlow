@@ -36,7 +36,16 @@ Try this (the signature demo):
 2. Click **Aviation** or **Healthcare (PSQIA)** → the **learning** attractor.
 3. Load the **Contested baseline** and drag **Just culture** up: the system
    **tips** from chilling to learning at a threshold (a saddle-node bifurcation).
-4. Switch to **Scientific** mode and toggle **Monte Carlo** for 10–90% bands.
+4. Switch to **Scientific** mode and explore the tabs:
+   - **Causal loops** — the live feedback structure; the dominant loop (R1
+     suppression spiral vs. R2 learning flywheel) lights up as you drag levers.
+   - **Tipping** — a 1-lever bifurcation diagram (with a hysteresis overlay) and a
+     2-lever tipping heatmap. Click any point to load those lever values.
+   - **Sensitivity** — tornado, Sobol (S1/ST), and PRCC for any model output.
+   - **Compare** — snapshot scenario **A**, then diff it against **B** in a delta
+     table and an overlaid time series.
+5. Toggle **Monte Carlo** in the header for 10–90% bands, then **Save**, **Share**
+   (a self-contained URL), or **Export** the scenario to CSV / PNG / PDF.
 
 ## Scripts
 
@@ -65,6 +74,17 @@ Try this (the signature demo):
 - **A React UI** with Executive and Scientific modes, live lever sliders, time-
   series charts (Plotly), the four cited sector presets, an always-reachable
   Assumptions & Methods panel, and a persistent no-forecast banner.
+- **Analytical views** built on the engine: an interactive causal-loop diagram
+  with live loop-dominance, a 1-/2-lever tipping explorer, Sobol/PRCC/tornado
+  sensitivity charts, and A/B scenario compare.
+- **Scenario management**: save/load/duplicate to `localStorage`, JSON
+  import/export, and a shareable URL that encodes the whole scenario into the hash
+  (lz-string) — no backend. CSV/PNG/PDF export carries the no-forecast line and
+  full run provenance.
+- **A typed-RPC Web Worker** (`src/workers`) runs the heavy analyses (Monte Carlo,
+  sweeps, Sobol, PRCC) off the main thread, with stale-response suppression so
+  dragging a selector never blocks the UI. Plotly, jsPDF, and each analytics view
+  are code-split into lazy chunks, keeping the initial bundle ~77 kB gzipped.
 
 ## Documentation
 
@@ -77,7 +97,8 @@ Try this (the signature demo):
 
 ## Status
 
-The engine, analytics, core UI, and epistemic layer are complete and tested.
-In progress: the interactive causal-loop diagram, the tipping explorer and
-sensitivity charts, scenario compare, scenario management (save/load/share),
-and CSV/PNG/PDF export.
+Complete and tested: the simulation engine, all analytical views (causal-loop
+diagram, tipping explorer, sensitivity, A/B compare), scenario management
+(save/load/duplicate/share/import-export), CSV/PNG/PDF export, the off-main-thread
+Web Worker, the epistemic layer, and the CI pipeline. 123 tests pass; the engine
+is held to ≥90% coverage (currently ~97%). Deployed as a static site on Vercel.
