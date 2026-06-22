@@ -1,0 +1,110 @@
+@import 'tailwindcss';
+
+/* Manual dark mode via a `.dark` class on <html> (projector-friendly toggle),
+   instead of the OS preference, so users can force light on a bright projector. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ----------------------------------------------------------------------------
+   DocFlow design tokens. Editorial "research instrument" palette: warm paper,
+   ink text, a trustworthy indigo accent, and two semantic regime colors —
+   `chilling` (R1, vicious loop) and `learning` (R2, virtuous loop). `estimate`
+   (amber) flags figures the spec requires us to mark as non-empirical.
+---------------------------------------------------------------------------- */
+@theme {
+  --color-paper: #faf8f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f1ea;
+  --color-ink: #1a1714;
+  --color-ink-soft: #4d473f;
+  --color-muted: #8a8178;
+  --color-line: #e7e2d9;
+  --color-line-strong: #d3ccc0;
+
+  --color-accent: #3a4fb0;
+  --color-accent-hover: #2f3f8f;
+  --color-accent-soft: #e9ecf8;
+
+  --color-chilling: #b3402e;
+  --color-chilling-soft: #f7e7e2;
+  --color-learning: #1f7a5a;
+  --color-learning-soft: #e2f1ea;
+  --color-estimate: #9a6b13;
+  --color-estimate-soft: #f8efd9;
+
+  --font-sans: 'Inter var', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: ui-serif, 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
+}
+
+/* Dark theme: deep neutral ground, brighter regime hues for contrast on dark. */
+.dark {
+  --color-paper: #15140f;
+  --color-surface: #1d1b16;
+  --color-surface-2: #26241d;
+  --color-ink: #f4f1ea;
+  --color-ink-soft: #c9c3b8;
+  --color-muted: #938b80;
+  --color-line: #322f27;
+  --color-line-strong: #423e34;
+
+  --color-accent: #8fa0ee;
+  --color-accent-hover: #aab6f4;
+  --color-accent-soft: #23263a;
+
+  --color-chilling: #e8755f;
+  --color-chilling-soft: #2e1d18;
+  --color-learning: #4fc196;
+  --color-learning-soft: #15271f;
+  --color-estimate: #e0b25c;
+  --color-estimate-soft: #2a2212;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink-soft);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--color-ink);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Respect reduced-motion for all transitions/animations (accessibility). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Visible keyboard focus everywhere (WCAG-AA). */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Thin, unobtrusive scrollbars to keep the scientific UI calm. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
