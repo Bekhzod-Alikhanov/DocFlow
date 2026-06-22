@@ -107,7 +107,7 @@ export const PRESETS: Preset[] = [
     id: 'neutral',
     name: 'Contested baseline',
     blurb:
-      'A mid-range regime sitting inside the bistable window: moderate privilege, separation, and translation, with no sector dominating. Use it to demonstrate path dependence — start culture low and it falls to the chilling attractor; start it high and it climbs to the learning attractor, with identical levers.',
+      'A mid-range regime sitting inside the bistable window: moderate privilege, separation, and translation, with no sector dominating. It LOADS in the chilling basin — documentation collapses and technical debt compounds — but a small nudge of Just culture (or starting culture higher) tips it to the learning attractor. Same levers, two destinations: that is the path dependence.',
     expectedRegime: 'contested',
     overrides: {
       privilege_strength: 0.5,
@@ -117,7 +117,10 @@ export const PRESETS: Preset[] = [
       recipient_enforcer_separation: 0.3,
       translation_layer: 0.3,
     },
-    init: { C: 0.4 },
+    // Start just below the saddle (C* ≈ 0.375) so the baseline opens in the
+    // chilling basin and the bistability is visible on load; raising Just culture
+    // past ~0.2 tips it to learning (the signature demo). See docs/MODEL.md.
+    init: { C: 0.3 },
     citations: [
       { text: 'Illustrative balanced baseline; no sector basis. Levers chosen to sit inside the bistable region so path dependence (hysteresis) is visible.' },
     ],

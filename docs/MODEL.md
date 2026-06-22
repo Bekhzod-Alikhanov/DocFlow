@@ -129,7 +129,9 @@ Jacobian (EISPACK `elmhes`/`hqr` port in [`linalg.ts`](../src/engine/linalg.ts))
 The Contested baseline (`privilege=0.5, just_culture=0.1, separation=0.3,
 translation=0.3`) has equilibria at `C≈0.08` (stable, chilling), `C≈0.38`
 (saddle / separatrix), `C≈1.0` (stable, learning). Path dependence: starting
-culture below the separatrix falls to chilling; above it climbs to learning.
+culture below the separatrix falls to chilling; above it climbs to learning. The
+preset's default start (`C = 0.3`, just below the separatrix) therefore opens in
+the chilling basin on load; nudging `just_culture` past ≈0.2 tips it to learning.
 
 Sweeping `just_culture` produces a **saddle-node (fold) bifurcation** near
 `jc ≈ 0.25` and a **hysteresis loop**: ramping just-culture up keeps the system
