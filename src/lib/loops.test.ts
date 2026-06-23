@@ -19,6 +19,13 @@ function aux(over: Partial<Auxiliaries>): Auxiliaries {
     harm_events: 0,
     safety_wins: 0,
     backfire: 0,
+    near_miss_signal: 0,
+    private_ordering_gap: 0,
+    accountability_legitimacy: 0,
+    safe_to_report_score: 0,
+    learning_yield: 0,
+    litigation_pressure: 0,
+    policy_scaffold_dependency: 0,
   }
   return { ...zero, ...over }
 }

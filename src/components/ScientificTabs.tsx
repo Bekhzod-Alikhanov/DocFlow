@@ -4,6 +4,7 @@ import type { ScientificView } from '../state/store'
 
 const TABS: { id: ScientificView; label: string }[] = [
   { id: 'workbench', label: 'Workbench' },
+  { id: 'institutional', label: 'Institutional design' },
   { id: 'cld', label: 'Causal loops' },
   { id: 'tipping', label: 'Tipping' },
   { id: 'sensitivity', label: 'Sensitivity' },

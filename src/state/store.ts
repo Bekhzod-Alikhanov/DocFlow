@@ -28,7 +28,7 @@ import {
 export type Mode = 'executive' | 'scientific'
 
 /** Secondary view inside Scientific mode (the analytical tab strip). */
-export type ScientificView = 'workbench' | 'cld' | 'tipping' | 'sensitivity' | 'compare'
+export type ScientificView = 'workbench' | 'institutional' | 'cld' | 'tipping' | 'sensitivity' | 'compare'
 
 export interface ScenarioMeta {
   id: string

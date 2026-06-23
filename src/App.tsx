@@ -18,6 +18,7 @@ import { ScenarioToolbar } from './components/ScenarioToolbar'
 import { decodeScenarioFromHash } from './lib/share'
 
 const Workbench = lazy(() => import('./views/Workbench').then((m) => ({ default: m.Workbench })))
+const InstitutionalView = lazy(() => import('./views/InstitutionalView').then((m) => ({ default: m.InstitutionalView })))
 const CausalLoopView = lazy(() => import('./views/CausalLoopView').then((m) => ({ default: m.CausalLoopView })))
 const TippingView = lazy(() => import('./views/TippingView').then((m) => ({ default: m.TippingView })))
 const SensitivityView = lazy(() => import('./views/SensitivityView').then((m) => ({ default: m.SensitivityView })))
@@ -124,6 +125,7 @@ function ScientificMode() {
         <div>
           <Suspense fallback={FALLBACK}>
             {view === 'workbench' && <Workbench />}
+            {view === 'institutional' && <InstitutionalView />}
             {view === 'cld' && <CausalLoopView />}
             {view === 'tipping' && <TippingView />}
             {view === 'sensitivity' && <SensitivityView />}

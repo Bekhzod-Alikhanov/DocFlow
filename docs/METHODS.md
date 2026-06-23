@@ -76,6 +76,11 @@ core produces bitwise-identical trajectories for identical inputs (verified).
 - **Behavior reproduction:** R1 (chilling) and R2 (learning) are each reachable;
   presets settle into their documented regimes; the contested baseline is
   path-dependent.
+- **Institutional v0.2 regressions:** safe harbor lowers litigation/backfire,
+  effective challenge raises learning/remediation, near-miss tiers add learning
+  without direct exposure, EU trap remains high-pressure without protection,
+  pharma safe-to-report improves over mandatory-only, and nuclear dual-channel
+  beats public-only/private-only variants.
 - **Stability/bifurcation:** two stable attractors + a saddle exist; a fold and
   hysteresis exist along a lever.
 - Engine coverage ≥ 90% (statements/lines/functions ≈ 97–99%).

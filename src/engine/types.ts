@@ -35,7 +35,7 @@ export interface StockSpec {
 // Parameters: levers (sliders) + structural constants — spec §2.4, §2.5
 // ---------------------------------------------------------------------------
 
-/** The six policy levers (spec §2.4), all in [0, 1]. */
+/** Policy / institutional levers, all in [0, 1]. */
 export const LEVER_KEYS = [
   'privilege_strength',
   'just_culture',
@@ -43,6 +43,12 @@ export const LEVER_KEYS = [
   'pld_penalty',
   'recipient_enforcer_separation',
   'translation_layer',
+  'workflow_protection',
+  'original_records_boundary',
+  'safe_harbor_non_admission',
+  'effective_challenge',
+  'near_miss_tier',
+  'intermediary_capacity',
 ] as const
 export type LeverKey = (typeof LEVER_KEYS)[number]
 
@@ -60,6 +66,9 @@ export const STRUCTURAL_KEYS = [
   'w_priv',
   'w_sep',
   'w_tl',
+  'w_workflow',
+  'w_records',
+  'w_safe',
   // incident generation (§2.3)
   'base_incident_rate',
   'alpha_td',
@@ -70,9 +79,13 @@ export const STRUCTURAL_KEYS = [
   'eta_learn',
   'base_eff',
   'tl_boost',
+  'intermediary_efficiency_boost',
+  'challenge_learning_boost',
+  'near_miss_learning_boost',
   'delta_L',
   // documented-incident & debt dynamics (§2.3)
   'rho',
+  'challenge_remediation_boost',
   'kappa_D',
   'mu',
   'sigma',
@@ -131,6 +144,8 @@ export interface ParamSpec {
   note: string
   /** false → a primary lever slider; true → lives in the Advanced panel. */
   advanced: boolean
+  /** Optional UI grouping for primary lever surfaces. */
+  leverFamily?: 'legal' | 'learning' | 'governance'
 }
 
 // ---------------------------------------------------------------------------
@@ -168,6 +183,13 @@ export interface Auxiliaries {
   harm_events: number
   safety_wins: number
   backfire: number
+  near_miss_signal: number
+  private_ordering_gap: number
+  accountability_legitimacy: number
+  safe_to_report_score: number
+  learning_yield: number
+  litigation_pressure: number
+  policy_scaffold_dependency: number
 }
 
 export const AUX_KEYS = [
@@ -186,6 +208,13 @@ export const AUX_KEYS = [
   'harm_events',
   'safety_wins',
   'backfire',
+  'near_miss_signal',
+  'private_ordering_gap',
+  'accountability_legitimacy',
+  'safe_to_report_score',
+  'learning_yield',
+  'litigation_pressure',
+  'policy_scaffold_dependency',
 ] as const satisfies readonly (keyof Auxiliaries)[]
 
 /** Records a clamp or numerical-guard event so divergence is never hidden (spec §2.1, §4.5). */

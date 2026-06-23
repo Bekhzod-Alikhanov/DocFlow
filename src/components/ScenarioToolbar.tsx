@@ -17,7 +17,7 @@ import {
   importScenarioFile,
 } from '../lib/persistence'
 import { encodeScenarioToHash } from '../lib/share'
-import { exportCSV, exportPNG, exportPDF, type ExportContext } from '../lib/export'
+import { exportCSV, exportPNG, exportPDF, exportPlaybookBrief, type ExportContext } from '../lib/export'
 import { getPrimaryGd } from '../lib/chartRegistry'
 import { MODEL_VERSION } from '../engine'
 import type { Scenario } from '../engine'
@@ -116,10 +116,11 @@ export function ScenarioToolbar() {
     }
   }
 
-  const onExport = async (kind: 'csv' | 'png' | 'pdf' | 'json') => {
+  const onExport = async (kind: 'csv' | 'png' | 'pdf' | 'json' | 'playbook') => {
     setMenuOpen(false)
     try {
       if (kind === 'csv') return exportCSV(ctx())
+      if (kind === 'playbook') return exportPlaybookBrief(ctx())
       if (kind === 'json') return exportScenarioFile(asScenario())
       const gd = getPrimaryGd()
       if (!gd) return flash('Open a chart view first')
@@ -186,14 +187,14 @@ export function ScenarioToolbar() {
           <>
             <button type="button" aria-hidden className="fixed inset-0 z-10 cursor-default" onClick={() => setMenuOpen(false)} />
             <div role="menu" className="absolute right-0 z-20 mt-1 w-40 rounded-md border border-line bg-surface py-1 shadow-lg">
-              {(['csv', 'png', 'pdf', 'json'] as const).map((k) => (
+              {(['playbook', 'csv', 'png', 'pdf', 'json'] as const).map((k) => (
                 <button
                   key={k}
                   role="menuitem"
                   className="block w-full px-3 py-1.5 text-left text-[12px] text-ink-soft hover:bg-accent-soft hover:text-accent"
                   onClick={() => onExport(k)}
                 >
-                  {k === 'json' ? 'Scenario JSON' : k.toUpperCase()}
+                  {k === 'json' ? 'Scenario JSON' : k === 'playbook' ? 'Playbook brief' : k.toUpperCase()}
                 </button>
               ))}
               <button

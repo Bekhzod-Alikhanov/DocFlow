@@ -6,7 +6,8 @@
  */
 import { buildRunRecord, MODEL_VERSION, STOCK_KEYS } from '../engine'
 import type { Params, State, SimSettings, Trajectory, SummaryMetrics } from '../engine'
-import { NO_FORECAST_LINE, fmt } from './format'
+import { REGIME_MATRIX, SOURCE_CAVEATS, institutionalScorecard, topRegimeMatches } from './institutional'
+import { NO_FORECAST_LINE, fmt, pct } from './format'
 import { slug, triggerDownload } from './persistence'
 
 export interface ExportContext {
@@ -55,6 +56,75 @@ export function buildCSV(ctx: ExportContext): string {
 export function exportCSV(ctx: ExportContext): void {
   const blob = new Blob([buildCSV(ctx)], { type: 'text/csv;charset=utf-8' })
   triggerDownload(blob, `${slug(ctx.scenarioName)}.csv`)
+}
+
+function mdCell(value: string): string {
+  return value.replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim()
+}
+
+function scoreValue(item: ReturnType<typeof institutionalScorecard>[number]): string {
+  return item.id === 'learning_yield' ? fmt(item.value * 2, 2) : pct(item.value)
+}
+
+export function buildPlaybookBrief(ctx: ExportContext): string {
+  const ts = ctx.timestamp ?? new Date().toISOString()
+  const score = institutionalScorecard(ctx.params, ctx.trajectory)
+  const matches = topRegimeMatches(ctx.params)
+  const s = ctx.summary
+  const lines = [
+    '# DocFlow playbook brief',
+    '',
+    NO_FORECAST_LINE,
+    'This export is decision-support for institutional design. It is not legal advice.',
+    '',
+    '## Scenario',
+    '',
+    `- Scenario: ${ctx.scenarioName}`,
+    `- Generated: ${ts}`,
+    `- Model version: ${MODEL_VERSION}`,
+    `- Regime readout: ${s.regime}`,
+    `- Final documented fraction: ${pct(s.finalFdoc)}`,
+    `- Final learning capability: ${fmt(s.finalState.L, 1)}`,
+    `- Final technical debt: ${fmt(s.finalState.TD, 1)}`,
+    `- Cumulative exposure: ${fmt(s.cumulativeExposure, 1)}`,
+    `- Time to tip: ${s.timeToTip == null ? 'did not tip' : `${fmt(s.timeToTip, 1)} months`}`,
+    '',
+    '## Institutional Scorecard',
+    '',
+    '| Metric | Readout | Interpretation |',
+    '| --- | ---: | --- |',
+    ...score.map((item) => `| ${mdCell(item.label)} | ${scoreValue(item)} | ${mdCell(item.note)} |`),
+    '',
+    '## Closest Regime Matches',
+    '',
+    '| Regime | Sector | Transferable principle | Transferability | Caveat |',
+    '| --- | --- | --- | --- | --- |',
+    ...matches.map(
+      (r) =>
+        `| ${mdCell(r.name)} | ${mdCell(r.sector)} | ${mdCell(r.transferablePrinciple)} | ${mdCell(r.transferability)} | ${mdCell(r.caveat)} |`,
+    ),
+    '',
+    '## Regime Comparison Matrix',
+    '',
+    '| Regime | Mechanism | Protected thing | Source of protection | Transferability |',
+    '| --- | --- | --- | --- | --- |',
+    ...REGIME_MATRIX.map(
+      (r) =>
+        `| ${mdCell(r.name)} | ${mdCell(r.mechanism)} | ${mdCell(r.protectedThing)} | ${mdCell(r.sourceOfProtection)} | ${mdCell(r.transferability)} |`,
+    ),
+    '',
+    '## Source Caveats',
+    '',
+    ...SOURCE_CAVEATS.map((c) => `- ${c}`),
+    '- Legal conclusions require counsel and jurisdiction-specific review.',
+    '',
+  ]
+  return lines.join('\n')
+}
+
+export function exportPlaybookBrief(ctx: ExportContext): void {
+  const blob = new Blob([buildPlaybookBrief(ctx)], { type: 'text/markdown;charset=utf-8' })
+  triggerDownload(blob, `${slug(ctx.scenarioName)}-playbook.md`)
 }
 
 /** Render the Plotly graph div to a PNG data URL (dynamic plotly import). */

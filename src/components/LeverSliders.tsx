@@ -6,6 +6,12 @@ import { LEVER_KEYS, PARAM_SPEC_BY_ID } from '../engine'
 import { useStore } from '../state/store'
 import { ParamSlider } from './ParamSlider'
 
+const FAMILY_ORDER = [
+  { id: 'legal', label: 'Legal scaffold' },
+  { id: 'governance', label: 'Governance line' },
+  { id: 'learning', label: 'Learning infrastructure' },
+] as const
+
 export function LeverSliders() {
   const params = useStore((s) => s.params)
   const setParam = useStore((s) => s.setParam)
@@ -28,14 +34,24 @@ export function LeverSliders() {
           </button>
         )}
       </div>
-      <p className="mb-1 text-[12px] text-muted">
+      <p className="mb-3 text-[12px] text-muted">
         Each lever maps to a real regime mechanism. Drag <strong>Just culture</strong> or{' '}
-        <strong>Privilege</strong> and watch the system tip between equilibria.
+        <strong>Safe harbor</strong> and watch the system tip between equilibria.
       </p>
-      <div className="divide-y divide-line/70">
-        {LEVER_KEYS.map((key) => (
-          <ParamSlider key={key} spec={PARAM_SPEC_BY_ID[key]} value={params[key]} onChange={(v) => setParam(key, v)} />
-        ))}
+      <div className="space-y-3">
+        {FAMILY_ORDER.map((family) => {
+          const keys = LEVER_KEYS.filter((key) => PARAM_SPEC_BY_ID[key].leverFamily === family.id)
+          return (
+            <div key={family.id}>
+              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{family.label}</div>
+              <div className="divide-y divide-line/70 rounded-md border border-line/70 px-2">
+                {keys.map((key) => (
+                  <ParamSlider key={key} spec={PARAM_SPEC_BY_ID[key]} value={params[key]} onChange={(v) => setParam(key, v)} />
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </section>
   )

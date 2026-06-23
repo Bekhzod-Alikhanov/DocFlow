@@ -16,7 +16,7 @@ import {
   defaultInitState,
   defaultSettings,
 } from '../engine'
-import type { Scenario, Params, State, SimSettings } from '../engine'
+import type { Scenario, Params, State, SimSettings, ParamKey } from '../engine'
 
 const HASH_PREFIX = 's='
 
@@ -24,6 +24,8 @@ interface ShareCodecV1 {
   v: 1
   mv: string
   n: string
+  /** optional key list for v0.2+; absent hashes decode using LEGACY_PARAM_KEYS_V1 */
+  k?: string[]
   /** params positional over ALL_PARAM_KEYS */
   p: number[]
   i: State
@@ -32,11 +34,57 @@ interface ShareCodecV1 {
   a?: string
 }
 
+const LEGACY_PARAM_KEYS_V1: ParamKey[] = [
+  'privilege_strength',
+  'just_culture',
+  'mandatory_reporting',
+  'pld_penalty',
+  'recipient_enforcer_separation',
+  'translation_layer',
+  'gain',
+  'threshold',
+  'a_c',
+  'a_jc',
+  'a_m',
+  'a_disc',
+  'w_m',
+  'w_p',
+  'w_priv',
+  'w_sep',
+  'w_tl',
+  'base_incident_rate',
+  'alpha_td',
+  'TD_ref',
+  'td_sat',
+  'beta_L',
+  'eta_learn',
+  'base_eff',
+  'tl_boost',
+  'delta_L',
+  'rho',
+  'kappa_D',
+  'mu',
+  'sigma',
+  'td_baseline',
+  'delta_TD',
+  'gamma',
+  'phi_doc',
+  'phi_harm',
+  'phi_pld',
+  'theta_E',
+  'omega',
+  'psi',
+  'lambda_C',
+  'a_sep',
+  'a_jc_c',
+]
+
 export function encodeScenarioToHash(sc: Scenario): string {
   const payload: ShareCodecV1 = {
     v: 1,
     mv: MODEL_VERSION,
     n: sc.name,
+    k: [...ALL_PARAM_KEYS],
     p: ALL_PARAM_KEYS.map((k) => sc.params[k]),
     i: sc.init,
     s: sc.settings,
@@ -67,7 +115,8 @@ export function decodeScenarioFromHash(hash: string): Scenario | null {
 
     // Rebuild a full param object from the positional array, then sanitize.
     const raw: Partial<Params> = {}
-    ALL_PARAM_KEYS.forEach((k, idx) => {
+    const keyOrder = Array.isArray(data.k) ? data.k.filter((k): k is ParamKey => (ALL_PARAM_KEYS as readonly string[]).includes(k)) : LEGACY_PARAM_KEYS_V1
+    keyOrder.forEach((k, idx) => {
       const val = data.p![idx]
       if (typeof val === 'number' && Number.isFinite(val)) raw[k] = val
     })

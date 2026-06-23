@@ -37,5 +37,11 @@ describe('App happy path', () => {
     await waitFor(() => {
       expect(screen.getByRole('option', { name: 'Integration Scn' })).toBeInTheDocument()
     })
+
+    // Institutional Design view loads and guided demos hydrate scenario presets.
+    fireEvent.click(screen.getByRole('tab', { name: 'Institutional design' }))
+    await screen.findByText('Institutional scorecard')
+    fireEvent.click(screen.getByRole('button', { name: /Why SR 11-7 makes documentation a control/i }))
+    expect(useStore.getState().activePresetId).toBe('sr11-effective-challenge')
   })
 })

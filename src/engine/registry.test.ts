@@ -45,7 +45,7 @@ describe('parameter registry', () => {
     }
   })
 
-  it('levers are the six policy dials in [0,1] (spec §2.4)', () => {
+  it('levers are institutional policy dials in [0,1]', () => {
     const levers = PARAM_SPECS.filter((p) => p.group === 'lever')
     expect(levers.map((l) => l.id).sort()).toEqual([...LEVER_KEYS].sort())
     for (const l of levers) {

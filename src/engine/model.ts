@@ -30,11 +30,16 @@ export function relu(x: number): number {
   return x > 0 ? x : 0
 }
 
+function clamp01(x: number): number {
+  return Math.min(1, Math.max(0, x))
+}
+
 /**
  * Perceived discoverability (spec §2.2). Signed: compulsion (mandatory reporting)
  * and the PLD adverse-inference regime raise it; privilege, recipient–enforcer
- * separation, and a translation layer lower it. Only its positive part chills
- * the drive to document (via relu in `driveToDocument`).
+ * separation, translation architecture, workflow protection, original-records
+ * boundaries, and safe-harbor/non-admission rules lower it. Only its positive
+ * part chills the drive to document (via relu in `driveToDocument`).
  */
 export function perceivedDiscoverability(p: Params): number {
   return (
@@ -42,7 +47,10 @@ export function perceivedDiscoverability(p: Params): number {
     p.w_p * p.pld_penalty -
     p.w_priv * p.privilege_strength -
     p.w_sep * p.recipient_enforcer_separation -
-    p.w_tl * p.translation_layer
+    p.w_tl * p.translation_layer -
+    p.w_workflow * p.workflow_protection -
+    p.w_records * p.original_records_boundary -
+    p.w_safe * p.safe_harbor_non_admission
   )
 }
 
@@ -89,9 +97,16 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   const to_D = f_doc * incident_inflow
   const to_U = (1 - f_doc) * incident_inflow
 
-  const translation_layer_efficiency = p.base_eff + p.tl_boost * p.translation_layer
-  const learning_gain = p.eta_learn * to_D * translation_layer_efficiency
-  const remediation = p.rho * D * (L / 100)
+  const translation_layer_efficiency =
+    p.base_eff +
+    p.tl_boost * p.translation_layer +
+    p.intermediary_efficiency_boost * p.intermediary_capacity
+  const near_miss_signal = p.near_miss_tier * incident_inflow * (0.35 + 0.65 * p.recipient_enforcer_separation)
+  const challengeMultiplier = 1 + p.challenge_learning_boost * p.effective_challenge
+  const learning_gain =
+    p.eta_learn * to_D * translation_layer_efficiency * challengeMultiplier +
+    p.near_miss_learning_boost * near_miss_signal * translation_layer_efficiency
+  const remediation = p.rho * D * (L / 100) * (1 + p.challenge_remediation_boost * p.effective_challenge)
   const d_closeout = p.kappa_D * D
 
   const belated_doc = p.mu * U * f_doc
@@ -108,7 +123,54 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   // scaled by translation efficiency) UNLESS records get weaponized for lack of
   // privilege (backfire). This is what makes the culture loop genuinely bistable.
   const safety_wins = p.omega * f_doc * translation_layer_efficiency
-  const backfire = p.psi * p.phi_doc * f_doc * (1 - p.privilege_strength)
+  const protectionBundle = clamp01(
+    0.36 * p.privilege_strength +
+      0.22 * p.workflow_protection +
+      0.18 * p.safe_harbor_non_admission +
+      0.14 * p.original_records_boundary +
+      0.1 * p.recipient_enforcer_separation,
+  )
+  const backfire = p.psi * p.phi_doc * f_doc * (1 - protectionBundle)
+
+  const privateOrderableCapacity = clamp01(
+    (p.original_records_boundary +
+      p.effective_challenge +
+      p.near_miss_tier +
+      p.intermediary_capacity +
+      p.translation_layer +
+      p.just_culture +
+      p.recipient_enforcer_separation) /
+      7,
+  )
+  const policy_scaffold_dependency = clamp01(
+    0.42 * p.safe_harbor_non_admission + 0.34 * p.workflow_protection + 0.24 * p.privilege_strength,
+  )
+  const private_ordering_gap = clamp01(policy_scaffold_dependency - 0.65 * privateOrderableCapacity)
+  const accountability_legitimacy = clamp01(
+    0.34 * p.original_records_boundary +
+      0.26 * p.just_culture +
+      0.18 * p.mandatory_reporting +
+      0.12 * p.effective_challenge +
+      0.1 * p.near_miss_tier,
+  )
+  const safe_to_report_score = clamp01(
+    0.22 * p.privilege_strength +
+      0.18 * p.recipient_enforcer_separation +
+      0.18 * p.workflow_protection +
+      0.16 * p.safe_harbor_non_admission +
+      0.12 * p.original_records_boundary +
+      0.08 * p.just_culture +
+      0.06 * p.intermediary_capacity -
+      0.16 * relu(perceived_discoverability),
+  )
+  const learning_yield = incident_inflow > 1e-9 ? learning_gain / incident_inflow : 0
+  const litigation_pressure = clamp01(
+    0.32 * relu(perceived_discoverability) +
+      0.24 * p.pld_penalty +
+      0.16 * p.mandatory_reporting +
+      0.18 * (1 - safe_to_report_score) +
+      0.1 * (1 - p.original_records_boundary),
+  )
 
   return {
     perceived_discoverability,
@@ -126,6 +188,13 @@ export function computeAux(s: State, p: Params): Auxiliaries {
     harm_events,
     safety_wins,
     backfire,
+    near_miss_signal,
+    private_ordering_gap,
+    accountability_legitimacy,
+    safe_to_report_score,
+    learning_yield,
+    litigation_pressure,
+    policy_scaffold_dependency,
   }
 }
 

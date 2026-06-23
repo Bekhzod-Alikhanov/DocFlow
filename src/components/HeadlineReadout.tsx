@@ -18,7 +18,9 @@ function Metric({ label, value, hint }: { label: string; value: string; hint?: s
 
 export function HeadlineReadout() {
   const summary = useStore((s) => s.summary)
-  const diverged = useStore((s) => s.trajectory.diverged)
+  const trajectory = useStore((s) => s.trajectory)
+  const diverged = trajectory.diverged
+  const aux = trajectory.aux[trajectory.aux.length - 1]
   const r = summary.regime
   const cls = REGIME_CLASS[r]
 
@@ -42,7 +44,7 @@ export function HeadlineReadout() {
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Metric label="Documented" value={pct(summary.finalFdoc)} hint="of new incidents" />
         <Metric label="Technical debt" value={fmt(summary.finalState.TD, 1)} hint="debt index" />
         <Metric label="Learning" value={fmt(summary.finalState.L, 0)} hint="0–100 capability" />
@@ -51,6 +53,8 @@ export function HeadlineReadout() {
           value={summary.timeToTip === null ? 'no tip' : `${fmt(summary.timeToTip, 0)} mo`}
           hint="f_doc crosses 50%"
         />
+        <Metric label="Safe-to-report" value={pct(aux.safe_to_report_score)} hint="institutional bundle" />
+        <Metric label="Private gap" value={pct(aux.private_ordering_gap)} hint="needs public law" />
         <Metric label="Cumulative exposure" value={fmt(summary.cumulativeExposure, 0)} hint="∫ E dt" />
         <Metric label="Culture" value={fmt(summary.finalState.C, 2)} hint="0–1 psych. safety" />
       </div>

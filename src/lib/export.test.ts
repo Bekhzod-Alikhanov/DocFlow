@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildCSV, provenanceHeader, type ExportContext } from './export'
+import { buildCSV, buildPlaybookBrief, provenanceHeader, type ExportContext } from './export'
 import { simulate, defaultParams, defaultInitState, defaultSettings, MODEL_VERSION } from '../engine'
 import { NO_FORECAST_LINE } from './format'
 
@@ -28,5 +28,16 @@ describe('export', () => {
     // One data row per timestep.
     const dataRows = lines.filter((l) => /^[0-9]/.test(l))
     expect(dataRows.length).toBe(c.trajectory.t.length)
+  })
+
+  it('buildPlaybookBrief emits scenario, regime, scorecard, matrix, and caveats', () => {
+    const brief = buildPlaybookBrief(ctx())
+    expect(brief).toContain(NO_FORECAST_LINE)
+    expect(brief).toContain('This export is decision-support')
+    expect(brief).toContain('## Institutional Scorecard')
+    expect(brief).toContain('## Closest Regime Matches')
+    expect(brief).toContain('## Regime Comparison Matrix')
+    expect(brief).toContain('## Source Caveats')
+    expect(brief).toContain('95%')
   })
 })

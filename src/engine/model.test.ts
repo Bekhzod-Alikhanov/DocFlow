@@ -40,6 +40,9 @@ describe('model: perceived discoverability (spec §2.2)', () => {
     expect(perceivedDiscoverability({ ...p, privilege_strength: 1 })).toBeLessThan(baseline)
     expect(perceivedDiscoverability({ ...p, recipient_enforcer_separation: 1 })).toBeLessThan(baseline)
     expect(perceivedDiscoverability({ ...p, translation_layer: 1 })).toBeLessThan(baseline)
+    expect(perceivedDiscoverability({ ...p, workflow_protection: 1 })).toBeLessThan(baseline)
+    expect(perceivedDiscoverability({ ...p, original_records_boundary: 1 })).toBeLessThan(baseline)
+    expect(perceivedDiscoverability({ ...p, safe_harbor_non_admission: 1 })).toBeLessThan(baseline)
   })
 })
 
@@ -121,6 +124,50 @@ describe('model: flow accounting & signs (spec §2.3)', () => {
     const weak = derivatives(baseState, { ...p, privilege_strength: 0 }).E
     const strong = derivatives(baseState, { ...p, privilege_strength: 1 }).E
     expect(weak).toBeGreaterThan(strong)
+  })
+
+  it('stronger safe harbor lowers backfire and litigation pressure', () => {
+    const p = { ...defaultParams(), just_culture: 1, mandatory_reporting: 0.7, pld_penalty: 0.7 }
+    const weak = computeAux({ ...baseState, C: 0.9 }, { ...p, safe_harbor_non_admission: 0 })
+    const strong = computeAux({ ...baseState, C: 0.9 }, { ...p, safe_harbor_non_admission: 1 })
+    expect(strong.backfire).toBeLessThan(weak.backfire)
+    expect(strong.litigation_pressure).toBeLessThan(weak.litigation_pressure)
+  })
+
+  it('effective challenge raises learning and remediation', () => {
+    const p = defaultParams()
+    const weak = computeAux(baseState, { ...p, effective_challenge: 0 })
+    const strong = computeAux(baseState, { ...p, effective_challenge: 1 })
+    expect(strong.learning_gain).toBeGreaterThan(weak.learning_gain)
+    expect(strong.remediation).toBeGreaterThan(weak.remediation)
+  })
+
+  it('near-miss tiers improve learning without directly increasing exposure', () => {
+    const p = defaultParams()
+    const weakP = { ...p, near_miss_tier: 0 }
+    const strongP = { ...p, near_miss_tier: 1 }
+    const weak = computeAux(baseState, weakP)
+    const strong = computeAux(baseState, strongP)
+    expect(strong.learning_gain).toBeGreaterThan(weak.learning_gain)
+    expect(derivatives(baseState, strongP).E).toBeCloseTo(derivatives(baseState, weakP).E, 10)
+  })
+
+  it('mandatory reporting without protection can still chill documentation', () => {
+    const p = {
+      ...defaultParams(),
+      just_culture: 0.2,
+      mandatory_reporting: 1,
+      pld_penalty: 1,
+      privilege_strength: 0,
+      recipient_enforcer_separation: 0,
+      translation_layer: 0,
+      workflow_protection: 0,
+      original_records_boundary: 0,
+      safe_harbor_non_admission: 0,
+    }
+    const a = computeAux({ ...baseState, C: 0.25 }, p)
+    expect(a.f_doc).toBeLessThan(0.5)
+    expect(a.litigation_pressure).toBeGreaterThan(0.5)
   })
 
   it('culture rate vanishes at the boundaries C=0 and C=1 (logistic form)', () => {
