@@ -1,10 +1,9 @@
 /**
- * Sector preset cards (spec §5.6). One-click load; each shows its expected regime,
- * blurb, and a citation/caveat card (the cyber card states the 95% figure is an
- * estimate — spec §4.4).
+ * Sector preset cards. One-click load; each shows expected regime, blurb,
+ * citations/caveats, and lever-level rationale metadata.
  */
 import { useState } from 'react'
-import { PRESETS } from '../engine'
+import { LEVER_KEYS, PARAM_SPEC_BY_ID, PRESETS } from '../engine'
 import { useStore } from '../state/store'
 import { REGIME_CLASS, REGIME_LABEL } from '../lib/format'
 
@@ -53,18 +52,45 @@ export function PresetGallery() {
                 {showCite ? 'Hide basis' : 'Basis & caveats'}
               </button>
               {showCite && (
-                <ul className="mt-1.5 space-y-1.5 border-t border-line pt-1.5">
-                  {p.citations.map((c, i) => (
-                    <li key={i} className="text-[11px] leading-snug text-ink-soft">
-                      {c.text}
-                      {c.caveat && (
-                        <span className="mt-0.5 block rounded bg-estimate-soft px-1.5 py-1 text-estimate">
-                          ⚠ {c.caveat}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                <div className="mt-1.5 space-y-2 border-t border-line pt-1.5">
+                  <ul className="space-y-1.5">
+                    {p.citations.map((c, i) => (
+                      <li key={i} className="text-[11px] leading-snug text-ink-soft">
+                        {c.text}
+                        {c.caveat && (
+                          <span className="mt-0.5 block rounded bg-estimate-soft px-1.5 py-1 text-estimate">
+                            {c.caveat}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="max-h-44 overflow-auto rounded border border-line">
+                    <table className="w-full border-collapse text-[10.5px]">
+                      <thead className="sticky top-0 bg-surface-2 text-left text-muted">
+                        <tr>
+                          <th className="px-1.5 py-1 font-medium">Lever</th>
+                          <th className="px-1.5 py-1 font-medium">Confidence</th>
+                          <th className="px-1.5 py-1 font-medium">Why this value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {LEVER_KEYS.map((key) => {
+                          const r = p.leverRationales[key]
+                          return (
+                            <tr key={key} className="border-t border-line align-top">
+                              <td className="px-1.5 py-1 font-medium text-ink">{PARAM_SPEC_BY_ID[key].label}</td>
+                              <td className="px-1.5 py-1 text-muted">
+                                {r.confidence} / {r.caveatLevel}
+                              </td>
+                              <td className="px-1.5 py-1 text-ink-soft">{r.basis}</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               )}
             </div>
           )

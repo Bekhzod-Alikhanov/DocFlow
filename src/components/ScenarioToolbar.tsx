@@ -17,7 +17,15 @@ import {
   importScenarioFile,
 } from '../lib/persistence'
 import { encodeScenarioToHash } from '../lib/share'
-import { exportCSV, exportPNG, exportPDF, exportPlaybookBrief, type ExportContext } from '../lib/export'
+import {
+  exportCSV,
+  exportLabChecklist,
+  exportPNG,
+  exportPDF,
+  exportPlaybookBrief,
+  exportPresetComparison,
+  type ExportContext,
+} from '../lib/export'
 import { getPrimaryGd } from '../lib/chartRegistry'
 import { MODEL_VERSION } from '../engine'
 import type { Scenario } from '../engine'
@@ -51,7 +59,7 @@ export function ScenarioToolbar() {
     setTimeout(() => setNote(null), 1800)
   }
 
-  const ctx = (): ExportContext => ({ params, init, settings, trajectory, summary, scenarioName })
+  const ctx = (): ExportContext => ({ params, init, settings, trajectory, summary, scenarioName, presetId: activePresetId })
 
   const asScenario = (): Scenario => ({
     id: savedId ?? 'working',
@@ -116,11 +124,13 @@ export function ScenarioToolbar() {
     }
   }
 
-  const onExport = async (kind: 'csv' | 'png' | 'pdf' | 'json' | 'playbook') => {
+  const onExport = async (kind: 'csv' | 'png' | 'pdf' | 'json' | 'playbook' | 'presetComparison' | 'labChecklist') => {
     setMenuOpen(false)
     try {
       if (kind === 'csv') return exportCSV(ctx())
       if (kind === 'playbook') return exportPlaybookBrief(ctx())
+      if (kind === 'presetComparison') return exportPresetComparison(ctx())
+      if (kind === 'labChecklist') return exportLabChecklist(ctx())
       if (kind === 'json') return exportScenarioFile(asScenario())
       const gd = getPrimaryGd()
       if (!gd) return flash('Open a chart view first')
@@ -187,14 +197,22 @@ export function ScenarioToolbar() {
           <>
             <button type="button" aria-hidden className="fixed inset-0 z-10 cursor-default" onClick={() => setMenuOpen(false)} />
             <div role="menu" className="absolute right-0 z-20 mt-1 w-40 rounded-md border border-line bg-surface py-1 shadow-lg">
-              {(['playbook', 'csv', 'png', 'pdf', 'json'] as const).map((k) => (
+              {(['playbook', 'presetComparison', 'labChecklist', 'csv', 'png', 'pdf', 'json'] as const).map((k) => (
                 <button
                   key={k}
                   role="menuitem"
                   className="block w-full px-3 py-1.5 text-left text-[12px] text-ink-soft hover:bg-accent-soft hover:text-accent"
                   onClick={() => onExport(k)}
                 >
-                  {k === 'json' ? 'Scenario JSON' : k === 'playbook' ? 'Playbook brief' : k.toUpperCase()}
+                  {k === 'json'
+                    ? 'Scenario JSON'
+                    : k === 'playbook'
+                      ? 'Playbook brief'
+                      : k === 'presetComparison'
+                        ? 'Preset comparison'
+                        : k === 'labChecklist'
+                          ? 'Lab checklist'
+                          : k.toUpperCase()}
                 </button>
               ))}
               <button

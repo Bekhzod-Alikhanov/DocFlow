@@ -263,6 +263,18 @@ export interface Citation {
   caveat?: string
 }
 
+export type ConfidenceLevel = 'low' | 'medium' | 'high'
+export type CaveatLevel = 'illustrative' | 'source-backed' | 'needs-verification'
+
+export interface LeverRationale {
+  basis: string
+  confidence: ConfidenceLevel
+  caveatLevel: CaveatLevel
+  sourceNote: string
+}
+
+export type PresetLeverRationales = Record<LeverKey, LeverRationale>
+
 export interface Preset {
   id: string
   name: string
@@ -274,6 +286,7 @@ export interface Preset {
   overrides: Partial<Params>
   init?: Partial<State>
   citations: Citation[]
+  leverRationales: PresetLeverRationales
 }
 
 /** A named, saveable scenario — the unit of persistence, export, and sharing. */

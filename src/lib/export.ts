@@ -4,9 +4,31 @@
  * an exported artifact must never lose its epistemic framing. Plotly and jsPDF are
  * dynamically imported so neither anchors the initial bundle.
  */
-import { buildRunRecord, MODEL_VERSION, STOCK_KEYS } from '../engine'
+import {
+  PRESETS,
+  buildRunRecord,
+  defaultSettings,
+  initFromPreset,
+  paramsFromPreset,
+  simulate,
+  MODEL_VERSION,
+  STOCK_KEYS,
+} from '../engine'
 import type { Params, State, SimSettings, Trajectory, SummaryMetrics } from '../engine'
-import { REGIME_MATRIX, SOURCE_CAVEATS, institutionalScorecard, topRegimeMatches } from './institutional'
+import {
+  LAB_CHECKLIST_SECTIONS,
+  NO_LEGAL_ADVICE_LINE,
+  POLICY_COMPONENT_BY_ID,
+  POLICY_PACKAGE_TEMPLATES,
+  REGIME_MATRIX,
+  SOURCE_CAVEATS,
+  decisionRecommendations,
+  groupedRecommendations,
+  institutionalScorecard,
+  presetMainCaveat,
+  presetSourceNotes,
+  topRegimeMatches,
+} from './institutional'
 import { NO_FORECAST_LINE, fmt, pct } from './format'
 import { slug, triggerDownload } from './persistence'
 
@@ -17,6 +39,7 @@ export interface ExportContext {
   trajectory: Trajectory
   summary: SummaryMetrics
   scenarioName: string
+  presetId?: string | null
   /** ISO timestamp; caller supplies it (keeps this module clock-agnostic in tests). */
   timestamp?: string
 }
@@ -70,12 +93,16 @@ export function buildPlaybookBrief(ctx: ExportContext): string {
   const ts = ctx.timestamp ?? new Date().toISOString()
   const score = institutionalScorecard(ctx.params, ctx.trajectory)
   const matches = topRegimeMatches(ctx.params)
+  const recs = decisionRecommendations(ctx.params, ctx.trajectory)
+  const grouped = groupedRecommendations(recs)
+  const sourceNotes = presetSourceNotes(ctx.presetId)
   const s = ctx.summary
   const lines = [
     '# DocFlow playbook brief',
     '',
     NO_FORECAST_LINE,
-    'This export is decision-support for institutional design. It is not legal advice.',
+    NO_LEGAL_ADVICE_LINE,
+    'This export is decision-support for institutional design.',
     '',
     '## Scenario',
     '',
@@ -94,6 +121,32 @@ export function buildPlaybookBrief(ctx: ExportContext): string {
     '| Metric | Readout | Interpretation |',
     '| --- | ---: | --- |',
     ...score.map((item) => `| ${mdCell(item.label)} | ${scoreValue(item)} | ${mdCell(item.note)} |`),
+    '',
+    '## Recommendations',
+    '',
+    '### Build Internally Now',
+    '',
+    ...(grouped['build-now'].length ? grouped['build-now'].map((r) => `- **${r.title}:** ${r.doNow} _(${r.confidence}; ${r.caveat})_`) : ['- No private-ordering recommendation triggered.']),
+    '',
+    '### Needs Regulator / Statute',
+    '',
+    ...(grouped['needs-law'].length ? grouped['needs-law'].map((r) => `- **${r.title}:** ${r.doNow} _(${r.confidence}; ${r.caveat})_`) : ['- No statutory/regulatory recommendation triggered.']),
+    '',
+    '### Watch / Caveat',
+    '',
+    ...(grouped.watch.length ? grouped.watch.map((r) => `- **${r.title}:** ${r.doNow} _(${r.confidence}; ${r.caveat})_`) : ['- No low-confidence caveat recommendation triggered.']),
+    '',
+    '## Policy Package Suggestions',
+    '',
+    ...POLICY_PACKAGE_TEMPLATES.map(
+      (p) =>
+        `- **${p.title}:** ${p.description} Components: ${p.componentIds.map((id) => POLICY_COMPONENT_BY_ID[id].title).join('; ')}.`,
+    ),
+    '',
+    '## Private Ordering vs Law / Regulator',
+    '',
+    '- Private ordering can create factual-record boundaries, internal effective challenge, near-miss workflows, translation layers, and lab-funded analytic capacity.',
+    '- Statute or regulator action is needed for robust safe harbor, non-admission treatment, admissibility limits, and externally binding confidentiality.',
     '',
     '## Closest Regime Matches',
     '',
@@ -116,7 +169,8 @@ export function buildPlaybookBrief(ctx: ExportContext): string {
     '## Source Caveats',
     '',
     ...SOURCE_CAVEATS.map((c) => `- ${c}`),
-    '- Legal conclusions require counsel and jurisdiction-specific review.',
+    `- ${NO_LEGAL_ADVICE_LINE}`,
+    ...(sourceNotes.length ? ['', '## Active Preset Lever Source Notes', '', ...sourceNotes.map((n) => `- ${n}`)] : []),
     '',
   ]
   return lines.join('\n')
@@ -125,6 +179,74 @@ export function buildPlaybookBrief(ctx: ExportContext): string {
 export function exportPlaybookBrief(ctx: ExportContext): void {
   const blob = new Blob([buildPlaybookBrief(ctx)], { type: 'text/markdown;charset=utf-8' })
   triggerDownload(blob, `${slug(ctx.scenarioName)}-playbook.md`)
+}
+
+export function buildPresetComparison(ctx: ExportContext): string {
+  const ts = ctx.timestamp ?? new Date().toISOString()
+  const settings = ctx.settings ?? defaultSettings()
+  const lines = [
+    '# DocFlow preset comparison',
+    '',
+    NO_FORECAST_LINE,
+    NO_LEGAL_ADVICE_LINE,
+    `Generated: ${ts}`,
+    `Model version: ${MODEL_VERSION}`,
+    '',
+    '| Preset | Expected | Simulated | Safe-to-report | Private gap | Closest analog | Teaching point | Main caveat |',
+    '| --- | --- | --- | ---: | ---: | --- | --- | --- |',
+    ...PRESETS.map((preset) => {
+      const params = paramsFromPreset(preset)
+      const run = simulate(initFromPreset(preset), params, settings)
+      const aux = run.trajectory.aux[run.trajectory.aux.length - 1]
+      const analog = topRegimeMatches(params)[0]?.name ?? 'n/a'
+      return `| ${mdCell(preset.name)} | ${preset.expectedRegime} | ${run.summary.regime} | ${pct(aux.safe_to_report_score)} | ${pct(aux.private_ordering_gap)} | ${mdCell(analog)} | ${mdCell(preset.blurb)} | ${mdCell(presetMainCaveat(preset))} |`
+    }),
+    '',
+    '## Source Caveats',
+    '',
+    ...SOURCE_CAVEATS.map((c) => `- ${c}`),
+    `- ${NO_LEGAL_ADVICE_LINE}`,
+    '',
+  ]
+  return lines.join('\n')
+}
+
+export function exportPresetComparison(ctx: ExportContext): void {
+  const blob = new Blob([buildPresetComparison(ctx)], { type: 'text/markdown;charset=utf-8' })
+  triggerDownload(blob, 'docflow-preset-comparison.md')
+}
+
+export function buildLabChecklist(ctx: ExportContext): string {
+  const recs = decisionRecommendations(ctx.params, ctx.trajectory)
+  const lines = [
+    '# DocFlow lab architecture checklist',
+    '',
+    NO_FORECAST_LINE,
+    NO_LEGAL_ADVICE_LINE,
+    `Scenario: ${ctx.scenarioName}`,
+    `Model version: ${MODEL_VERSION}`,
+    '',
+    ...LAB_CHECKLIST_SECTIONS.flatMap((section) => [
+      `## ${section.title}`,
+      '',
+      ...section.items.map((item) => `- [ ] ${item}`),
+      '',
+    ]),
+    '## Current Scenario Recommendations',
+    '',
+    ...(recs.length ? recs.map((r) => `- [ ] ${r.title}: ${r.doNow}`) : ['- [ ] No triggered recommendation; preserve current safeguards and review source caveats.']),
+    '',
+    '## Source Caveats',
+    '',
+    ...SOURCE_CAVEATS.map((c) => `- ${c}`),
+    '',
+  ]
+  return lines.join('\n')
+}
+
+export function exportLabChecklist(ctx: ExportContext): void {
+  const blob = new Blob([buildLabChecklist(ctx)], { type: 'text/markdown;charset=utf-8' })
+  triggerDownload(blob, `${slug(ctx.scenarioName)}-lab-checklist.md`)
 }
 
 /** Render the Plotly graph div to a PNG data URL (dynamic plotly import). */

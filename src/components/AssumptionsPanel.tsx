@@ -4,7 +4,7 @@
  * `illustrative-assumption` rows are visually distinct from `empirical-anchor`.
  */
 import { Fragment } from 'react'
-import { PARAM_SPECS, type ParamGroup } from '../engine'
+import { LEVER_KEYS, PARAM_SPECS, PRESET_BY_ID, type LeverKey, type ParamGroup } from '../engine'
 import { useStore } from '../state/store'
 import { fmt, EVIDENCE_LABEL, NO_FORECAST_LINE } from '../lib/format'
 
@@ -27,6 +27,9 @@ const EVIDENCE_BADGE: Record<string, string> = {
 
 export function AssumptionsPanel() {
   const params = useStore((s) => s.params)
+  const activePresetId = useStore((s) => s.activePresetId)
+  const activePreset = activePresetId ? PRESET_BY_ID[activePresetId] : null
+  const isLever = (id: string): id is LeverKey => (LEVER_KEYS as readonly string[]).includes(id)
 
   return (
     <section aria-labelledby="assume-h" className="rounded-lg border border-line bg-surface p-4">
@@ -81,7 +84,14 @@ export function AssumptionsPanel() {
                           {EVIDENCE_LABEL[p.evidence_basis]}
                         </span>
                       </td>
-                      <td className="px-2 py-1.5 text-[11px] leading-snug text-ink-soft">{p.source}</td>
+                      <td className="px-2 py-1.5 text-[11px] leading-snug text-ink-soft">
+                        {p.source}
+                        {activePreset && isLever(p.id) && (
+                          <div className="mt-1 rounded bg-surface-2 px-1.5 py-1 text-[10px] text-muted">
+                            Preset: {activePreset.leverRationales[p.id].confidence} / {activePreset.leverRationales[p.id].caveatLevel}
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </Fragment>

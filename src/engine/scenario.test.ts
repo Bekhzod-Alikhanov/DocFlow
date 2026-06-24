@@ -3,7 +3,7 @@ import { PRESETS, PRESET_BY_ID, DEFAULT_PRESET_ID } from './presets'
 import { paramsFromPreset, initFromPreset, scenarioFromPreset, defaultScenario } from './scenario'
 import { PARAM_SPEC_BY_ID, defaultInitState, defaultSettings, ALL_PARAM_KEYS } from './registry'
 import { simulate } from './simulate'
-import { STOCK_KEYS } from './types'
+import { LEVER_KEYS, STOCK_KEYS } from './types'
 
 describe('presets (spec §1, §5.6)', () => {
   it('ships the cited sector and institutional-design presets', () => {
@@ -43,6 +43,19 @@ describe('presets (spec §1, §5.6)', () => {
     const eu = PRESET_BY_ID['eu-trap']
     const caveatText = eu.citations.map((c) => c.caveat ?? '').join(' ')
     expect(caveatText.toLowerCase()).toContain('verif')
+  })
+
+  it('every preset explains every lever value with confidence and caveat metadata', () => {
+    for (const preset of PRESETS) {
+      for (const key of LEVER_KEYS) {
+        const rationale = preset.leverRationales[key]
+        expect(rationale, `${preset.id}.${key}`).toBeDefined()
+        expect(rationale.basis.length).toBeGreaterThan(0)
+        expect(rationale.sourceNote.length).toBeGreaterThan(0)
+        expect(['low', 'medium', 'high']).toContain(rationale.confidence)
+        expect(['illustrative', 'source-backed', 'needs-verification']).toContain(rationale.caveatLevel)
+      }
+    }
   })
 })
 
