@@ -1022,11 +1022,22 @@ describe('path scoring & no-dominant-path', () => {
     expect(s.params.workflow_protection).toBeCloseTo(0.4)
   })
 
-  it('the oral path wins short-term legal safety (lowest litigation pressure)', () => {
+  it('the oral path wins short-term *perceived* legal safety', () => {
     const scored = scoreAllPaths(scenario)
     const oral = scored.find((p) => p.choices[0].id === 'oral')!
     const translate = scored.find((p) => p.choices[0].id === 'translate')!
-    expect(oral.institutional.litigation_pressure).toBeLessThanOrEqual(translate.institutional.litigation_pressure)
+    // legalSafety is the felt, short-term shield (privilege + off-the-record), NOT
+    // the durable litigation_pressure. The oral path maximizes it — that is the lure.
+    expect(oral.legalSafety).toBeGreaterThan(translate.legalSafety)
+  })
+
+  it('decoupling: the oral path does NOT also win durable litigation pressure (privilege-first is a trap)', () => {
+    const scored = scoreAllPaths(scenario)
+    const oral = scored.find((p) => p.choices[0].id === 'oral')!
+    const translate = scored.find((p) => p.choices[0].id === 'translate')!
+    // Gutting the protective workflow raises real discoverability more than privilege lowers it,
+    // so the two-track path ends with LOWER litigation pressure than the oral path.
+    expect(translate.institutional.litigation_pressure).toBeLessThan(oral.institutional.litigation_pressure)
   })
 
   it('the oral path loses on learning, remediation, and recurrence', () => {
@@ -1056,9 +1067,17 @@ Expected: FAIL — cannot find module `./score`.
 /**
  * Score every terminal path of a scenario and test the central thesis property:
  * NO path is best on every meter. "Good" meters (higher is better) include the
- * five positive institutional meters, the six positive incident meters, and legal
- * safety (1 − litigation_pressure); recurrence_risk is folded in inverted. A path
- * "dominates" if it is ≥ all others on every good meter and > on at least one.
+ * five positive institutional meters, the six positive incident meters, the durable
+ * exposure axis (1 − litigation_pressure), and the short-term PERCEIVED legal shield
+ * (`legalSafety`); recurrence_risk is folded in inverted. A path "dominates" if it is
+ * ≥ all others on every good meter and > on at least one.
+ *
+ * `legalSafety` is deliberately decoupled from litigation_pressure. The playbook's
+ * lesson (cyber privilege-first analog) is that asserting privilege and keeping
+ * analysis off the record FEELS protective now, yet is fragile and degrades the safety
+ * architecture — so the durable litigation_pressure can move the opposite way. The
+ * "keep-it-oral" path wins the perceived shield and loses the durable axis: that split
+ * is the trap, and it is why no path dominates.
  */
 import type { LeverKey } from '../types'
 import { defaultParams, defaultInitState, defaultSettings } from '../registry'
@@ -1077,7 +1096,29 @@ export interface PathScore {
   institutional: Record<InstitutionalMeterKey, number>
   incident: IncidentMeters
   outcome: AftermathOutcome
+  /** Short-term *perceived* legal shield (0–1) — felt safety of asserting privilege
+   *  and keeping analysis off the record. NOT the durable litigation_pressure. */
   legalSafety: number
+}
+
+function clamp01(x: number): number {
+  return Math.min(1, Math.max(0, x))
+}
+
+/**
+ * The short-term *perceived* legal shield: privilege asserted, the record kept off
+ * the books, fewer discoverable factual records. This is what makes the "keep-it-oral"
+ * path feel safe in the moment. Computed purely from levers + flags so the UI can show
+ * exactly why it moved — and pair it with the litigation_pressure caveat. 0–1.
+ */
+function perceivedLegalShield(state: RunState): number {
+  const privilegedSingleTrack =
+    state.flags.includes('legal_owns_record') || state.flags.includes('privileged_single_track')
+  return clamp01(
+    0.55 * state.params.privilege_strength +
+      0.30 * (privilegedSingleTrack ? 1 : 0) +
+      0.15 * (1 - state.params.original_records_boundary),
+  )
 }
 
 export function initialRunState(scenario: TabletopScenario): RunState {
@@ -1103,7 +1144,7 @@ export function scorePath(scenario: TabletopScenario, choices: Choice[]): PathSc
     institutional,
     incident: state.incident,
     outcome: engineForwardOutcome(state),
-    legalSafety: 1 - institutional.litigation_pressure,
+    legalSafety: perceivedLegalShield(state),
   }
 }
 
@@ -1119,7 +1160,8 @@ function goodVector(p: PathScore): number[] {
     p.institutional.learning_yield,
     1 - p.institutional.private_ordering_gap,
     1 - p.institutional.policy_scaffold_dependency,
-    p.legalSafety,
+    1 - p.institutional.litigation_pressure, // durable exposure axis (two-track path tends to win this)
+    p.legalSafety, // short-term perceived shield (oral path wins this) — decoupled on purpose
     p.incident.signal_fidelity,
     p.incident.record_capturability,
     p.incident.regulatory_timeliness,
@@ -1149,7 +1191,7 @@ export function hasDominantPath(scenario: TabletopScenario): boolean {
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/engine/tabletop/score.test.ts`
-Expected: PASS (4 tests).
+Expected: PASS (5 tests).
 
 - [ ] **Step 5: Commit**
 

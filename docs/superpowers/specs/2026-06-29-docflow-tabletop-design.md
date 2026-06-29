@@ -104,6 +104,18 @@ each meter moved."** The engine recomputes after each choice.
 ### Grounding (no parallel scoring)
 - **Institutional meters** = existing scorecard, recomputed live from the nudged
   lever state. Source of truth stays in `src/engine` + `lib/institutional.ts`.
+- **Short-term legal safety is decoupled from `litigation_pressure`** (decided
+  during implementation, 2026-06-29). The SD model encodes the playbook's own
+  thesis: privilege-first / keep-it-oral is a *trap* — gutting the protective
+  workflow raises real discoverability more than asserting privilege lowers it, so
+  the engine's durable `litigation_pressure` does **not** drop for the oral path.
+  The tabletop therefore represents the oral path's lure as a distinct, transparent
+  **perceived legal shield** (`legalSafety`, derived from privilege + off-the-record
+  flags + low original-records boundary), shown beside the durable
+  `litigation_pressure`. The oral path wins the perceived shield (the seductive
+  short-term beat) and loses the durable exposure axis — which is exactly the trap,
+  and is why no path dominates. The UI must label the shield as short-term/perceived
+  and pair it with the litigation-pressure caveat.
 - **New, clearly-separated incident meters** (the only new indices; 0–100,
   directional, each chapter-tagged, documented in `TABLETOP.md`):
   - `signal_fidelity` (Ch.2) — original detail surviving at the current boundary.
