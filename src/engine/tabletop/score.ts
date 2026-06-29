@@ -102,7 +102,10 @@ function goodVector(p: PathScore): number[] {
     p.incident.board_oversight_visibility,
     p.incident.evidentiary_posture,
     p.incident.remediation_completeness,
-    100 - p.incident.recurrence_risk,
+    // Engine-forward recurrence is the meaningful per-path signal; the incident meter
+    // `recurrence_risk` stays a static placeholder until Aftermath, so using it here
+    // would make this axis inert. Use the outcome value.
+    100 - p.outcome.recurrenceRisk,
   ]
 }
 
