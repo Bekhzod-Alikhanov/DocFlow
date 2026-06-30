@@ -1,4 +1,5 @@
 // src/views/Tabletop/MeterRail.tsx
+import { useMemo } from 'react'
 import { useTabletopStore } from '../../state/tabletopStore'
 import { institutionalScorecard } from '../../lib/institutional'
 import {
@@ -159,7 +160,10 @@ export function MeterRail() {
   const runState = useTabletopStore((s) => s.runState)
   const finished = useTabletopStore((s) => s.finished)
 
-  const { trajectory } = simulate(runState.init, runState.params, runState.settings)
+  const { trajectory } = useMemo(
+    () => simulate(runState.init, runState.params, runState.settings),
+    [runState],
+  )
   const scoreItems = institutionalScorecard(runState.params, trajectory)
 
   const shieldValue = perceivedLegalShield(runState)
@@ -181,7 +185,7 @@ export function MeterRail() {
               scale={1}
               kind={item.kind}
               meterId={item.id}
-              logic={INSTITUTIONAL_LOGIC[item.id]}
+              logic={INSTITUTIONAL_LOGIC[item.id] ?? { formula: '—', levers: [], flags: [] }}
               activeFlags={activeFlags}
             />
 
