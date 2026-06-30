@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { TabletopScenario } from './types'
-import { scoreAllPaths, hasDominantPath, initialRunState } from './score'
+import { scoreAllPaths, hasDominantPath, initialRunState, dominates } from './score'
 
 // Two-path scenario: "oral" maxes legal safety but tanks learning/remediation;
 // "translation" inverts the trade-off. Neither dominates the other.
@@ -56,5 +56,65 @@ describe('path scoring & no-dominant-path', () => {
 
   it('no path dominates every meter (the core thesis property)', () => {
     expect(hasDominantPath(scenario)).toBe(false)
+  })
+})
+
+// Positive controls for the no-dominant-path detector. Without these, an always-false
+// `dominates`/`hasDominantPath` would pass every assertion above (they only assert false).
+describe('dominates (Pareto strict-domination helper)', () => {
+  it('is true when strictly better on every dimension', () => {
+    expect(dominates([2, 2, 2], [1, 1, 1])).toBe(true)
+  })
+
+  it('is false when better on one dimension but worse on another', () => {
+    expect(dominates([2, 1], [1, 2])).toBe(false)
+  })
+
+  it('is false for equal vectors (domination must be strict on ≥1 dimension)', () => {
+    expect(dominates([1, 1], [1, 1])).toBe(false)
+  })
+})
+
+// A constructed 2-path scenario where one choice is strictly better on every good-vector
+// dimension: it raises the private-orderable / learning levers, carries the perceived-shield
+// flag, sets positive incidentEffects, and lowers recurrence — while the other choice is
+// strictly worse on all of them. This MUST trip the detector to true, proving it can fire.
+const dominatedScenario: TabletopScenario = {
+  id: 'dom', name: 'Dominant', blurb: '', failureType: 'malfunction', captureResistance: 'irreproducible',
+  retrainCadence: 0.2, startLevers: {}, startNodeId: 'root', chapters: [1, 2, 3, 4],
+  nodes: [
+    { id: 'root', phase: 1, chapter: 1, title: 'Routing', situation: '', choices: [
+      { id: 'strong', label: 'Strictly better on every meter', role: 'safety_eng', chapter: 4, rationale: '',
+        // Raise only private-orderable / learning levers — leave privilege, workflow,
+        // safe_harbor, original_records at default so policy-scaffold dependency does not
+        // rise. The legal_owns_record flag lifts perceived shield with no lever cost.
+        leverDeltas: {
+          recipient_enforcer_separation: 0.4, effective_challenge: 0.4,
+          translation_layer: 0.4, near_miss_tier: 0.4, intermediary_capacity: 0.4, just_culture: 0.4,
+        },
+        incidentEffects: {
+          record_capturability: 40, regulatory_timeliness: 40, board_oversight_visibility: 40,
+          evidentiary_posture: 40, remediation_completeness: 40, recurrence_risk: -20,
+        },
+        flags: ['state_snapshotted', 'pipeline_captured', 'legal_owns_record'], analogRefs: [], citations: [], next: 'aEnd' },
+      { id: 'weak', label: 'Strictly worse no-op-ish path', role: 'counsel', chapter: 4, rationale: '',
+        leverDeltas: {
+          recipient_enforcer_separation: -0.1, effective_challenge: -0.1,
+          translation_layer: -0.1, near_miss_tier: -0.1, intermediary_capacity: -0.1, just_culture: -0.1,
+        },
+        incidentEffects: {
+          record_capturability: -10, regulatory_timeliness: -10, board_oversight_visibility: -10,
+          evidentiary_posture: -10, remediation_completeness: -10, recurrence_risk: 10,
+        },
+        flags: [], analogRefs: [], citations: [], next: 'bEnd' },
+    ] },
+    { id: 'aEnd', phase: 8, chapter: 4, title: 'Aftermath', situation: '', choices: [], terminal: true },
+    { id: 'bEnd', phase: 8, chapter: 4, title: 'Aftermath', situation: '', choices: [], terminal: true },
+  ],
+}
+
+describe('hasDominantPath positive control', () => {
+  it('returns true when one path is strictly better on every good-vector dimension', () => {
+    expect(hasDominantPath(dominatedScenario)).toBe(true)
   })
 })

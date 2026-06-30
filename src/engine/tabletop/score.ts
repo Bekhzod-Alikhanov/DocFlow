@@ -109,7 +109,12 @@ function goodVector(p: PathScore): number[] {
   ]
 }
 
-function dominates(a: number[], b: number[]): boolean {
+/**
+ * `a` dominates `b` iff it is ≥ `b` on every dimension and strictly > on at least one.
+ * Equal vectors do NOT dominate. Exported for direct unit testing (a positive control
+ * for `hasDominantPath`, which is otherwise only ever asserted false).
+ */
+export function dominates(a: number[], b: number[]): boolean {
   let strictly = false
   for (let i = 0; i < a.length; i++) {
     if (a[i] < b[i] - 1e-9) return false
