@@ -35,6 +35,16 @@ src/
                  stocks/flows (model.ts), integrators (RK4/Euler), simulate, registry,
                  presets, equilibria + Jacobian (linalg), bifurcation/hysteresis,
                  monteCarlo, sensitivity (Sobol/LHS), rng.
+    tabletop/    Pure tabletop engine (no React/DOM/IO). Imports only engine + types.
+                 types.ts          — scenario/node/choice types, IncidentMeters, Role, flags.
+                 boundary.ts       — Ch.2 transfer function + normalization-of-deviance probability.
+                 capturability.ts  — Ch.4 record-capturability function.
+                 meters.ts         — institutional-meter bridge (reads engine auxiliaries directly).
+                 applyChoice.ts    — pure reducer: lever deltas, flags, incident effects.
+                 outcome.ts        — engine-forward Aftermath verdict + recurrenceRisk derivation.
+                 resolver.ts       — node-graph traversal, reachability, path enumeration.
+                 score.ts          — path scoring, perceivedLegalShield, hasDominantPath.
+                 index.ts          — barrel export.
   workers/       Typed-RPC Web Worker (protocol.ts + engine.worker.ts) and the
                  useWorkerTask hook. Runs the heavy analyses (MC, Sobol, PRCC,
                  sweeps, hysteresis) off the main thread with stale-response
@@ -42,15 +52,25 @@ src/
   state/         Zustand store: the live scenario A (recomputed synchronously on
                  every change), the frozen comparison scenario B, presentation
                  mode, and the active analytical view.
+    tabletopStore.ts  — run state for the Tabletop surface. Independent of the main
+                        store on the per-turn hot path; writes to scenario A only on
+                        the explicit "See this as a system" handoff.
   lib/           Persistence (localStorage, versioned + migratable), URL scenario
                  codec (share.ts, lz-string), CSV/PNG/PDF export (export.ts),
                  loop-dominance scoring (loops.ts), the lazy Plotly wrapper
                  (Plot.tsx → PlotImpl.tsx), theme tokens, and the chart registry.
+    tabletop/    Scenario data + validation + debrief.
+                 scenarios/production-incident.ts — the one launch scenario (8-phase spine).
+                 schema.ts         — structural validator (npm run validate:scenarios).
+                 debrief.ts        — Markdown after-action report (reuses export epistemic framing).
   components/    Sliders, the Plotly-backed charts (time series, bifurcation,
                  heatmap, sensitivity bars, tornado), the hand-drawn causal-loop
                  diagram, the scenario toolbar, tabs, assumptions panel, banner.
   views/         Scientific-mode views, lazy-loaded: Workbench, CausalLoopView,
                  TippingView, SensitivityView, CompareView.
+    Tabletop/    Tabletop surface views, lazy-loaded: TabletopSurface, PhaseView,
+                 ChoiceCard, MeterRail, ScoringLogicPanel, BoundaryVisualizer,
+                 AnalogMentorPanel, Debrief.
 ```
 
 ## Data flow
@@ -69,6 +89,14 @@ src/
    `MODEL_VERSION`) and serialize to a complete, re-runnable JSON spec; a
    compressed positional form rides in the URL hash for sharing, re-validated via
    `sanitizeParams` on decode.
+5. **Tabletop surface:** `useTabletopStore` is independent of the main store on
+   the per-turn hot path. Each player choice calls `applyChoice` (pure reducer),
+   then resolves the next node via `resolveNext`. The tabletop calls `simulate()`
+   directly (same pure engine) to update institutional meters after each choice.
+   It writes to the main store **only** on the explicit "See this as a system"
+   handoff: `loadScenario({ params, init, settings, ... })` then
+   `setMode('scientific')` + `setView('tipping')`. There is no shared mutable
+   state between the tabletop and the main model while a run is in progress.
 
 ## Tech
 
@@ -84,7 +112,8 @@ src/
   analyses; the engine runs unchanged inside it.
 - **Tests:** Vitest (Node env for the engine, jsdom for components/hooks via a
   `// @vitest-environment jsdom` file directive); coverage via
-  `@vitest/coverage-v8`, engine held to ≥90% (currently ~97%). 123 tests.
+  `@vitest/coverage-v8`, engine held to ≥90% (`engine/tabletop` currently ~99%).
+  205 tests.
 - **CI:** GitHub Actions — typecheck (`tsc --strict`), lint, tests + coverage,
   build.
 

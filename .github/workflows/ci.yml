@@ -27,5 +27,8 @@ jobs:
       - name: Test with coverage (engine ≥90%)
         run: npm run coverage
 
+      - name: Validate scenario schemas
+        run: npm run validate:scenarios
+
       - name: Build
         run: npm run build

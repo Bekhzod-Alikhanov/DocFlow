@@ -33,7 +33,21 @@ law, internal controls, or lab governance systems.
 
 ## What Is On The Website
 
-The deployed website has two presentation modes:
+The deployed website has three presentation modes:
+
+### Tabletop Mode
+
+Tabletop is an interactive incident-response simulation. A player runs a
+single AI incident through all four playbook lenses at once, making choices
+about capture, framing, routing, remediation, and disclosure. Each choice
+nudges institutional levers and incident meters, and the engine recomputes
+live. At the end, the real system-dynamics engine runs forward on the
+configuration the player produced and shows the long-run consequence.
+
+The central lesson: the "protect ourselves / keep it oral / counsel owns the
+record" path wins a perceived short-term legal shield and loses on learning,
+recurrence, regulatory standing, and eventual exposure. No path maxes every
+meter — this is property-tested.
 
 ### Executive Mode
 
@@ -231,6 +245,35 @@ Old v0.1 share URLs are preserved through a migration path in the share codec.
    threshold.
 10. Use **Export -> Playbook brief** to create a Chapter 3-ready Markdown artifact.
 
+## Suggested Tabletop Demo
+
+1. Switch to the **Tabletop** surface.
+2. Start the **Production Incident: High-Severity Model Output** scenario.
+3. In Phase 2 (Evidence Capture), choose **"Capture only a minimal oral
+   summary; avoid creating discoverable artifacts"** — watch `record_capturability`
+   fall. Note that this choice is cheap now and irreversible later.
+4. In Phase 3 (Framing), choose **"Keep analysis oral; counsel owns the record;
+   no written safety workflow"** — watch `signal_fidelity` drop via the Ch.2
+   transfer function and the perceived legal shield (`legalSafety`) rise, while
+   `litigation_pressure` does NOT improve durably.
+5. Continue through Phases 4–7, choosing the containment / minimal-notice path.
+6. Reach **Aftermath** — the real engine runs forward. Observe high `recurrenceRisk`
+   and a chilling or contested regime.
+7. Click **"See this as a system"** — the lever configuration is loaded into
+   scenario A and the Tipping tab opens, showing the decade-long consequence of
+   the institutional design the player expressed.
+
+**Authoring new scenarios:** create a `.ts` file in
+`src/lib/tabletop/scenarios/`, export a `TabletopScenario` following the types
+in `src/engine/tabletop/types.ts`, then run:
+
+```bash
+npm run validate:scenarios
+```
+
+The validator checks lever keys, incident-meter keys, node reachability, and
+citation requirements. See `docs/TABLETOP.md` for the full authoring guide.
+
 ## Technical Architecture
 
 DocFlow is static/browser-only:
@@ -291,8 +334,8 @@ The current test suite verifies:
 - React integration paths for mode switching, lever updates, saves, and the
   Institutional Design tab.
 
-Current verification: **133 tests pass**, plus typecheck, lint, and production
-build.
+Current verification: **205 tests pass**, plus typecheck, lint, scenario
+validation, and production build.
 
 ## Repository Map
 
