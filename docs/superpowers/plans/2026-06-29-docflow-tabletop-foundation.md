@@ -2140,25 +2140,29 @@ describe('BoundaryVisualizer', () => {
 
 **Files:**
 - Create: `src/views/Tabletop/AnalogMentorPanel.tsx`
+- Modify: `src/views/Tabletop/TabletopSurface.tsx` (mount `BoundaryVisualizer` + `AnalogMentorPanel` during play) and `src/views/Tabletop/TabletopSurface.test.tsx` (assert they appear)
 - Test: `src/views/Tabletop/AnalogMentorPanel.test.tsx`
 
 **Interfaces:**
 - Consumes: `useTabletopStore` (current node's choices' `analogRefs`); `REGIME_MATRIX` from `../../lib/institutional`.
 - Produces: `AnalogMentorPanel` — for the current node, surfaces each referenced analog's `name`, `mechanism`, `transferablePrinciple`, and `sources` (with caveats).
 
+**Wiring (closes a gap):** `BoundaryVisualizer` (Task 17) and `AnalogMentorPanel` were built/tested in isolation but not mounted. In this task, render BOTH inside `TabletopSurface` during play (i.e. when `!finished`): `BoundaryVisualizer` above or below `PhaseView` in the main column; `AnalogMentorPanel` below the choices or in the side column near the `MeterRail`. Extend `TabletopSurface.test.tsx` with an assertion that, after `start(productionIncident)`, the surface shows a boundary label (e.g. /engineer/i) and an analog cue (e.g. /principle|mechanism|analog/i). Keep the `EpistemicBanner` pinned (it lives in `App.tsx`, untouched).
+
 - [ ] **Step 1: Write the failing test**
 
 ```tsx
 // @vitest-environment jsdom
 // src/views/Tabletop/AnalogMentorPanel.test.tsx
-import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { render, screen, cleanup } from '@testing-library/react'
 import { AnalogMentorPanel } from './AnalogMentorPanel'
 import { useTabletopStore } from '../../state/tabletopStore'
 import { productionIncident } from '../../lib/tabletop/scenarios/production-incident'
 
 describe('AnalogMentorPanel', () => {
   beforeEach(() => useTabletopStore.getState().start(productionIncident))
+  afterEach(() => cleanup())
   it('shows at least one sector analog with its transferable principle', () => {
     render(<AnalogMentorPanel />)
     // The start node references at least one analog (e.g. cyber or psqia).
@@ -2168,9 +2172,9 @@ describe('AnalogMentorPanel', () => {
 ```
 
 - [ ] **Step 2: Run to verify it fails.** → FAIL.
-- [ ] **Step 3: Implement** — gather `analogRefs` across the current node's choices, dedupe, look up in `REGIME_MATRIX`, render each as a small card.
-- [ ] **Step 4: Run to verify it passes.** → PASS.
-- [ ] **Step 5: Commit.** `git add src/views/Tabletop/AnalogMentorPanel.tsx src/views/Tabletop/AnalogMentorPanel.test.tsx && git commit -m "feat: analog-mentor panel sourced from the regime matrix"`
+- [ ] **Step 3: Implement** — gather `analogRefs` across the current node's choices, dedupe, look up in `REGIME_MATRIX`, render each as a small card. Then mount `BoundaryVisualizer` and `AnalogMentorPanel` in `TabletopSurface` during play, and add the surface-level assertion described in **Wiring** above.
+- [ ] **Step 4: Run to verify it passes.** → PASS (AnalogMentorPanel test + the extended TabletopSurface test).
+- [ ] **Step 5: Commit.** `git add src/views/Tabletop/AnalogMentorPanel.tsx src/views/Tabletop/AnalogMentorPanel.test.tsx src/views/Tabletop/TabletopSurface.tsx src/views/Tabletop/TabletopSurface.test.tsx && git commit -m "feat: analog-mentor panel + mount boundary/mentor in the tabletop surface"`
 
 ---
 
