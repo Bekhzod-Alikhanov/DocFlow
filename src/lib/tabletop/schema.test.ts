@@ -46,5 +46,38 @@ describe('validateScenario', () => {
     const bad = structuredClone(good)
     ;(bad.nodes[0].choices[0].incidentEffects as Record<string, number>).bogus = 1
     expect(validateScenario(bad).ok).toBe(false)
+    expect(validateScenario(bad).errors.join(' ')).toMatch(/bogus/)
+  })
+
+  it('rejects an unknown lever key in startLevers', () => {
+    const bad = structuredClone(good)
+    ;(bad.startLevers as Record<string, number>).not_a_lever = 0.5
+    const res = validateScenario(bad)
+    expect(res.ok).toBe(false)
+    expect(res.errors.join(' ')).toMatch(/not_a_lever/)
+  })
+
+  it('rejects an unknown role', () => {
+    const bad = structuredClone(good)
+    ;(bad.nodes[0].choices[0] as { role: string }).role = 'mayor'
+    const res = validateScenario(bad)
+    expect(res.ok).toBe(false)
+    expect(res.errors.join(' ')).toMatch(/mayor/)
+  })
+
+  it('rejects a non-terminal choice with no citations', () => {
+    const bad = structuredClone(good)
+    bad.nodes[0].choices[0].citations = []
+    const res = validateScenario(bad)
+    expect(res.ok).toBe(false)
+    expect(res.errors.join(' ')).toMatch(/citation/i)
+  })
+
+  it('rejects duplicate node ids', () => {
+    const bad = structuredClone(good)
+    bad.nodes.push(structuredClone(bad.nodes[0]))
+    const res = validateScenario(bad)
+    expect(res.ok).toBe(false)
+    expect(res.errors.join(' ')).toMatch(/duplicate/i)
   })
 })

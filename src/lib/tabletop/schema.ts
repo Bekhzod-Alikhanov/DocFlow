@@ -47,7 +47,7 @@ export function validateScenario(data: unknown): { ok: boolean; errors: string[]
       if (typeof c.next === 'string') checkTarget(c.next, `choice ${c.id}`)
       else { checkTarget(c.next.then, `choice ${c.id}.then`); checkTarget(c.next.else, `choice ${c.id}.else`) }
       if (!node.terminal && c.citations.length === 0) {
-        errors.push(`choice ${c.id}: non-terminal choices must carry at least one citation`)
+        errors.push(`node ${node.id} choice ${c.id}: non-terminal choices must carry at least one citation`)
       }
     }
   }
