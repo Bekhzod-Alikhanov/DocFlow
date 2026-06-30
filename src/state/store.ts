@@ -25,7 +25,7 @@ import {
   initFromPreset,
 } from '../engine'
 
-export type Mode = 'executive' | 'scientific'
+export type Mode = 'executive' | 'scientific' | 'tabletop'
 
 /** Secondary view inside Scientific mode (the analytical tab strip). */
 export type ScientificView = 'workbench' | 'institutional' | 'cld' | 'tipping' | 'sensitivity' | 'compare'
