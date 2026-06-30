@@ -35,4 +35,26 @@ describe('resolver', () => {
     expect(paths.length).toBeGreaterThanOrEqual(2)
     for (const p of paths) expect(p.length).toBeGreaterThan(0)
   })
+
+  it('cycle-guards enumeratePaths: a back-edge is treated as a terminal cut-off', () => {
+    // Scenario where choice points back to a node already on the path (cycle).
+    const cyclic: TabletopScenario = {
+      id: 'cyclic', name: 'Cyclic', blurb: '', failureType: 'malfunction', captureResistance: 'silent',
+      retrainCadence: 0.3, startLevers: {}, startNodeId: 'x', chapters: [1],
+      nodes: [
+        { id: 'x', phase: 1, chapter: 1, title: 'X', situation: '', choices: [
+          // Back-edge: next points to 'x' itself — the cycle guard should cut it and include the partial path.
+          { id: 'x1', label: '', role: 'safety_eng', chapter: 1, rationale: '', leverDeltas: {}, incidentEffects: {}, flags: [], analogRefs: [], citations: [], next: 'x' },
+          { id: 'x2', label: '', role: 'safety_eng', chapter: 1, rationale: '', leverDeltas: {}, incidentEffects: {}, flags: [], analogRefs: [], citations: [], next: 'z' },
+        ] },
+        { id: 'z', phase: 2, chapter: 1, title: 'Z', situation: '', choices: [], terminal: true },
+      ],
+    }
+    const paths = enumeratePaths(cyclic)
+    // The cyclic choice (x→x) should produce a 1-choice path (cut by cycle guard);
+    // the non-cyclic choice (x→z) should produce a 1-choice path reaching terminal.
+    expect(paths.length).toBeGreaterThanOrEqual(1)
+    // Every path must be non-empty (the partial cyclic path has at least 1 choice).
+    for (const p of paths) expect(p.length).toBeGreaterThan(0)
+  })
 })

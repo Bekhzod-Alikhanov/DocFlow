@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { defaultParams, defaultInitState, defaultSettings } from '../registry'
 import { simulate } from '../simulate'
 import { institutionalScorecard } from '../../lib/institutional'
-import { institutionalMeters } from './meters'
+import { institutionalMeters, runConfig } from './meters'
 import { INSTITUTIONAL_METER_KEYS } from './types'
 
 describe('institutional-meter bridge', () => {
@@ -30,5 +30,17 @@ describe('institutional-meter bridge', () => {
     expect(byId.private_ordering_gap).toBe(m.private_ordering_gap)
     expect(byId.policy_scaffold_dependency).toBe(m.policy_scaffold_dependency)
     expect(byId.learning_yield).toBe(Math.min(1, m.learning_yield / 2))
+  })
+
+  it('runConfig returns traj and institutional that match direct simulation', () => {
+    const result = runConfig(params, init, settings)
+    expect(result.traj).toBeDefined()
+    expect(result.institutional).toBeDefined()
+    // Verify institutional meters from runConfig match a direct simulation
+    const { trajectory: directTraj } = simulate(init, params, settings)
+    const directInstitutional = institutionalMeters(directTraj)
+    for (const k of INSTITUTIONAL_METER_KEYS) {
+      expect(result.institutional[k]).toBeCloseTo(directInstitutional[k], 10)
+    }
   })
 })
