@@ -50,7 +50,11 @@ export function applyChoice(state: RunState, choice: Choice): RunState {
         retrainCadence: state.retrainCadence,
       }),
     )
-    incident.board_oversight_visibility = clampMeter(incident.signal_fidelity)
+    // Board visibility tracks the fidelity that actually reached leadership, plus the
+    // explicit board-routing delta the choice authored (structured channel vs. informal
+    // brief). Folding the delta in keeps the authored ±deltas live instead of discarding them.
+    const boardDelta = choice.incidentEffects.board_oversight_visibility ?? 0
+    incident.board_oversight_visibility = clampMeter(incident.signal_fidelity + boardDelta)
   }
 
   // Ch.4 capture: recompute capturability from accumulated capture flags.

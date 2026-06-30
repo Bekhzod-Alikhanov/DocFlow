@@ -68,4 +68,26 @@ describe('applyChoice', () => {
     expect(next.incident.evidentiary_posture).toBe(80)
     expect(next.incident.regulatory_timeliness).toBe(0)
   })
+
+  it('folds the authored board_oversight_visibility delta into the Ch.2 fidelity baseline', () => {
+    // Same starting state, same Ch.2 transfer-function inputs — only the authored
+    // board-routing delta differs. The +25 (structured channel) must end up strictly
+    // higher than the -15 (informal brief), proving the authored delta survives the
+    // fidelity-derived recompute (it used to be overwritten and collapse to equal).
+    const structured: Choice = {
+      ...boundaryBottleneck,
+      flags: [],
+      leverDeltas: {},
+      incidentEffects: { board_oversight_visibility: 25 },
+    }
+    const informal: Choice = {
+      ...boundaryBottleneck,
+      flags: [],
+      leverDeltas: {},
+      incidentEffects: { board_oversight_visibility: -15 },
+    }
+    const a = applyChoice(baseState(), structured)
+    const b = applyChoice(baseState(), informal)
+    expect(a.incident.board_oversight_visibility).toBeGreaterThan(b.incident.board_oversight_visibility)
+  })
 })
