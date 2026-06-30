@@ -13,8 +13,10 @@ const TRACK_H = 56
 const BAR_Y = 28
 const BAR_H = 14
 const LABEL_Y = 16
+const CAPTION_Y = 8
 const SVG_W = TRACK_W + 40 // 20px padding each side
 const SVG_H = TRACK_H + 24
+const FONT_STACK = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
 
 export function BoundaryVisualizer() {
   const fidelity = useTabletopStore((s) => s.runState.incident.signal_fidelity)
@@ -34,6 +36,19 @@ export function BoundaryVisualizer() {
       role="img"
       style={{ display: 'block', maxWidth: '100%' }}
     >
+      {/* Fidelity caption centered above track */}
+      <text
+        x={SVG_W / 2}
+        y={CAPTION_Y}
+        textAnchor="middle"
+        fontSize={11}
+        fontFamily={FONT_STACK}
+        fill="currentColor"
+        opacity={0.75}
+      >
+        Signal fidelity {Math.round(pct)}%
+      </text>
+
       {/* Track background */}
       <rect
         x={20}
@@ -75,25 +90,11 @@ export function BoundaryVisualizer() {
             y={LABEL_Y}
             textAnchor="middle"
             fontSize={12}
-            fontFamily="inherit"
+            fontFamily={FONT_STACK}
             fill="currentColor"
           >
             {name}
           </text>
-          {/* Percentage label below bar for last station (fidelity endpoint) */}
-          {i === STATIONS.length - 1 && (
-            <text
-              x={0}
-              y={BAR_Y + BAR_H + 16}
-              textAnchor="end"
-              fontSize={11}
-              fontFamily="inherit"
-              fill="currentColor"
-              opacity={0.75}
-            >
-              {Math.round(pct)}%
-            </text>
-          )}
         </g>
       ))}
     </svg>
