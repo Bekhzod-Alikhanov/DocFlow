@@ -15,7 +15,8 @@
     "typecheck": "tsc -b",
     "test": "vitest",
     "test:run": "vitest run",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "validate:scenarios": "node scripts/validate-scenarios.mjs"
   },
   "dependencies": {
     "jspdf": "^4.2.1",
