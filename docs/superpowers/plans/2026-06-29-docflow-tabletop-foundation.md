@@ -2051,37 +2051,47 @@ export function PhaseView() {
 - Test: `src/views/Tabletop/MeterRail.test.tsx`
 
 **Interfaces:**
-- Consumes: `useTabletopStore`; `institutionalScorecard` from `../../lib/institutional`; `INCIDENT_METER_KEYS` from `../../engine/tabletop`; `simulate` from `../../engine`.
+- Consumes: `useTabletopStore`; `institutionalScorecard` from `../../lib/institutional`; `INCIDENT_METER_KEYS`, `perceivedLegalShield` from `../../engine/tabletop`; `simulate` from `../../engine`.
 - Produces: `MeterRail`, `ScoringLogicPanel`.
+- **Prereq export:** `perceivedLegalShield(state: RunState): number` is currently a private helper in `src/engine/tabletop/score.ts`. Add `export` to it and re-export it from `src/engine/tabletop/index.ts`, so the live rail can compute the short-term shield from the current run state (DRY — same formula the scorer uses).
 
 - [ ] **Step 1: Write the failing test**
 
 ```tsx
 // @vitest-environment jsdom
 // src/views/Tabletop/MeterRail.test.tsx
-import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { MeterRail } from './MeterRail'
 import { useTabletopStore } from '../../state/tabletopStore'
 import { productionIncident } from '../../lib/tabletop/scenarios/production-incident'
 
 describe('MeterRail', () => {
   beforeEach(() => useTabletopStore.getState().start(productionIncident))
+  afterEach(() => cleanup())
 
   it('shows institutional and incident meters and a scoring-logic toggle', () => {
     render(<MeterRail />)
     expect(screen.getByText(/Safe-to-report/i)).toBeTruthy()
     expect(screen.getByText(/signal fidelity/i)).toBeTruthy()
-    const toggle = screen.getByRole('button', { name: /show scoring logic/i })
+    const toggle = screen.getAllByRole('button', { name: /show scoring logic/i })[0]
     fireEvent.click(toggle)
     expect(screen.getByText(/formula|levers|flags/i)).toBeTruthy()
+  })
+
+  it('surfaces the short-term perceived legal shield with its trap caveat, beside litigation pressure', () => {
+    render(<MeterRail />)
+    expect(screen.getByText(/perceived legal shield/i)).toBeTruthy()
+    expect(screen.getByText(/litigation pressure/i)).toBeTruthy()
+    // The shield is labelled short-term/perceived and paired with the fragility caveat.
+    expect(screen.getByText(/short-term|fragile|feels|not a durable/i)).toBeTruthy()
   })
 })
 ```
 
 - [ ] **Step 2: Run to verify it fails.** → FAIL (no module).
 
-- [ ] **Step 3: Implement** `MeterRail` (reads `useTabletopStore`'s `runState`/`institutional`, formats institutional meters through `institutionalScorecard(runState.params, simulate(...).trajectory)`, lists incident meters from `INCIDENT_METER_KEYS` with a 0–100 bar; hides `recurrence_risk` until `finished`) and `ScoringLogicPanel` (a collapsible `<button aria-expanded>` that reveals the formula text, the levers, and the flags that drove the selected meter). Use the existing token classes; each meter row carries a one-line "why".
+- [ ] **Step 3: Implement.** First export `perceivedLegalShield` from `score.ts` (add `export`) and from the barrel `index.ts`. Then implement `MeterRail` (reads `useTabletopStore`'s `runState`/`institutional`; formats the six institutional meters through `institutionalScorecard(runState.params, simulate(runState.init, runState.params, runState.settings).trajectory)` — `litigation_pressure` is one of them; lists incident meters from `INCIDENT_METER_KEYS` with a 0–100 bar; hides `recurrence_risk` until `finished`). Add a dedicated **Perceived legal shield** row computed via `perceivedLegalShield(runState)`, rendered beside `litigation_pressure`, labelled short-term/perceived with a one-line caveat (e.g. "Feels protective now (privilege asserted); fragile — not a durable reduction in exposure. Compare litigation pressure."). Implement `ScoringLogicPanel` (a collapsible `<button aria-expanded>` per meter that reveals the formula text, the levers, and the flags that drove it). Use the existing token classes; each meter row carries a one-line "why".
 
 - [ ] **Step 4: Run to verify it passes.** → PASS.
 
