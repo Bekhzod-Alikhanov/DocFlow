@@ -414,8 +414,7 @@ interface ConditionalNext {
 
 1. Create a new `.ts` file in `src/lib/tabletop/scenarios/`.
 2. Export a `TabletopScenario` object following the types above.
-3. Add it to `TABLETOP_SCENARIOS` in `src/lib/tabletop/scenarios/production-incident.ts`
-   (or in a new barrel file).
+3. Add it to the `TABLETOP_SCENARIOS` registry in `src/lib/tabletop/scenarios/index.ts` (create your scenario in its own file under `scenarios/`, then import and append it there).
 4. Run `npm run validate:scenarios` to check structural integrity:
    - All `leverDelta` keys are valid `LeverKey` values.
    - All `incidentEffects` keys are valid `IncidentMeterKey` values.

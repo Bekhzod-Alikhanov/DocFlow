@@ -596,5 +596,3 @@ export const productionIncident: TabletopScenario = {
     },
   ],
 }
-
-export const TABLETOP_SCENARIOS: TabletopScenario[] = [productionIncident]
