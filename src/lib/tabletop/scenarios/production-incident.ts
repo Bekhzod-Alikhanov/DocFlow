@@ -320,7 +320,8 @@ export const productionIncident: TabletopScenario = {
               text: 'SR 11-7 (Fed. Reserve / OCC 2011): model risk management requires independent validation and board-level oversight of material model risk.',
             },
             {
-              text: 'SR 26-2 / OCC 2026-13: updated expectations for AI model risk governance, including board escalation requirements.',
+              text: 'OCC Bulletin 2026-13: updated expectations for AI / model-risk governance, including board escalation.',
+              caveat: 'Recent issuance; verify the bulletin number and effective dates before external circulation.',
             },
           ],
           next: 'ph5-routing',
