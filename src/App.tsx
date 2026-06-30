@@ -17,6 +17,7 @@ import { ScientificTabs } from './components/ScientificTabs'
 import { ScenarioToolbar } from './components/ScenarioToolbar'
 import { decodeScenarioFromHash } from './lib/share'
 
+const TabletopSurface = lazy(() => import('./views/Tabletop/TabletopSurface').then((m) => ({ default: m.TabletopSurface })))
 const Workbench = lazy(() => import('./views/Workbench').then((m) => ({ default: m.Workbench })))
 const InstitutionalView = lazy(() => import('./views/InstitutionalView').then((m) => ({ default: m.InstitutionalView })))
 const CausalLoopView = lazy(() => import('./views/CausalLoopView').then((m) => ({ default: m.CausalLoopView })))
@@ -60,7 +61,7 @@ function Header() {
             </button>
           )}
           <div role="tablist" aria-label="Presentation mode" className="flex rounded-md border border-line p-0.5">
-            {(['executive', 'scientific'] as const).map((m) => (
+            {(['executive', 'scientific', 'tabletop'] as const).map((m) => (
               <button
                 key={m}
                 role="tab"
@@ -155,7 +156,11 @@ export default function App() {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-4">
-        {mode === 'executive' ? <ExecutiveMode /> : <ScientificMode />}
+        {mode === 'executive' && <ExecutiveMode />}
+        {mode === 'scientific' && <ScientificMode />}
+        {mode === 'tabletop' && (
+          <Suspense fallback={FALLBACK}><TabletopSurface /></Suspense>
+        )}
       </main>
       <div className="sticky bottom-0 z-10">
         <EpistemicBanner />
