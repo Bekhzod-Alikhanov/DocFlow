@@ -54,40 +54,47 @@ const SHIELD_LOGIC: ScoringLogicEntry = {
   flags: ['legal_owns_record', 'privileged_single_track'],
 }
 
-// Scoring-logic for incident meters
+// Scoring-logic for incident meters.
+// These strings describe the REAL engine (boundary.ts, capturability.ts, applyChoice.ts).
+// Only signal_fidelity, record_capturability, and board_oversight_visibility are computed
+// by formulas; the rest move purely via each choice's explicit incidentEffects deltas.
 const INCIDENT_LOGIC: Record<IncidentMeterKey, ScoringLogicEntry> = {
   signal_fidelity: {
-    formula: 'Starts at 100; reduced by choices that suppress reporting or omit evidence.',
-    levers: ['near_miss_tier', 'recipient_enforcer_separation'],
-    flags: ['signal_suppressed'],
+    formula: 'Ch.2 transfer function at each chapter-2 handoff: fidelity × tieStrength × (1 − translationLoss) × (1 − 0.5·normalization).',
+    levers: [
+      'recipient_enforcer_separation', 'near_miss_tier', 'effective_challenge', 'intermediary_capacity', // raise tie strength
+      'translation_layer', 'original_records_boundary', // lower translation loss
+      'just_culture', // lower normalization (near_miss_tier also lowers it)
+    ],
+    flags: ['independent_review_channel', 'legal_owns_record'],
   },
   record_capturability: {
-    formula: 'f(captureResistance, retrainCadence, original_records_boundary)',
-    levers: ['original_records_boundary'],
-    flags: ['privileged_single_track'],
+    formula: 'base(captureResistance) + 30·state_snapshotted + 15·pipeline_captured − 40·retrainCadence (erosion applies only when state is not snapshotted).',
+    levers: [],
+    flags: ['state_snapshotted', 'pipeline_captured'],
   },
   regulatory_timeliness: {
-    formula: 'f(mandatory_reporting, recipient_enforcer_separation)',
-    levers: ['mandatory_reporting', 'recipient_enforcer_separation'],
+    formula: 'Moved by the explicit effect of each choice you make (e.g. voluntary disclosure raises it, containment lowers it); see the choice rationale.',
+    levers: [],
     flags: [],
   },
   board_oversight_visibility: {
-    formula: 'f(effective_challenge, mandatory_reporting)',
-    levers: ['effective_challenge', 'mandatory_reporting'],
-    flags: ['board_briefed'],
+    formula: 'After a chapter-2 handoff it equals signal_fidelity + the choice’s board-routing delta (structured channel vs. informal brief). Tracks signal_fidelity.',
+    levers: [],
+    flags: [],
   },
   evidentiary_posture: {
-    formula: 'Higher = more defensible objective record; f(original_records_boundary, workflow_protection)',
-    levers: ['original_records_boundary', 'workflow_protection'],
-    flags: ['legal_owns_record'],
+    formula: 'Higher = more defensible objective record. Moved by the explicit effect of each choice you make; see the choice rationale.',
+    levers: [],
+    flags: [],
   },
   remediation_completeness: {
-    formula: 'f(translation_layer, effective_challenge)',
-    levers: ['translation_layer', 'effective_challenge'],
-    flags: ['remediation_committed'],
+    formula: 'Moved by the explicit effect of each choice you make (full remediation raises it, minimal patch lowers it); see the choice rationale.',
+    levers: [],
+    flags: [],
   },
   recurrence_risk: {
-    formula: 'Engine-forward recurrence risk; static placeholder until Aftermath is reached.',
+    formula: 'Moved by the explicit effect of each choice, and revealed via the engine-forward Aftermath; the in-play value is a static placeholder until Aftermath is reached.',
     levers: [],
     flags: [],
   },
