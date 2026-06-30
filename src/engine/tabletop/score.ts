@@ -45,7 +45,7 @@ function clamp01(x: number): number {
  * path feel safe in the moment. Computed purely from levers + flags so the UI can show
  * exactly why it moved — and pair it with the litigation_pressure caveat. 0–1.
  */
-function perceivedLegalShield(state: RunState): number {
+export function perceivedLegalShield(state: RunState): number {
   const privilegedSingleTrack =
     state.flags.includes('legal_owns_record') || state.flags.includes('privileged_single_track')
   return clamp01(
