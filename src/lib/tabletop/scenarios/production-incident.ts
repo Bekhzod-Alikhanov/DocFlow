@@ -193,7 +193,7 @@ export const productionIncident: TabletopScenario = {
             {
               text: 'In re Capital One Consumer Data Sec. Breach Litig., E.D. Va. 2020: court rejected privilege over forensic analysis produced by counsel-retained firm when the work was not prepared primarily for litigation.',
               caveat:
-                'The ~95% no-written-report figure is an estimate, not a measured statistic; Capital One shows how courts scrutinize the privilege claim.',
+                'Capital One shows how courts scrutinize the privilege claim.',
             },
           ],
           next: 'ph3-framing',
