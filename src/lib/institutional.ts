@@ -161,7 +161,7 @@ export const REGIME_MATRIX: RegimeRecord[] = [
     transferablePrinciple: 'Treat model documentation as a control and give independent reviewers power to force change.',
     transferability: 'partly-private',
     caveat: 'The governance discipline transfers; the regulator-held CSI shield does not.',
-    sources: ['SR 11-7', 'SR 26-2 / OCC 2026-13', 'In re Subpoena Served Upon Comptroller'],
+    sources: ['SR 11-7', 'OCC Bulletin 2026-13', 'In re Subpoena Served Upon Comptroller'],
   },
   {
     id: 'nuclear',
