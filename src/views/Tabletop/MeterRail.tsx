@@ -118,16 +118,34 @@ interface MeterRowProps {
   meterId: string
   logic: ScoringLogicEntry
   activeFlags?: string[]
+  /** One-line "why" shown at rest (not only inside the scoring-logic panel). */
+  note?: string
+  /** Emphasized caveat shown at rest, italic (e.g. the perceived-shield fragility caveat). */
+  caveat?: string
+  /** Override the derived bar color (e.g. the amber perceived-legal-shield bar). */
+  barColorClass?: string
 }
 
-function MeterRow({ label, value, scale = 1, kind = 'neutral', meterId, logic, activeFlags = [] }: MeterRowProps) {
+function MeterRow({
+  label,
+  value,
+  scale = 1,
+  kind = 'neutral',
+  meterId,
+  logic,
+  activeFlags = [],
+  note,
+  caveat,
+  barColorClass,
+}: MeterRowProps) {
   const pct = Math.round(Math.min(100, Math.max(0, scale === 100 ? value : value * 100)))
   const barColor =
-    kind === 'good'
+    barColorClass ??
+    (kind === 'good'
       ? 'bg-accent'
       : kind === 'bad'
         ? 'bg-red-500'
-        : 'bg-zinc-400'
+        : 'bg-zinc-400')
 
   const logicWithActiveFlags: ScoringLogicEntry = {
     ...logic,
@@ -142,6 +160,7 @@ function MeterRow({ label, value, scale = 1, kind = 'neutral', meterId, logic, a
         <span className="text-sm font-medium text-ink">{label}</span>
         <span className="text-xs text-ink-soft tabular-nums">{pct}%</span>
       </div>
+      {caveat && <p className="text-xs text-muted mb-1 italic">{caveat}</p>}
       <div
         className="h-2 w-full rounded-full bg-accent-soft overflow-hidden"
         role="progressbar"
@@ -155,6 +174,7 @@ function MeterRow({ label, value, scale = 1, kind = 'neutral', meterId, logic, a
           style={{ width: `${pct}%` }}
         />
       </div>
+      {note && <p className="mt-1 text-xs text-ink-soft">{note}</p>}
       <ScoringLogicPanel meterId={meterId} logic={logicWithActiveFlags} />
     </div>
   )
@@ -194,32 +214,23 @@ export function MeterRail() {
               meterId={item.id}
               logic={INSTITUTIONAL_LOGIC[item.id] ?? { formula: '—', levers: [], flags: [] }}
               activeFlags={activeFlags}
+              note={item.note}
             />
 
-            {/* Perceived legal shield row — rendered directly after litigation_pressure */}
+            {/* Perceived legal shield row — rendered directly after litigation_pressure.
+                Uses the shared MeterRow (amber bar) and keeps its short-term/fragility caveat. */}
             {item.id === 'litigation_pressure' && (
               <div className="ml-3 mt-0 mb-1 pl-3 border-l-2 border-accent-soft">
-                <div className="py-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-ink">Perceived legal shield</span>
-                    <span className="text-xs text-ink-soft tabular-nums">{Math.round(shieldValue * 100)}%</span>
-                  </div>
-                  <p className="text-xs text-muted mb-1 italic">Short-term / perceived — asserting privilege appears protective; fragile — not a durable reduction in exposure. The oral-path trap.</p>
-                  <div
-                    className="h-2 w-full rounded-full bg-accent-soft overflow-hidden"
-                    role="progressbar"
-                    aria-valuenow={Math.round(shieldValue * 100)}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label="Perceived legal shield"
-                  >
-                    <div
-                      className="h-full rounded-full bg-amber-400 transition-all"
-                      style={{ width: `${Math.round(shieldValue * 100)}%` }}
-                    />
-                  </div>
-                  <ScoringLogicPanel meterId="perceived_legal_shield" logic={SHIELD_LOGIC} />
-                </div>
+                <MeterRow
+                  label="Perceived legal shield"
+                  value={shieldValue}
+                  scale={1}
+                  kind="neutral"
+                  barColorClass="bg-amber-400"
+                  meterId="perceived_legal_shield"
+                  logic={SHIELD_LOGIC}
+                  caveat="Short-term / perceived — asserting privilege appears protective; fragile — not a durable reduction in exposure. The oral-path trap."
+                />
               </div>
             )}
           </div>
