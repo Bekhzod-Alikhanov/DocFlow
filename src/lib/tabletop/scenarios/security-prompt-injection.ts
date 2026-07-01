@@ -395,7 +395,7 @@ export const securityPromptInjection: TabletopScenario = {
               text: 'FAA AC 00-46F (ASRS): the CALLBACK newsletter closes the loop between the reporter and the safety enhancement. In the agentic-security context, the feedback mechanism is: confirm to the security engineer that the reported injection vector is now blocked by a verified output-validation gate.',
             },
             {
-              text: '21 CFR § 820.100 (QMSR CAPA, eff. Feb 2, 2024): corrective and preventive action must be verified for effectiveness. The agentic-architecture-patch analog requires testing the fix against the documented injection sequences before the next deployment.',
+              text: '21 CFR § 820.100 (QMSR CAPA, eff. Feb 2, 2026): corrective and preventive action must be verified for effectiveness. The agentic-architecture-patch analog requires testing the fix against the documented injection sequences before the next deployment.',
             },
           ],
           next: 'spi-ph5-aftermath',

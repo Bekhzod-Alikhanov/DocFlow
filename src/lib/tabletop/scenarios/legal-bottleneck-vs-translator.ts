@@ -173,6 +173,10 @@ export const legalBottleneckVsTranslator: TabletopScenario = {
             {
               text: 'SR 11-7 CSI doctrine (12 CFR § 261.2; 12 U.S.C. § 1828(x)): the Confidential Supervisory Information doctrine protects bank examination records held by the regulator, not attorney-client privilege held by the bank. The SR 11-7 documentation-intensive model works because the regulator holds the privilege — banks cannot replicate this structure with attorney-client privilege alone, and AI firms face the same structural gap.',
             },
+            {
+              text: 'Langevoort — legal gate-keeping and the translator-vs-bottleneck dynamic (AI Incident Litigation Playbook, Ch.2).',
+              caveat: 'Organizational-law doctrine drawn from the playbook Ch.2, not the comparative safety-reporting dossier.',
+            },
           ],
           next: 'lbvt-ph2-disclosure',
         },

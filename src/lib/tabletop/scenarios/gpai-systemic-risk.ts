@@ -317,7 +317,7 @@ export const gpaiSystemicRisk: TabletopScenario = {
               text: '10 CFR Part 50 Appendix B, Criterion XVI (Corrective Action): nuclear plants must identify conditions adverse to quality and take corrective action. The AI analog is a structured corrective-action cycle that connects the eval finding to the training-data filter and verifies effectiveness before deployment.',
             },
             {
-              text: '21 CFR § 820.100 (QMSR CAPA, eff. Feb 2, 2024): corrective and preventive action must be verified for effectiveness. The distributional-capability analog requires confirming the fix in the eval regime that originally produced the finding.',
+              text: '21 CFR § 820.100 (QMSR CAPA, eff. Feb 2, 2026): corrective and preventive action must be verified for effectiveness. The distributional-capability analog requires confirming the fix in the eval regime that originally produced the finding.',
             },
           ],
           next: 'gpai-ph4-aftermath',
