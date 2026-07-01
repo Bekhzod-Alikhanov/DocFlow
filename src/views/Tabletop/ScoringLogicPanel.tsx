@@ -31,6 +31,8 @@ export function ScoringLogicPanel({ meterId, logic }: Props) {
 
   return (
     <div className="mt-1">
+      {/* Stable accessible name: never flips Show/Hide. State is conveyed by
+          aria-expanded, so assistive tech and tests get a constant name to target. */}
       <button
         type="button"
         aria-expanded={open}
@@ -38,7 +40,7 @@ export function ScoringLogicPanel({ meterId, logic }: Props) {
         onClick={() => setOpen((prev) => !prev)}
         className="text-xs text-accent underline underline-offset-2 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       >
-        {open ? 'Hide scoring logic' : 'Show scoring logic'}
+        Show scoring logic
       </button>
 
       {open && (
