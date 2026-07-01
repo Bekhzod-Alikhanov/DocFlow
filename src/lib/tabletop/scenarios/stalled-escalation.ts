@@ -145,6 +145,10 @@ export const stalledEscalation: TabletopScenario = {
             {
               text: 'FAA AC 00-46F (ASRS): the non-punitive, voluntary near-miss tier exists precisely to avoid the normalization dynamic — giving reporters a low-friction, no-blame route that does not require the reporter to be certain of severity before the signal is recorded.',
             },
+            {
+              text: 'Vaughan, The Challenger Launch Decision (1996) and Perrow, Normal Accidents (1984) — normalization of deviance and normal-accident theory.',
+              caveat: 'Organizational-theory sources drawn from the playbook Ch.2, not the comparative safety-reporting dossier.',
+            },
           ],
           next: 'se-ph2-safety-to-legal',
         },
@@ -349,6 +353,10 @@ export const stalledEscalation: TabletopScenario = {
             },
             {
               text: '10 C.F.R. §§ 50.72-50.73 (NRC): post-TMI analysis found that NRC licensing staff had received multiple near-miss signals about the Three Mile Island facility design that were individually logged as "within-band" before the accident. The normalization pattern is the canonical example of signal death at the management-summary hop.',
+            },
+            {
+              text: 'Hansen, "The Search-Transfer Problem" (1999) on tie strength, and Røvik on organizational translation loss.',
+              caveat: 'Organizational-theory sources drawn from the playbook Ch.2, not the comparative safety-reporting dossier.',
             },
           ],
           next: 'se-ph4-exec-to-board',
