@@ -347,6 +347,8 @@ export const productionIncident: TabletopScenario = {
           citations: [
             {
               text: 'CIRCIA § 681e (Cyber Incident Reporting for Critical Infrastructure Act): bars use of covered cyber incident reports as evidence against the reporting entity in enforcement proceedings — a precedent for safe-harbor design.',
+              caveat:
+                'CIRCIA protections are not yet broadly operative: the final rule is not yet issued as of 2026, so the § 681e bar is a statutory-design precedent rather than settled operative law.',
             },
           ],
           next: 'ph5-routing',
@@ -496,7 +498,7 @@ export const productionIncident: TabletopScenario = {
           analogRefs: ['cyber'],
           citations: [
             {
-              text: 'In re Target Corp. Customer Data Security Breach Litig.: post-incident remediation records were sought in discovery; the minimal-footprint approach reduces what is available but also reduces what the firm learned.',
+              text: 'In re Target Corp. Customer Data Sec. Breach Litig. (D. Minn. 2015): the two-track privilege approach was only partially preserved — the counter-example to In re Capital One. Splitting a protected investigation from a business-operations track can hold, but courts still pierce the parts not primarily prepared for litigation, so the minimal-footprint approach both narrows discoverable records and narrows what the firm learns.',
             },
           ],
           next: 'ph7-disclosure',
