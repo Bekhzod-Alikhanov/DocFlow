@@ -4,6 +4,17 @@
  */
 import type { TabletopScenario } from '../../../engine/tabletop'
 import { productionIncident } from './production-incident'
+import { malfunctionNearMiss } from './malfunction-near-miss'
+import { redteamLatentCapability } from './redteam-latent-capability'
+import { misuseAsWeapon } from './misuse-as-weapon'
 
 export { productionIncident }
-export const TABLETOP_SCENARIOS: TabletopScenario[] = [productionIncident]
+export { malfunctionNearMiss }
+export { redteamLatentCapability }
+export { misuseAsWeapon }
+export const TABLETOP_SCENARIOS: TabletopScenario[] = [
+  productionIncident,
+  malfunctionNearMiss,
+  redteamLatentCapability,
+  misuseAsWeapon,
+]
