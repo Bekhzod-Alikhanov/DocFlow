@@ -94,7 +94,7 @@ const INCIDENT_LOGIC: Record<IncidentMeterKey, ScoringLogicEntry> = {
     flags: [],
   },
   recurrence_risk: {
-    formula: 'Moved by the explicit effect of each choice, and revealed via the engine-forward Aftermath; the in-play value is a static placeholder until Aftermath is reached.',
+    formula: 'Moved by the explicit effect of each choice (e.g. full remediation −20, minimal patch +15). The authoritative verdict is the engine-forward AftermathOutcome.recurrenceRisk, revealed only after the terminal node fires.',
     levers: [],
     flags: [],
   },
