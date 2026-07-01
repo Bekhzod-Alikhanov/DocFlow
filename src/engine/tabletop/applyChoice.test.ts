@@ -59,6 +59,9 @@ describe('applyChoice', () => {
 
   it('drops signal fidelity through a Ch.2 boundary handoff', () => {
     const next = applyChoice(baseState(), boundaryBottleneck)
+    // Strictly < 100 because the default params give tie < 1 and a positive
+    // translation-loss + normalization haircut, so crossBoundary multiplies the
+    // incoming 100 by factors each < 1 — the signal can only shrink at a handoff.
     expect(next.incident.signal_fidelity).toBeLessThan(100)
   })
 
