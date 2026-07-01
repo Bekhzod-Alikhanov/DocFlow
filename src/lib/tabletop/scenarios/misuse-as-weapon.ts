@@ -361,7 +361,7 @@ export const misuseAsWeapon: TabletopScenario = {
               text: 'FAA AC 00-46F (ASRS): the CALLBACK newsletter closes the loop between reporter and safety enhancement. The feedback mechanism sustains the reporting culture that makes near-miss learning work.',
             },
             {
-              text: '21 CFR § 820.100 (QMSR CAPA, eff. Feb 2, 2024): corrective and preventive action must be verified for effectiveness. The guardrail-patch analog requires testing the fix against the documented elicitation sequences before the next deployment.',
+              text: '21 CFR § 820.100 (QMSR CAPA, eff. Feb 2, 2026): corrective and preventive action must be verified for effectiveness. The guardrail-patch analog requires testing the fix against the documented elicitation sequences before the next deployment.',
             },
           ],
           next: 'maw-ph5-aftermath',

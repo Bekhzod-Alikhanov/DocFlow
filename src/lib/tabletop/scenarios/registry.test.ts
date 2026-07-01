@@ -15,4 +15,19 @@ describe('scenario registry', () => {
       expect(validateScenario(s)).toEqual({ ok: true, errors: [] })
     }
   })
+
+  it('every QMSR citation uses the correct 2026 effective date (guards against backdating drift)', () => {
+    for (const s of TABLETOP_SCENARIOS) {
+      for (const node of s.nodes) {
+        for (const choice of node.choices) {
+          for (const cit of choice.citations) {
+            if (/QMSR/i.test(cit.text)) {
+              expect(cit.text, `${s.id}/${choice.id}`).toMatch(/2026/)
+              expect(cit.text, `${s.id}/${choice.id}`).not.toMatch(/2024/)
+            }
+          }
+        }
+      }
+    }
+  })
 })
