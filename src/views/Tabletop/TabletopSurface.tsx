@@ -1,6 +1,7 @@
 // src/views/Tabletop/TabletopSurface.tsx
 import { useEffect } from 'react'
 import { useTabletopStore } from '../../state/tabletopStore'
+import { ScenarioPicker } from './ScenarioPicker'
 import { PhaseView } from './PhaseView'
 import { MeterRail } from './MeterRail'
 import { Debrief } from './Debrief'
@@ -15,6 +16,7 @@ export function TabletopSurface() {
 
   return (
     <div className="space-y-4">
+      <ScenarioPicker />
       <div className="rounded-lg border border-line bg-surface p-4">
         <h2 className="m-0 text-[15px] font-semibold text-ink">Tabletop — {scenario.name}</h2>
         <p className="mt-1 text-[12px] text-muted">{scenario.blurb}</p>

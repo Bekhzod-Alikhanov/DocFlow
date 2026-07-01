@@ -14,6 +14,7 @@ import {
 import { simulate } from '../engine'
 import { useStore } from './store'
 import { productionIncident } from '../lib/tabletop/scenarios/production-incident'
+import { TABLETOP_SCENARIOS } from '../lib/tabletop/scenarios'
 import { buildDebriefMarkdown, type DebriefArgs } from '../lib/tabletop/debrief'
 
 function instOf(state: RunState): Record<InstitutionalMeterKey, number> {
@@ -30,6 +31,7 @@ interface TabletopState {
   start: (scenario?: TabletopScenario) => void
   choose: (choice: Choice) => void
   reset: () => void
+  selectScenario: (id: string) => void
   outcome: () => AftermathOutcome
   debriefArgs: (timestamp: string) => DebriefArgs
   buildDebrief: (timestamp: string) => string
@@ -55,7 +57,13 @@ export const useTabletopStore = create<TabletopState>((set, get) => ({
     set({ runState: nextState, currentNodeId: nextId, history: [...history, choice], institutional: instOf(nextState), finished })
   },
 
-  reset: () => set(seed(productionIncident)),
+  reset: () => set(seed(get().scenario)),
+
+  selectScenario: (id) => {
+    const scenario = TABLETOP_SCENARIOS.find((s) => s.id === id)
+    if (!scenario) return
+    get().start(scenario)
+  },
 
   outcome: () => engineForwardOutcome(get().runState),
 
