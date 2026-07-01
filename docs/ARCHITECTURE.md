@@ -60,7 +60,12 @@ src/
                  loop-dominance scoring (loops.ts), the lazy Plotly wrapper
                  (Plot.tsx → PlotImpl.tsx), theme tokens, and the chart registry.
     tabletop/    Scenario data + validation + debrief.
-                 scenarios/production-incident.ts — the one launch scenario (8-phase spine).
+                 scenarios/index.ts — TABLETOP_SCENARIOS registry: all 10 cited
+                 scenarios (production-incident, malfunction-near-miss,
+                 redteam-latent-capability, misuse-as-weapon,
+                 security-prompt-injection, gpai-systemic-risk,
+                 legal-bottleneck-vs-translator, stalled-escalation,
+                 discovery-inquiry, cross-border), one file each.
                  schema.ts         — structural validator (npm run validate:scenarios).
                  debrief.ts        — Markdown after-action report (reuses export epistemic framing).
   components/    Sliders, the Plotly-backed charts (time series, bifurcation,
@@ -68,7 +73,9 @@ src/
                  diagram, the scenario toolbar, tabs, assumptions panel, banner.
   views/         Scientific-mode views, lazy-loaded: Workbench, CausalLoopView,
                  TippingView, SensitivityView, CompareView.
-    Tabletop/    Tabletop surface views, lazy-loaded: TabletopSurface, PhaseView,
+    Tabletop/    Tabletop surface views, lazy-loaded: TabletopSurface,
+                 ScenarioPicker (one-click switch across all 10 scenarios via
+                 tabletopStore.selectScenario, resetting the run), PhaseView,
                  ChoiceCard, MeterRail, ScoringLogicPanel, BoundaryVisualizer,
                  AnalogMentorPanel, Debrief.
 ```
@@ -97,6 +104,11 @@ src/
    handoff: `loadScenario({ params, init, settings, ... })` then
    `setMode('scientific')` + `setView('tipping')`. There is no shared mutable
    state between the tabletop and the main model while a run is in progress.
+   The **scenario picker** (`ScenarioPicker.tsx`) reads the `TABLETOP_SCENARIOS`
+   registry and calls `selectScenario(id)`, which looks up the scenario and
+   calls `start(scenario)` — reseeding `runState`, `currentNodeId`, `history`,
+   and `institutional` from scratch. Selecting a scenario always resets the
+   current run; there is no mid-run scenario switch.
 
 ## Tech
 

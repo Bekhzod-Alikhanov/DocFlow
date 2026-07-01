@@ -37,12 +37,16 @@ The deployed website has three presentation modes:
 
 ### Tabletop Mode
 
-Tabletop is an interactive incident-response simulation. A player runs a
-single AI incident through all four playbook lenses at once, making choices
-about capture, framing, routing, remediation, and disclosure. Each choice
-nudges institutional levers and incident meters, and the engine recomputes
-live. At the end, the real system-dynamics engine runs forward on the
-configuration the player produced and shows the long-run consequence.
+Tabletop is an interactive incident-response simulation. It ships **10 cited
+scenarios** — covering production incidents, near-misses, red-team findings,
+misuse, prompt injection, cross-firm systemic risk, legal bottleneck design,
+weak-tie signal decay, discovery/litigation pressure, and cross-border
+disclosure — selectable through a **scenario picker**. A player runs one of
+these scenarios through the relevant playbook lenses, making choices about
+capture, framing, routing, remediation, and disclosure. Each choice nudges
+institutional levers and incident meters, and the engine recomputes live. At
+the end, the real system-dynamics engine runs forward on the configuration
+the player produced and shows the long-run consequence.
 
 The central lesson: the "protect ourselves / keep it oral / counsel owns the
 record" path wins a perceived short-term legal shield and loses on learning,
@@ -248,7 +252,9 @@ Old v0.1 share URLs are preserved through a migration path in the share codec.
 ## Suggested Tabletop Demo
 
 1. Switch to the **Tabletop** surface.
-2. Start the **Production Incident: High-Severity Model Output** scenario.
+2. Use the **scenario picker** to select a scenario — start with **Production
+   Incident: High-Severity Model Output** (the flagship, 8-phase scenario).
+   Picking a different card resets the run to that scenario's first phase.
 3. In Phase 2 (Evidence Capture), choose **"Capture only a minimal oral
    summary; avoid creating discoverable artifacts"** — watch `record_capturability`
    fall. Note that this choice is cheap now and irreversible later.
@@ -264,6 +270,11 @@ Old v0.1 share URLs are preserved through a migration path in the share codec.
 7. Click **"See this as a system"** — the lever configuration is loaded into
    scenario A and the Tipping tab opens, showing the decade-long consequence of
    the institutional design the player expressed.
+8. Return to the scenario picker and try another card — e.g. **Stalled
+   Escalation** (pure Ch.2 weak-tie signal decay) or **Cross-Border** (EU AI
+   Act / SEC / California disclosure clocks) — to see a different failure type
+   and chapter focus play out. See `docs/TABLETOP.md` for the full catalog of
+   all 10 scenarios.
 
 **Authoring new scenarios:** create a `.ts` file in
 `src/lib/tabletop/scenarios/`, export a `TabletopScenario` following the types
@@ -335,8 +346,12 @@ The current test suite verifies:
 - Export builders, including the Playbook brief.
 - React integration paths for mode switching, lever updates, saves, and the
   Institutional Design tab.
+- Tabletop engine primitives (boundary transfer, record capturability,
+  institutional-meter parity, engine-forward outcome, no-dominant-path) and
+  structural validation of all 10 scenarios (reachability, citations, lever
+  and incident-meter key integrity).
 
-Current verification: **205 tests pass**, plus typecheck, lint, scenario
+Current verification: **270 tests pass**, plus typecheck, lint, scenario
 validation, and production build.
 
 ## Repository Map

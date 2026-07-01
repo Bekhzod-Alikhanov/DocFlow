@@ -512,29 +512,61 @@ These caveats are carried verbatim through the codebase and must appear in-app:
 
 ---
 
-## 14. Milestone 2 — Deferred Items
+## 14. Scenario Catalog
 
-The following are explicitly deferred and not built in the Foundation Slice:
+The tabletop surface ships **10 cited scenarios**, all registered in
+`TABLETOP_SCENARIOS` (`src/lib/tabletop/scenarios/index.ts`) and selectable
+through the **scenario picker** (`src/views/Tabletop/ScenarioPicker.tsx`,
+mounted in `TabletopSurface.tsx`). Each card shows the scenario's name,
+failure-type tag, and chapter tags, and calls `selectScenario(id)`
+(`src/state/tabletopStore.ts`), which looks the scenario up in
+`TABLETOP_SCENARIOS` and calls `start(scenario)` — **resetting the current run**
+to phase 1 of the newly selected scenario. There is no in-progress-run guard:
+switching scenarios always starts over.
 
-1. **Remaining nine scenarios** (chapter-tagged, cited): role-specific variants,
-   misuse / security / distributional-shift / regulatory-first scenarios.
-2. **Role mode + facilitator console** — cross-role Ch.2 handoff simulation,
-   inject-events, turn timer, pause/resume, multi-player session.
-3. **In-app authoring editor** — a GUI for the scenario JSON schema. The schema
-   + `npm run validate:scenarios` ship in this slice, so authoring-by-file already
-   works.
-4. **Elicitation capture** — playtester disagreement flagging; surfacing contested
-   nodes for iterative authoring.
-5. **Full After-Action PDF** with the principles-honored/violated radar chart
-   (the Markdown debrief with per-chapter readout + counterfactual ships in this
-   slice).
-6. **URL share of a played path** — sharing a completed run's configuration via
-   the URL hash (the system-handoff to scenario A uses `loadScenario` already;
-   path-level sharing is Milestone 2).
+| # | Scenario (file) | Failure type | Chapters | Phases | Mechanic |
+|---|---|---|---|---|---|
+| 1 | **Production Incident: High-Severity Model Output** (`production-incident.ts`) | malfunction | 1, 2, 3, 4 | 8 | The full incident lifecycle — manifestation, evidence capture, framing, boundary crossing, regulatory routing, remediation, and disclosure — culminating in an engine-forward Aftermath. The flagship scenario; the two-track vs. oral-only trade-off runs through every phase. |
+| 2 | **Malfunction Near-Miss: Silent Failure Caught Internally** (`malfunction-near-miss.ts`) | malfunction | 4, 2 | 5 | A harmful output caught internally, inside the "expected variation" band. Tests whether the firm classifies it as a near-miss (voluntary reporting tier, full capture) or normalizes it as routine noise before it ever crosses an organizational boundary. |
+| 3 | **Red-Team Latent Capability: Irreproducible Finding** (`redteam-latent-capability.ts`) | security | 4, 1 | 4 | A red team finds a distributional latent capability that cannot be reliably reproduced on demand. Documenting it creates a knowledge-of-defect record; suppressing it forecloses patching, monitoring, and due-diligence evidence. |
+| 4 | **Misuse as Weapon: Guardrail-Response Evidence** (`misuse-as-weapon.ts`) | misuse | 4, 2, 1 | 5 | A user deliberately weaponizes the model; guardrails partially fire. The evidence that matters is the guardrail-response trace, not just the attacker's intent — "user fault, we blocked it" vs. "guardrail failure, patch it." |
+| 5 | **Prompt Injection: Environment-as-Cause Evidence** (`security-prompt-injection.ts`) | security | 4, 2, 1 | 5 | A prompt-injection attack through an agentic pipeline exfiltrates customer data. Pits an InfoSec-under-counsel privilege-first response against a two-track investigation, against the SEC Item 1.05 4-business-day 8-K clock. |
+| 6 | **GPAI Systemic Risk: Intermediary or Proprietary?** (`gpai-systemic-risk.ts`) | malfunction (systemic) | 3, 1, 4 | 4 | A frontier lab finds a distributional capability that may recur across other labs' models. Decides whether to keep the finding proprietary under privilege or route it through a trusted ASIAS/INPO-style sector intermediary that separates learning from enforcement. |
+| 7 | **Legal Bottleneck vs. Translator: The Ch.2 Design Choice** (`legal-bottleneck-vs-translator.ts`) | malfunction | 2, 1 | 3 | A compact, single-pivot scenario: one binary organizational-design choice (Legal as bottleneck that absorbs the record vs. Legal as translator running a parallel exposure assessment) traced straight through to a diverging disclosure outcome. |
+| 8 | **Stalled Escalation: Weak-Tie Signal Death** (`stalled-escalation.ts`) | malfunction (org failure) | 2 | 5 | Pure Ch.2: an error-rate creep signal must survive four organizational hops (engineer → safety → legal/exec → board). Each hop can preserve or degrade signal fidelity via translation loss and normalization of deviance; the pivotal choice is whether to open a formal independent-review channel. |
+| 9 | **Discovery Inquiry: Privilege Architecture Under Pressure** (`discovery-inquiry.ts`) | malfunction | 1, 3 | 3 | Months after an incident, litigation and a regulatory document request test the record architecture (two-track vs. single-track oral) the institution built earlier. Plays the *direction* of the case law (Capital One, Target, Wengui), not settled holdings. |
+| 10 | **Cross-Border: EU AI Act Art. 73 vs US Disclosure Posture** (`cross-border.ts`) | malfunction (cross-border) | 1, 3 | 3 | A serious incident deployed across EU and US jurisdictions starts three disclosure clocks at once (EU AI Act Art. 73, SEC 8-K, California SB 53). Tests a two-track + non-admission filing against a privilege-first bare-file approach under the EU's PLD adverse-inference exposure (no privilege scaffold in the EU). |
+
+All 10 scenarios share the same structural guarantees, enforced by
+`npm run validate:scenarios` (Section 10): every non-terminal choice carries
+at least one real citation, every node is reachable from `startNodeId`, and
+every scenario terminates in a single terminal Aftermath node that hands its
+lever configuration to `engineForwardOutcome`.
 
 ---
 
-## 15. Files Reference
+## 15. Milestone 2 — Deferred Items
+
+The scenario library (all 10 scenarios) and the scenario picker are **done**
+as of this milestone and are no longer deferred. The following remain
+explicitly deferred:
+
+1. **Role mode + facilitator console** — cross-role Ch.2 handoff simulation,
+   inject-events, turn timer, pause/resume, multi-player session.
+2. **In-app authoring editor** — a GUI for the scenario JSON schema. The schema
+   + `npm run validate:scenarios` ship in this slice, so authoring-by-file already
+   works.
+3. **Elicitation capture** — playtester disagreement flagging; surfacing contested
+   nodes for iterative authoring.
+4. **Full After-Action PDF** with the principles-honored/violated radar chart
+   (the Markdown debrief with per-chapter readout + counterfactual ships already).
+5. **URL share of a played path** — sharing a completed run's configuration via
+   the URL hash (the system-handoff to scenario A uses `loadScenario` already;
+   path-level sharing remains deferred).
+
+---
+
+## 16. Files Reference
 
 | Path | Role |
 |------|------|
@@ -547,9 +579,20 @@ The following are explicitly deferred and not built in the Foundation Slice:
 | `src/engine/tabletop/resolver.ts` | Node-graph traversal, reachability, path enumeration |
 | `src/engine/tabletop/score.ts` | Path scoring, `perceivedLegalShield`, `hasDominantPath` |
 | `src/engine/tabletop/index.ts` | Barrel export |
-| `src/lib/tabletop/scenarios/production-incident.ts` | The one launch scenario |
+| `src/lib/tabletop/scenarios/index.ts` | `TABLETOP_SCENARIOS` registry — all 10 scenarios |
+| `src/lib/tabletop/scenarios/production-incident.ts` | Scenario 1 — the flagship 8-phase scenario |
+| `src/lib/tabletop/scenarios/malfunction-near-miss.ts` | Scenario 2 — near-miss vs. normalization of deviance |
+| `src/lib/tabletop/scenarios/redteam-latent-capability.ts` | Scenario 3 — irreproducible red-team finding |
+| `src/lib/tabletop/scenarios/misuse-as-weapon.ts` | Scenario 4 — guardrail-response evidence |
+| `src/lib/tabletop/scenarios/security-prompt-injection.ts` | Scenario 5 — agentic prompt-injection exfiltration |
+| `src/lib/tabletop/scenarios/gpai-systemic-risk.ts` | Scenario 6 — cross-firm systemic-risk intermediary |
+| `src/lib/tabletop/scenarios/legal-bottleneck-vs-translator.ts` | Scenario 7 — single-pivot Ch.2 design choice |
+| `src/lib/tabletop/scenarios/stalled-escalation.ts` | Scenario 8 — pure Ch.2 weak-tie signal decay |
+| `src/lib/tabletop/scenarios/discovery-inquiry.ts` | Scenario 9 — privilege architecture under discovery |
+| `src/lib/tabletop/scenarios/cross-border.ts` | Scenario 10 — EU/US/CA cross-border disclosure clocks |
 | `src/lib/tabletop/schema.ts` | `validateScenario` — structural validator |
 | `src/lib/tabletop/debrief.ts` | Markdown after-action report builder |
-| `src/state/tabletopStore.ts` | Run state; drives scenario A only on explicit handoff |
-| `src/views/Tabletop/` | Surface, phase view, choice cards, meter rail, boundary visualizer, analog mentor, debrief |
+| `src/state/tabletopStore.ts` | Run state; `selectScenario` resets to a chosen scenario; drives scenario A only on explicit handoff |
+| `src/views/Tabletop/ScenarioPicker.tsx` | Scenario picker — one-click switch between all 10 scenarios |
+| `src/views/Tabletop/` | Surface, scenario picker, phase view, choice cards, meter rail, boundary visualizer, analog mentor, debrief |
 | `docs/TABLETOP.md` | This file — source of truth |
