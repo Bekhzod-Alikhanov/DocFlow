@@ -36,14 +36,16 @@ describe('resolver', () => {
     for (const p of paths) expect(p.length).toBeGreaterThan(0)
   })
 
-  it('cycle-guards enumeratePaths: a back-edge is treated as a terminal cut-off', () => {
-    // Scenario where choice points back to a node already on the path (cycle).
+  it('cycle-guards enumeratePaths: a back-edge contributes NO path (only genuine terminals are returned)', () => {
+    // Scenario where one choice points back to a node already on the path (cycle),
+    // and one reaches a genuine terminal.
     const cyclic: TabletopScenario = {
       id: 'cyclic', name: 'Cyclic', blurb: '', failureType: 'malfunction', captureResistance: 'silent',
       retrainCadence: 0.3, startLevers: {}, startNodeId: 'x', chapters: [1],
       nodes: [
         { id: 'x', phase: 1, chapter: 1, title: 'X', situation: '', choices: [
-          // Back-edge: next points to 'x' itself — the cycle guard should cut it and include the partial path.
+          // Back-edge: next points to 'x' itself — the cycle guard stops descending
+          // this branch WITHOUT adding a (partial) path.
           { id: 'x1', label: '', role: 'safety_eng', chapter: 1, rationale: '', leverDeltas: {}, incidentEffects: {}, flags: [], analogRefs: [], citations: [], next: 'x' },
           { id: 'x2', label: '', role: 'safety_eng', chapter: 1, rationale: '', leverDeltas: {}, incidentEffects: {}, flags: [], analogRefs: [], citations: [], next: 'z' },
         ] },
@@ -51,10 +53,23 @@ describe('resolver', () => {
       ],
     }
     const paths = enumeratePaths(cyclic)
-    // The cyclic choice (x→x) should produce a 1-choice path (cut by cycle guard);
-    // the non-cyclic choice (x→z) should produce a 1-choice path reaching terminal.
-    expect(paths.length).toBeGreaterThanOrEqual(1)
-    // Every path must be non-empty (the partial cyclic path has at least 1 choice).
-    for (const p of paths) expect(p.length).toBeGreaterThan(0)
+    // Exactly one path: the non-cyclic choice (x→z) reaching terminal. The purely-cyclic
+    // branch (x→x) is dropped entirely — it is not pushed as a partial/terminal path.
+    expect(paths.length).toBe(1)
+    expect(paths[0].map((c) => c.id)).toEqual(['x2'])
+  })
+
+  it('cycle-guards enumeratePaths: a fully-cyclic node yields NO paths', () => {
+    // A node whose only choice loops back to itself has no terminal path at all.
+    const allCyclic: TabletopScenario = {
+      id: 'all-cyclic', name: 'AllCyclic', blurb: '', failureType: 'malfunction', captureResistance: 'silent',
+      retrainCadence: 0.3, startLevers: {}, startNodeId: 'x', chapters: [1],
+      nodes: [
+        { id: 'x', phase: 1, chapter: 1, title: 'X', situation: '', choices: [
+          { id: 'x1', label: '', role: 'safety_eng', chapter: 1, rationale: '', leverDeltas: {}, incidentEffects: {}, flags: [], analogRefs: [], citations: [], next: 'x' },
+        ] },
+      ],
+    }
+    expect(enumeratePaths(allCyclic)).toEqual([])
   })
 })
