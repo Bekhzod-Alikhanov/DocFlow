@@ -14,7 +14,7 @@
  * is the trap, and it is why no path dominates.
  */
 import type { LeverKey } from '../types'
-import { defaultParams, defaultInitState, defaultSettings } from '../registry'
+import { defaultParams, defaultInitState, defaultSettings, clampParam } from '../registry'
 import {
   type TabletopScenario, type Choice, type IncidentMeters,
   type InstitutionalMeterKey, initialIncidentMeters,
@@ -46,6 +46,9 @@ function clamp01(x: number): number {
  * exactly why it moved — and pair it with the litigation_pressure caveat. 0–1.
  */
 export function perceivedLegalShield(state: RunState): number {
+  // `privileged_single_track` (like `legal_owns_record`) is a choice flag: it is set by
+  // the oral-only / counsel-owns-the-record choices as they accumulate onto state.flags,
+  // NOT a lever. Either flag lifts the perceived shield by the 0.30 weight below.
   const privilegedSingleTrack =
     state.flags.includes('legal_owns_record') || state.flags.includes('privileged_single_track')
   return clamp01(
@@ -57,7 +60,9 @@ export function perceivedLegalShield(state: RunState): number {
 
 export function initialRunState(scenario: TabletopScenario): RunState {
   const params = { ...defaultParams() }
-  for (const [k, v] of Object.entries(scenario.startLevers) as [LeverKey, number][]) params[k] = v
+  // Route each authored start-lever through clampParam so an out-of-range scenario
+  // value cannot seed a param outside its registry range and poison downstream meters.
+  for (const [k, v] of Object.entries(scenario.startLevers) as [LeverKey, number][]) params[k] = clampParam(k, v)
   return {
     params, init: defaultInitState(), settings: defaultSettings(),
     flags: [], incident: initialIncidentMeters(), retrainCadence: scenario.retrainCadence,
@@ -86,7 +91,17 @@ export function scoreAllPaths(scenario: TabletopScenario): PathScore[] {
   return enumeratePaths(scenario).map((p) => scorePath(scenario, p))
 }
 
-/** The vector of "higher is better" meters used for domination testing. */
+/**
+ * The vector of "higher is better" meters used for domination testing. 14 dimensions:
+ *   • 5 institutional positives: safe_to_report_score, accountability_legitimacy,
+ *     learning_yield, (1 − private_ordering_gap), (1 − policy_scaffold_dependency)
+ *   • 1 durable exposure axis: (1 − litigation_pressure) — two-track path tends to win
+ *   • 1 short-term perceived shield: legalSafety — oral path wins (decoupled on purpose)
+ *   • 6 incident positives: signal_fidelity, record_capturability, regulatory_timeliness,
+ *     board_oversight_visibility, evidentiary_posture, remediation_completeness
+ *   • 1 inverted engine-forward recurrence: (100 − outcome.recurrenceRisk)
+ * All are oriented so higher = better before domination is tested.
+ */
 function goodVector(p: PathScore): number[] {
   return [
     p.institutional.safe_to_report_score,
@@ -102,9 +117,11 @@ function goodVector(p: PathScore): number[] {
     p.incident.board_oversight_visibility,
     p.incident.evidentiary_posture,
     p.incident.remediation_completeness,
-    // Engine-forward recurrence is the meaningful per-path signal; the incident meter
-    // `recurrence_risk` stays a static placeholder until Aftermath, so using it here
-    // would make this axis inert. Use the outcome value.
+    // Engine-forward recurrence is the meaningful per-path signal. The incident meter
+    // `recurrence_risk` may be nudged by choices (e.g. full remediation −20, minimal
+    // patch +15) but is only revealed at Aftermath; the domination test uses the
+    // engine-forward `outcome.recurrenceRisk` instead, which reruns the SD model on the
+    // final lever configuration. Use the outcome value.
     100 - p.outcome.recurrenceRisk,
   ]
 }

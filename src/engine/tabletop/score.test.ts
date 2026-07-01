@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { TabletopScenario } from './types'
-import { scoreAllPaths, hasDominantPath, initialRunState, dominates } from './score'
+import { scoreAllPaths, hasDominantPath, initialRunState, dominates, perceivedLegalShield } from './score'
 
 // Two-path scenario: "oral" maxes legal safety but tanks learning/remediation;
 // "translation" inverts the trade-off. Neither dominates the other.
@@ -25,6 +25,42 @@ describe('path scoring & no-dominant-path', () => {
   it('initialRunState seeds levers from the scenario', () => {
     const s = initialRunState(scenario)
     expect(s.params.workflow_protection).toBeCloseTo(0.4)
+  })
+
+  it('initialRunState clamps out-of-range startLevers to the registry range', () => {
+    // Out-of-range startLevers must be routed through clampParam, not assigned raw:
+    // 5 clamps down to 1, -3 clamps up to 0. Prevents a bad scenario from seeding
+    // a lever outside [0,1] and poisoning every downstream meter.
+    const bad: TabletopScenario = {
+      ...scenario,
+      startLevers: { privilege_strength: 5, original_records_boundary: -3 },
+    }
+    const s = initialRunState(bad)
+    expect(s.params.privilege_strength).toBe(1)
+    expect(s.params.original_records_boundary).toBe(0)
+  })
+
+  it('perceivedLegalShield stays within [0,1] for low and high privilege configs', () => {
+    // Low config: no privilege, full original-records boundary, no single-track flag.
+    const low = initialRunState({
+      ...scenario,
+      startLevers: { privilege_strength: 0, original_records_boundary: 1 },
+    })
+    const shieldLow = perceivedLegalShield(low)
+    expect(shieldLow).toBeGreaterThanOrEqual(0)
+    expect(shieldLow).toBeLessThanOrEqual(1)
+
+    // High config: max privilege, no original-records boundary, privileged single track.
+    const high = initialRunState({
+      ...scenario,
+      startLevers: { privilege_strength: 1, original_records_boundary: 0 },
+    })
+    high.flags = ['privileged_single_track']
+    const shieldHigh = perceivedLegalShield(high)
+    expect(shieldHigh).toBeGreaterThanOrEqual(0)
+    expect(shieldHigh).toBeLessThanOrEqual(1)
+    // The high config must read as a stronger perceived shield than the low config.
+    expect(shieldHigh).toBeGreaterThan(shieldLow)
   })
 
   it('the oral path wins short-term *perceived* legal safety', () => {
