@@ -10,6 +10,9 @@ import { misuseAsWeapon } from './misuse-as-weapon'
 import { securityPromptInjection } from './security-prompt-injection'
 import { gpaiSystemicRisk } from './gpai-systemic-risk'
 import { legalBottleneckVsTranslator } from './legal-bottleneck-vs-translator'
+import { stalledEscalation } from './stalled-escalation'
+import { discoveryInquiry } from './discovery-inquiry'
+import { crossBorder } from './cross-border'
 
 export { productionIncident }
 export { malfunctionNearMiss }
@@ -18,6 +21,9 @@ export { misuseAsWeapon }
 export { securityPromptInjection }
 export { gpaiSystemicRisk }
 export { legalBottleneckVsTranslator }
+export { stalledEscalation }
+export { discoveryInquiry }
+export { crossBorder }
 export const TABLETOP_SCENARIOS: TabletopScenario[] = [
   productionIncident,
   malfunctionNearMiss,
@@ -26,4 +32,7 @@ export const TABLETOP_SCENARIOS: TabletopScenario[] = [
   securityPromptInjection,
   gpaiSystemicRisk,
   legalBottleneckVsTranslator,
+  stalledEscalation,
+  discoveryInquiry,
+  crossBorder,
 ]
