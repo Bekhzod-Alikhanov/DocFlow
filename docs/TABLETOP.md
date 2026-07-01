@@ -109,7 +109,7 @@ export function initialIncidentMeters(): IncidentMeters {
 | `board_oversight_visibility` | Ch.2 | Higher = better | Whether the incident signal reached oversight intact. Starts at 0 (oversight not yet briefed). Tracks `signal_fidelity` after Ch.2 handoffs. |
 | `evidentiary_posture` | Ch.1 | Higher = better | Normative-admission load vs. objective record. Higher = more defensible objective record. Starts at 50. |
 | `remediation_completeness` | Ch.4 | Higher = better | Whether findings translated into durable engineering action (regression suite, monitoring, feedback loops). Starts at 0 (nothing done yet). |
-| `recurrence_risk` | Ch.4 | Lower = better | Revealed only in Aftermath. Derived from the engine-forward `finalDebt` and learning shortfall. The incident-meter placeholder stays at its last value until the terminal node. |
+| `recurrence_risk` | Ch.4 | Lower = better | The incident meter may be nudged by choices during play (e.g. full remediation −20, minimal patch +15), but the authoritative verdict is revealed only in Aftermath as the engine-forward `AftermathOutcome.recurrenceRisk`, derived from `finalDebt` and learning shortfall. The no-dominant-path test and the Aftermath screen use that engine-forward value, not the in-play incident meter. |
 
 **Meters are directional 0–100 indices, not predictions.** Every movement
 shows a plain "why" and a **"show scoring logic"** panel exposing the formula,
@@ -283,9 +283,10 @@ export function engineForwardOutcome(state: RunState): AftermathOutcome {
 }
 ```
 
-`recurrence_risk` is hidden during play (its incident-meter placeholder stays at
-its last value); it is revealed as `AftermathOutcome.recurrenceRisk` only after
-the terminal node fires. The Aftermath screen shows the regime, the recurrence
+`recurrence_risk` is hidden during play (the incident meter may be nudged by
+choices, but its in-play value is not shown until Aftermath); it is revealed as
+the engine-forward `AftermathOutcome.recurrenceRisk` only after the terminal node
+fires. The Aftermath screen shows the regime, the recurrence
 risk, cumulative harm, settled technical debt, and learning capability — all
 derived from the same engine that powers the Tipping and Workbench tabs.
 
@@ -348,7 +349,7 @@ good = [
   board_oversight_visibility,
   evidentiary_posture,
   remediation_completeness,
-  100 − outcome.recurrenceRisk,  // engine-forward; incident meter is static until Aftermath
+  100 − outcome.recurrenceRisk,  // engine-forward; incident meter may be nudged by choices but is revealed only at Aftermath, so the test uses the outcome value
 ]
 ```
 
