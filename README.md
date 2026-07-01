@@ -253,9 +253,11 @@ Old v0.1 share URLs are preserved through a migration path in the share codec.
    summary; avoid creating discoverable artifacts"** — watch `record_capturability`
    fall. Note that this choice is cheap now and irreversible later.
 4. In Phase 3 (Framing), choose **"Keep analysis oral; counsel owns the record;
-   no written safety workflow"** — watch `signal_fidelity` drop via the Ch.2
-   transfer function and the perceived legal shield (`legalSafety`) rise, while
-   `litigation_pressure` does NOT improve durably.
+   no written safety workflow"** — watch `signal_fidelity` drop via this choice's
+   explicit effect (`incidentEffects: { signal_fidelity: -10 }`) and the perceived
+   legal shield (`legalSafety`) rise, while `litigation_pressure` does NOT improve
+   durably. (The separate Ch.2 transfer-function drop fires later, at the Phase 4
+   boundary crossing — a chapter-2 handoff.)
 5. Continue through Phases 4–7, choosing the containment / minimal-notice path.
 6. Reach **Aftermath** — the real engine runs forward. Observe high `recurrenceRisk`
    and a chilling or contested regime.
