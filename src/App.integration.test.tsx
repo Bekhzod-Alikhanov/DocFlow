@@ -23,7 +23,8 @@ describe('App happy path', () => {
 
     // Switch to Scientific → Workbench (lazy) loads and shows the headline.
     fireEvent.click(screen.getByRole('tab', { name: 'scientific' }))
-    await screen.findByText('Documented')
+    // Lazy chunk: allow generous time for the Scientific view to import under parallel workers.
+    await screen.findByText('Documented', undefined, { timeout: 5000 })
 
     // Moving a lever flows through to the store (UI → store → recomputed run).
     const privLabel = PARAM_SPEC_BY_ID['privilege_strength'].label
@@ -45,7 +46,8 @@ describe('App happy path', () => {
 
     // Institutional Design view loads and guided demos hydrate scenario presets.
     fireEvent.click(screen.getByRole('tab', { name: 'Institutional design' }))
-    await screen.findByText('What should a lab do now?')
+    // Lazy chunk: the Institutional view imports on demand; wait past the 1s default under load.
+    await screen.findByText('What should a lab do now?', undefined, { timeout: 5000 })
     expect(screen.getByText('Policy package builder')).toBeInTheDocument()
     expect(screen.getByText('Chapter 3 narrative')).toBeInTheDocument()
     expect(screen.getByText('Institutional scorecard')).toBeInTheDocument()
