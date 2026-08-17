@@ -20,6 +20,10 @@ export function HeadlineReadout() {
   const summary = useStore((s) => s.summary)
   const trajectory = useStore((s) => s.trajectory)
   const diverged = trajectory.diverged
+  // v0.3.0 (AUDIT.md F2): a run held together by clamps is not a solution of the
+  // differential equation. v0.2 reported exactly that case as healthy.
+  const saturated = trajectory.saturated
+  const saturatedPct = Math.round(trajectory.saturatedFraction * 100)
   const aux = trajectory.aux[trajectory.aux.length - 1]
   const r = summary.regime
   const cls = REGIME_CLASS[r]
@@ -38,6 +42,12 @@ export function HeadlineReadout() {
       </div>
       <p className="mb-3 text-[13px] text-ink-soft">{REGIME_BLURB[r]}</p>
 
+      {saturated && !diverged && (
+        <p className="mb-3 rounded border border-estimate/40 bg-estimate-soft px-2 py-1 text-[12px] text-estimate">
+          ⚠ A stock sat pinned at a physical bound on {saturatedPct}% of steps. The trajectory shown is
+          partly the clamp&rsquo;s, not the model&rsquo;s — treat the levels as unreliable.
+        </p>
+      )}
       {diverged && (
         <p className="mb-3 rounded border border-chilling/40 bg-chilling-soft px-2 py-1 text-[12px] text-chilling">
           ⚠ The simulation hit a numerical guard (divergence). Treat this run as unreliable.

@@ -13,7 +13,7 @@ import type {
   ClampEvent,
 } from './types'
 import { computeAux } from './model'
-import { step, clampState } from './integrators'
+import { step, clampState, stepRK45Adaptive } from './integrators'
 import { MODEL_VERSION } from './version'
 
 /** Hard cap on integration steps — a runaway-loop backstop, far above any real run. */
@@ -39,11 +39,18 @@ export function integrate(init: State, params: Params, settings: SimSettings): T
   const aux: Auxiliaries[] = new Array(n + 1)
   const clampEvents: ClampEvent[] = []
   let diverged = false
+  // v0.3.0 (AUDIT.md F2): boundary saturation is tracked separately from
+  // divergence. A trajectory held together by clamps is not a solution of the
+  // differential equation, and v0.2 reported exactly that case as healthy.
+  let saturatedSteps = 0
+  const adaptive = { accepted: 0, rejected: 0, maxErrorRatio: 0, minStep: Infinity }
+  const isAdaptive = settings.solver === 'rk45'
 
   // Clamp the initial state too, so a user-supplied init can't start out-of-bounds.
   const first = clampState({ ...init }, 0, 0)
   clampEvents.push(...first.events)
   diverged = diverged || first.diverged
+  if (first.saturated) saturatedSteps++
 
   let current = first.state
   t[0] = 0
@@ -52,17 +59,43 @@ export function integrate(init: State, params: Params, settings: SimSettings): T
 
   for (let i = 1; i <= n; i++) {
     const time = i * dt
-    const raw = step(current, params, dt, settings.solver)
+    let raw: State
+    if (isAdaptive) {
+      const r = stepRK45Adaptive(current, params, dt, { rtol: settings.rtol, atol: settings.atol })
+      raw = r.state
+      adaptive.accepted += r.accepted
+      adaptive.rejected += r.rejected
+      adaptive.maxErrorRatio = Math.max(adaptive.maxErrorRatio, r.maxErrorRatio)
+      adaptive.minStep = Math.min(adaptive.minStep, r.minStep)
+    } else {
+      raw = step(current, params, dt, settings.solver)
+    }
     const clamped = clampState(raw, i, time)
     if (clamped.events.length) clampEvents.push(...clamped.events)
     diverged = diverged || clamped.diverged
+    if (clamped.saturated) saturatedSteps++
     current = clamped.state
     t[i] = time
     states[i] = current
     aux[i] = computeAux(current, params)
   }
 
-  return { t, states, aux, diverged, clampEvents, settings }
+  const saturatedFraction = saturatedSteps / (n + 1)
+  return {
+    t,
+    states,
+    aux,
+    diverged,
+    // A single incidental clamp is noise; sustained residence at a bound means the
+    // reported trajectory is the clamp's, not the model's. 2% is the threshold.
+    saturated: saturatedFraction > 0.02,
+    saturatedFraction,
+    clampEvents,
+    settings,
+    adaptive: isAdaptive
+      ? { ...adaptive, minStep: Number.isFinite(adaptive.minStep) ? adaptive.minStep : dt }
+      : undefined,
+  }
 }
 
 /** Build a complete, re-runnable provenance record. `timestamp` is supplied by the caller. */

@@ -201,14 +201,19 @@ export interface ParamSpec {
 // Integration & simulation — spec §2.6, §3.1
 // ---------------------------------------------------------------------------
 
-export type Solver = 'rk4' | 'euler'
+export type Solver = 'rk4' | 'euler' | 'rk45'
 
 export interface SimSettings {
   /** Number of steps (interpreted as months). Default 120. */
   horizon: number
-  /** Integration step size. */
+  /** Integration step size. For `rk45` this is the SAMPLE spacing; the solver
+   *  takes adaptive substeps between samples. */
   dt: number
   solver: Solver
+  /** Relative tolerance for the adaptive solver. Ignored by rk4/euler. */
+  rtol?: number
+  /** Absolute tolerance for the adaptive solver. Ignored by rk4/euler. */
+  atol?: number
 }
 
 /**
@@ -288,8 +293,26 @@ export interface Trajectory {
   aux: Auxiliaries[]
   /** True if a NaN/Inf or runaway bound was hit (results are then suspect). */
   diverged: boolean
+  /**
+   * v0.3.0: true if a stock spent a material share of the run pinned at a physical
+   * bound. Distinct from `diverged` on purpose. Through v0.2 `clampState` set
+   * `diverged` only for non-finite/runaway values, never for min/max saturation —
+   * so the five learning presets ran with TD pinned at zero on >83% of steps while
+   * reporting `diverged: false`, i.e. perfectly healthy (AUDIT.md F2). A clamped
+   * trajectory is not a solution of the differential equation and must say so.
+   */
+  saturated: boolean
+  /** Fraction of steps on which at least one bound clamp fired. */
+  saturatedFraction: number
   clampEvents: ClampEvent[]
   settings: SimSettings
+  /** Adaptive-solver diagnostics; undefined for fixed-step solvers. */
+  adaptive?: {
+    accepted: number
+    rejected: number
+    maxErrorRatio: number
+    minStep: number
+  }
 }
 
 /**

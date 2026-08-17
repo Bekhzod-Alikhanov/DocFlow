@@ -13,6 +13,7 @@
  */
 import type { State, Params } from './types'
 import { STOCK_KEYS } from './types'
+import { STOCK_SPECS } from './registry'
 import { derivatives, computeAux } from './model'
 import { eigenvalues, maxRealPart, solveLinear, type Complex, type Matrix } from './linalg'
 
@@ -393,11 +394,52 @@ function refineAt(C: number, fast: State, p: Params): Equilibrium {
 }
 
 /** Convenience: just the stable attractors. */
-export function stableAttractors(p: Params): Equilibrium[] {
-  return findAllEquilibria(p).filter((e) => e.stability === 'stable')
+/**
+ * Residual below which a returned point is treated as a genuine fixed point.
+ * Anything above this is a Newton failure wearing an equilibrium's clothes.
+ */
+export const EQUILIBRIUM_RESIDUAL_TOL = 1e-6
+
+/**
+ * True only if this point is actually a fixed point AND lies in the physical
+ * domain. v0.3.0 (AUDIT.md F13): `converged` and `residualNorm` were computed and
+ * then **never read by any caller**, so a non-converged, domain-clamped point could
+ * be eigen-classified as "stable" and counted by `isBistable`. Stability of a point
+ * that is not an equilibrium is a meaningless number.
+ */
+export function isReliableEquilibrium(e: Equilibrium): boolean {
+  if (!e.converged) return false
+  if (!(e.residualNorm < EQUILIBRIUM_RESIDUAL_TOL)) return false
+  if (!Number.isFinite(e.C) || e.C < -1e-9 || e.C > 1 + 1e-9) return false
+  for (const k of STOCK_KEYS) {
+    const v = e.state[k]
+    if (!Number.isFinite(v)) return false
+    const spec = STOCK_SPECS[k]
+    if (v < spec.min - 1e-6) return false
+    if (spec.max !== null && v > spec.max + 1e-6) return false
+  }
+  return true
 }
 
-/** True if the system has (at least) two stable attractors — i.e. is bistable. */
+/**
+ * Stable attractors. Gated on reliability: a point that Newton did not converge to,
+ * or that sits outside the physical domain, is not returned regardless of what its
+ * eigenvalues say.
+ */
+export function stableAttractors(p: Params): Equilibrium[] {
+  return findAllEquilibria(p).filter((e) => e.stability === 'stable' && isReliableEquilibrium(e))
+}
+
+/** True if the system has (at least) two RELIABLE stable attractors. */
 export function isBistable(p: Params): boolean {
   return stableAttractors(p).length >= 2
+}
+
+/**
+ * Equilibria that were enumerated but rejected as unreliable. Exposed rather than
+ * silently dropped so a caller can report "the solver could not resolve this point"
+ * instead of implying the point does not exist.
+ */
+export function unreliableEquilibria(p: Params): Equilibrium[] {
+  return findAllEquilibria(p).filter((e) => !isReliableEquilibrium(e))
 }
