@@ -89,10 +89,17 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   // (TD → ∞), which would also preclude fixed-point analysis. We use a SATURATING
   // (Michaelis–Menten) amplification instead, so the debt→incident feedback has a
   // finite ceiling (1 + alpha_td·td_sat). Sign and low-debt slope are unchanged.
+  // v0.3.0: the Michaelis–Menten form had a POLE at TD = −TD_ref·td_sat, which RK4's
+  // unclamped intermediate stages can reach from TD ≈ 0 at registry minima
+  // (AUDIT.md F12). The bounded exponential below matches both the low-debt slope
+  // (alpha_td/TD_ref) and the ceiling (1 + alpha_td·td_sat) and has no pole.
   const capabilityFactor = Math.max(0, 1 - p.beta_L * (L / 100))
   const debtRatio = TD / p.TD_ref
-  const debtAmplification = 1 + p.alpha_td * (debtRatio / (1 + debtRatio / p.td_sat))
+  const debtAmplification = 1 + p.alpha_td * p.td_sat * (1 - Math.exp(-debtRatio / p.td_sat))
   const incident_inflow = Math.max(0, p.base_incident_rate * debtAmplification * capabilityFactor)
+
+  /** Fraction of debt actually available to act on; → 0 as TD → 0. */
+  const debtAvailability = TD / (TD + p.td_k)
 
   const to_D = f_doc * incident_inflow
   const to_U = (1 - f_doc) * incident_inflow
@@ -106,7 +113,12 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   const learning_gain =
     p.eta_learn * to_D * translation_layer_efficiency * challengeMultiplier +
     p.near_miss_learning_boost * near_miss_signal * translation_layer_efficiency
-  const remediation = p.rho * D * (L / 100) * (1 + p.challenge_remediation_boost * p.effective_challenge)
+  // v0.3.0: gated by debtAvailability. You cannot remediate debt that does not
+  // exist, and without this gate dTD/dt < 0 at TD = 0, so the lower bound had to be
+  // enforced by a clamp that fired on >83% of steps in the learning presets and
+  // degraded RK4 to first order (AUDIT.md F2, F11).
+  const remediation =
+    p.rho * D * (L / 100) * (1 + p.challenge_remediation_boost * p.effective_challenge) * debtAvailability
   const d_closeout = p.kappa_D * D
 
   const belated_doc = p.mu * U * f_doc
@@ -130,7 +142,11 @@ export function computeAux(s: State, p: Params): Auxiliaries {
       0.14 * p.original_records_boundary +
       0.1 * p.recipient_enforcer_separation,
   )
-  const backfire = p.psi * p.phi_doc * f_doc * (1 - protectionBundle)
+  // v0.3.0: phi_doc removed. It is declared `exposure/incident` and was being reused
+  // as a dimensionless gain here, which is both a unit error and a hard parameter
+  // alias — phi_doc could not be varied in dE/dt without moving the culture loop
+  // (AUDIT.md F7). psi's default absorbs the old product; see the registry note.
+  const backfire = p.psi * f_doc * (1 - protectionBundle)
 
   const privateOrderableCapacity = clamp01(
     (p.original_records_boundary +
@@ -216,13 +232,35 @@ export function derivativesFromAux(s: State, p: Params, a: Auxiliaries): State {
     p.phi_pld * p.pld_penalty * a.to_U -
     p.theta_E * s.E
 
-  // Culture: logistic reinforcing stock with hysteresis (spec §2.3). The bracket
-  // is the culture "target" pressure; C·(1−C) gives the bistable logistic shape.
-  // a_jc_c weights the just-culture baseline (symmetric with the spec's a_sep) so
-  // the bistable window sits at sensible lever values — see MODEL.md.
-  const cultureTarget =
-    p.a_jc_c * p.just_culture + p.a_sep * p.recipient_enforcer_separation + a.safety_wins - a.backfire
-  const dC = p.lambda_C * (cultureTarget - s.C) * s.C * (1 - s.C)
+  // --- Culture (v0.3.0: the R1 loop is now actually closed) ---------------------
+  //
+  // Before v0.3.0 every term here depended only on C and parameters, so dC/dt was
+  // an AUTONOMOUS scalar equation and the debt → harm → exposure → culture loop
+  // described in MODEL.md §7 did not exist in the code (AUDIT.md F1). The two
+  // saturating terms below are the return arrows: realised exposure and realised
+  // harm both chill the willingness to document. They make dC/dt depend on E, TD
+  // and L, so the Jacobian's culture row is no longer [0,0,0,0,0,∂C].
+  //
+  // Both are saturating so that unbounded E or harm cannot drive the target
+  // arbitrarily negative, and the target is clamped to [0,1] — the stock's own
+  // range — so "target" means what the name says.
+  const exposureChill = p.psi_E * (s.E / (s.E + p.E_k))
+  const harmChill = p.psi_H * (a.harm_events / (a.harm_events + p.h_k))
+  const cultureTarget = clamp01(
+    p.a_jc_c * p.just_culture +
+      p.a_sep * p.recipient_enforcer_separation +
+      a.safety_wins -
+      a.backfire -
+      exposureChill -
+      harmChill,
+  )
+
+  // Kernel: a convex blend of a constant floor and the (normalised) logistic bump.
+  // The pure C·(1−C) kernel makes C = 0 and C = 1 exact fixed points, so once the
+  // clamp pinned culture at a boundary no policy change could ever move it again
+  // (AUDIT.md F9). eps_C keeps the bistable shape while allowing recovery.
+  const kernel = p.eps_C + (1 - p.eps_C) * 4 * s.C * (1 - s.C)
+  const dC = p.lambda_C * (cultureTarget - s.C) * kernel
 
   return { U: dU, D: dD, TD: dTD, L: dL, E: dE, C: dC }
 }

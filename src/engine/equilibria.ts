@@ -125,32 +125,62 @@ export function findEquilibrium(
 // --- Complete enumeration via the decoupled culture root structure ---
 
 /** g(C) = cultureTarget(C) − C, using only f_doc(C) (culture is decoupled). */
-function cultureG(C: number, p: Params): number {
-  const a = computeAux({ U: 0, D: 0, TD: 0, L: 0, E: 0, C }, p)
-  // safety_wins/backfire depend only on f_doc(C); cultureTarget mirrors model.ts.
-  const cultureTarget = p.a_jc_c * p.just_culture + p.a_sep * p.recipient_enforcer_separation + a.safety_wins - a.backfire
-  return cultureTarget - C
+/**
+ * dC/dt evaluated on the SLOW MANIFOLD: the fast stocks are first relaxed to their
+ * equilibrium at this culture value, then the culture rate is read off there.
+ *
+ * v0.3.0: this replaces a version that duplicated the cultureTarget formula and
+ * evaluated it at all-zero stocks. That was valid only while culture was decoupled.
+ * Now that realised exposure and harm feed back into the culture target
+ * (AUDIT.md F1), E, TD and L must be at their C-consistent values or the roots are
+ * simply wrong. Calling `derivatives` directly also removes the duplicated formula,
+ * which had already drifted out of sync with `model.ts`.
+ *
+ * Sign note: dC/dt = lambda_C·(target − C)·kernel with kernel > 0 everywhere
+ * (eps_C > 0), so the sign of dC/dt is the sign of (target − C) and root-bracketing
+ * on it is equivalent.
+ */
+function cultureG(C: number, p: Params, guess?: State): { g: number; state: State } {
+  const state = fastEquilibriumAt(C, p, guess)
+  return { g: derivatives(state, p).C, state }
 }
 
-/** All roots of g(C) on [0,1] (plus stable boundaries), bracketed + bisected. */
+/**
+ * All roots of dC/dt on [0,1], bracketed on a grid and bisected.
+ *
+ * The scan is warm-started: each grid point seeds the next fast-subsystem solve
+ * (numerical continuation along C). That is both markedly faster than solving each
+ * point cold and more accurate, because consecutive solves stay on the same branch.
+ */
 export function cultureEquilibria(p: Params): number[] {
   const roots: number[] = []
-  const M = 1000
+  const M = 400
+  let warm: State | undefined
+  const at = (C: number) => {
+    const r = cultureG(C, p, warm)
+    warm = r.state
+    return r.g
+  }
+
+  // C = 0 is a fixed point only if the target sits at or below it.
+  if (at(1e-6) < 0) roots.push(0)
+  warm = undefined
+
   let prevC = 0
-  let prevG = cultureG(0, p)
-  // C = 0 is an equilibrium of C·(1−C)·g; it is an attractor if g(0+) < 0.
-  if (cultureG(1e-6, p) < 0) roots.push(0)
+  let prevG = at(0)
   for (let i = 1; i <= M; i++) {
     const C = i / M
-    const g = cultureG(C, p)
+    const g = at(C)
     if ((prevG <= 0 && g > 0) || (prevG >= 0 && g < 0)) {
-      // Bisect for the interior root.
+      // Bisect for the interior root, warm-starting each evaluation.
       let lo = prevC
       let hi = C
-      for (let b = 0; b < 60; b++) {
+      let seed: State | undefined = warm
+      for (let b = 0; b < 40; b++) {
         const mid = 0.5 * (lo + hi)
-        const gm = cultureG(mid, p)
-        if (prevG <= 0 ? gm > 0 : gm < 0) hi = mid
+        const r = cultureG(mid, p, seed)
+        seed = r.state
+        if (prevG <= 0 ? r.g > 0 : r.g < 0) hi = mid
         else lo = mid
       }
       roots.push(0.5 * (lo + hi))
@@ -158,31 +188,61 @@ export function cultureEquilibria(p: Params): number[] {
     prevC = C
     prevG = g
   }
-  if (cultureG(1 - 1e-6, p) > 0) roots.push(1)
+  if (at(1 - 1e-6) > 0) roots.push(1)
   return roots
 }
 
-/** Equilibrium of the 5 fast stocks at a fixed culture C (integrate to steady state). */
-export function fastEquilibriumAt(C: number, p: Params): State {
-  // Integrate the full system but pin C each step (cheap, robust to stiffness).
-  let s: State = { U: 20, D: 5, TD: 10, L: 30, E: 10, C }
+/**
+ * Equilibrium of the 5 fast stocks at a fixed culture C (relax to steady state).
+ *
+ * `guess` warm-starts the relaxation — used by `cultureEquilibria` to continue
+ * along C rather than solving each point cold.
+ *
+ * v0.3.0: the previous version clamped L into [0,100] *inside* the loop, so a true
+ * equilibrium with L* > 100 would park at the bound, never satisfy the convergence
+ * test, and be returned after 4000 steps as a non-fixed-point that callers then
+ * classified as "stable" (AUDIT.md F13). The relaxation is now unclamped and the
+ * caller is told whether it actually converged.
+ */
+export function fastEquilibriumAt(C: number, p: Params, guess?: State): State {
+  return fastEquilibriumDetail(C, p, guess).state
+}
+
+export interface FastEquilibriumResult {
+  state: State
+  converged: boolean
+  residual: number
+}
+
+export function fastEquilibriumDetail(C: number, p: Params, guess?: State): FastEquilibriumResult {
+  let s: State = guess ? { ...guess, C } : { U: 20, D: 5, TD: 10, L: 30, E: 10, C }
   const dt = 0.5
+  let residual = Infinity
+  let converged = false
   for (let i = 0; i < 4000; i++) {
     const d = derivatives(s, p)
+    // Unclamped: the equations now keep the non-negative stocks non-negative on
+    // their own (TD = 0 is invariant via debtAvailability), so a clamp here would
+    // only hide a genuine out-of-domain equilibrium.
     const next: State = {
-      U: Math.max(0, s.U + dt * d.U),
-      D: Math.max(0, s.D + dt * d.D),
-      TD: Math.max(0, s.TD + dt * d.TD),
-      L: Math.min(100, Math.max(0, s.L + dt * d.L)),
-      E: Math.max(0, s.E + dt * d.E),
+      U: s.U + dt * d.U,
+      D: s.D + dt * d.D,
+      TD: s.TD + dt * d.TD,
+      L: s.L + dt * d.L,
+      E: s.E + dt * d.E,
       C,
     }
+    if (!Number.isFinite(next.U + next.D + next.TD + next.L + next.E)) break
     let delta = 0
     for (const k of STOCK_KEYS) delta += Math.abs(next[k] - s[k])
     s = next
-    if (delta < 1e-9) break
+    residual = delta / dt
+    if (residual < 1e-9) {
+      converged = true
+      break
+    }
   }
-  return s
+  return { state: s, converged, residual }
 }
 
 /**
@@ -197,7 +257,18 @@ export function findAllEquilibria(p: Params): Equilibrium[] {
     const polished = findEquilibrium(p, fast, { maxIter: 40 })
     // Keep the enumerated culture value if Newton drifted to a different basin.
     const eq = Math.abs(polished.C - C) < 0.02 ? polished : refineAt(C, fast, p)
-    out.push(eq)
+
+    // v0.3.0: DEDUPLICATE. An attracting boundary and an interior root adjacent to
+    // it can enumerate separately and then polish to the SAME fixed point, which
+    // silently inflated the attractor count (neutral reported 3 stable attractors
+    // when it has 2). Compare the full state, not just C, since distinct culture
+    // roots that converge to one point are exactly the case being caught.
+    const dup = out.some((e) => {
+      let d = 0
+      for (const k of STOCK_KEYS) d += Math.abs(e.state[k] - eq.state[k]) / (1 + Math.abs(e.state[k]))
+      return d < 1e-4
+    })
+    if (!dup) out.push(eq)
   }
   return out.sort((a, b) => a.C - b.C)
 }

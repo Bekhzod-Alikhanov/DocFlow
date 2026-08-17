@@ -153,13 +153,28 @@ institutional design packages.
 
 - **R1 chilling:** weak protection -> high perceived discoverability/backfire ->
   low culture -> low documentation -> lower learning and higher debt -> more
-  incidents and exposure.
+  incidents, harm and exposure -> **realised exposure and harm chill culture
+  further** (the `psi_E` and `psi_H` terms in `cultureTarget`).
 - **R2 learning:** protected workflow + just culture + separation + translation
   layer + intermediary capacity -> reports become safe and useful -> learning
   and remediation improve -> culture rises.
 
-The slow culture stock `C` with logistic dynamics, coupled to sigmoidal
-`f_doc(C)`, creates the model's path dependence and tipping behavior.
+The slow culture stock `C`, coupled to sigmoidal `f_doc(C)`, creates the model's
+path dependence and tipping behavior.
+
+> **Correction, v0.3.0.** Through v0.2 the closing arrow of R1 **did not exist in
+> the code**. `dC/dt` depended only on `C` and parameters — `backfire` was a
+> function of `f_doc` and the protection levers alone, with no dependence on `TD`,
+> `E`, `harm_events` or `L`. The culture equation was therefore an *autonomous
+> scalar ODE* driving a one-way cascade, and this section described a loop the
+> equations did not contain. See `docs/plan/AUDIT.md` F1.
+>
+> v0.3.0 closes it: `cultureTarget` now subtracts saturating terms in realised
+> exposure and realised harm, so the culture row of the Jacobian is no longer
+> `[0,0,0,0,0,∂C]`. This is asserted by `src/engine/diagnostics.test.ts` (V1.3) so
+> it cannot silently regress. The coefficients (`psi_E`, `E_k`, `psi_H`, `h_k`)
+> are **free parameters** — the direction is argued from the literature, the
+> magnitudes are not measured.
 
 ## 8. Preset Regression Targets
 
@@ -182,3 +197,4 @@ The test suite verifies these qualitative targets:
 |---|---|---|
 | 2026-06-21 | 0.1.0 | Initial model. Added saturating debt-to-incident amplification, natural debt retirement, and fraction-driven culture reinforcement to make the system well-posed and bistable. |
 | 2026-06-22 | 0.2.0 | Added institutional design levers and derived readouts while keeping the six-stock core. Added workflow protection, original-records boundary, safe harbor / non-admission, effective challenge, near-miss tier, and intermediary capacity. Updated presets for aviation, PSQIA, pharma, SR 11-7, nuclear, cyber, and EU AI Act + PLD. |
+| 2026-08-17 | 0.3.0 | **Correctness release following the Phase 0 audit (`docs/plan/AUDIT.md`).** (F1) **Closed the R1 loop** — `cultureTarget` now subtracts saturating terms in realised exposure and harm (`psi_E`, `E_k`, `psi_H`, `h_k`), so `dC/dt` depends on the physical stocks; through v0.2 it was an autonomous scalar equation and the documented loop did not exist. (F2) **`dTD/dt` reformulated** — remediation is gated by `TD/(TD+td_k)`, making `TD = 0` an invariant of the equations; clamp events across all presets went from 680+ to **zero**, and RK4 recovered 4th-order convergence on the affected presets. (F9) **Culture is no longer absorbing** — the logistic kernel is blended with a floor `eps_C`, so culture can recover from either boundary; `cultureTarget` is also clamped to [0,1]. (F12) **Pole removed** — Michaelis–Menten debt amplification replaced by a bounded exponential with the same low-debt slope and ceiling. (F7) **`phi_doc` removed from `backfire`** — it is an exposure/incident conversion and was acting as a dimensionless culture gain, which was both a unit error and a hard parameter alias; `psi`'s default absorbs the old product. (F13) `fastEquilibriumAt` no longer clamps inside its iteration and reports convergence; `findAllEquilibria` now deduplicates equilibria that polish to the same fixed point. (F16) `expectedRegime` corrected on `eu-trap` and `neutral`, which declared `contested` while simulating `chilling`. Added `src/engine/diagnostics.test.ts` as a permanent gate suite. **Behavioural consequence, accepted rather than tuned around: only the contested baseline remains bistable.** |

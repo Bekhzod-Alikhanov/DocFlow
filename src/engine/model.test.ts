@@ -170,9 +170,27 @@ describe('model: flow accounting & signs (spec §2.3)', () => {
     expect(a.litigation_pressure).toBeGreaterThan(0.5)
   })
 
-  it('culture rate vanishes at the boundaries C=0 and C=1 (logistic form)', () => {
+  // v0.3.0 REPLACES an earlier test that asserted `dC/dt == 0` at C = 0 and C = 1.
+  // That was asserting a DEFECT: the pure logistic kernel made both boundaries exact
+  // fixed points, so once the clamp pinned culture at a bound no policy change could
+  // ever move it again (AUDIT.md F9). Culture is now recoverable, and the correct
+  // property is that motion at a boundary follows the sign of (target − C).
+  it('culture is not trapped at the boundaries: motion follows the target', () => {
     const p = defaultParams()
-    expect(derivatives({ ...baseState, C: 0 }, p).C).toBeCloseTo(0, 12)
-    expect(derivatives({ ...baseState, C: 1 }, p).C).toBeCloseTo(0, 12)
+    // Strong pro-documentation regime ⇒ target well above 0 ⇒ C must rise off 0.
+    const good = { ...p, just_culture: 1, recipient_enforcer_separation: 1 }
+    expect(derivatives({ ...baseState, C: 0, E: 0, TD: 0 }, good).C).toBeGreaterThan(0)
+
+    // Strip every source of culture support ⇒ target below 1 ⇒ C must fall off 1.
+    const bad = { ...p, just_culture: 0, recipient_enforcer_separation: 0, omega: 0 }
+    expect(derivatives({ ...baseState, C: 1 }, bad).C).toBeLessThan(0)
+  })
+
+  it('culture stays bounded: the target is clamped to the stock range', () => {
+    // Even with the reinforcement coefficients at their maxima, C must not be driven
+    // above 1 (cultureTarget is clamped, so the target can never exceed the stock's
+    // own range — in v0.2 it could reach ~7.4 against a stock capped at 1).
+    const p = { ...defaultParams(), omega: 4, just_culture: 1, recipient_enforcer_separation: 1 }
+    expect(derivatives({ ...baseState, C: 1 }, p).C).toBeLessThanOrEqual(1e-12)
   })
 })

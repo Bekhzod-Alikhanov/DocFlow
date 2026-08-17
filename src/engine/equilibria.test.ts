@@ -74,20 +74,40 @@ describe('equilibria: BISTABILITY (the signature property, spec §3.2, §9)', ()
     expect(cultureEquilibria(paramsFromPreset(PRESET_BY_ID.neutral)).length).toBeGreaterThanOrEqual(3)
   })
 
-  it('the sector presets are MONOSTABLE in their regimes', () => {
-    // Cyber → single chilling attractor near the ~5% (an estimate) documentation level.
+  // v0.3.0: this test previously asserted the cyber preset was MONOSTABLE. Closing
+  // the R1 loop (AUDIT.md F1) changed that: with realised exposure and harm feeding
+  // back into culture, cyber now carries a learning attractor as well, and settles
+  // chilling because of where it STARTS, not because no other attractor exists.
+  // That is a substantive finding, not a regression — so the test now asserts the
+  // claim that actually matters (where each preset settles) rather than a claim
+  // about attractor counts that the corrected model does not support.
+  it('the sector presets settle in their declared regimes', () => {
     const cyber = paramsFromPreset(PRESET_BY_ID.cybersecurity)
     const cyberStable = stableAttractors(cyber)
-    expect(cyberStable.length).toBe(1)
+    // The lowest attractor is the chilling one, near the ~5% (an estimate) level.
+    expect(cyberStable.length).toBeGreaterThanOrEqual(1)
     expect(cyberStable[0].C).toBeLessThan(0.3)
     expect(cyberStable[0].fdoc).toBeLessThan(0.1)
-    expect(isBistable(cyber)).toBe(false)
 
-    // Aviation & healthcare → single learning attractor.
+    // Aviation & healthcare → a learning attractor, reached from their own init.
     for (const id of ['aviation', 'healthcare'] as const) {
       const s = stableAttractors(paramsFromPreset(PRESET_BY_ID[id]))
-      expect(s.length).toBe(1)
-      expect(s[0].fdoc).toBeGreaterThan(0.7)
+      expect(s.length).toBeGreaterThanOrEqual(1)
+      expect(s[s.length - 1].fdoc).toBeGreaterThan(0.7)
+    }
+  })
+
+  it('bistability is reported, not assumed: record which presets carry two attractors', () => {
+    // Deliberately a CENSUS, not a target. v0.2 tuned omega/psi/gain "for
+    // bistability" and then presented it as demonstrated (AUDIT.md §6.1). Here we
+    // only assert the count is well-defined and log what the model actually does.
+    const census = ['cybersecurity', 'aviation', 'healthcare', 'eu-trap', 'neutral'].map((id) => {
+      const p = paramsFromPreset(PRESET_BY_ID[id])
+      return `${id}=${stableAttractors(p).length}${isBistable(p) ? ' (bistable)' : ''}`
+    })
+    console.log(`attractor census: ${census.join(', ')}`)
+    for (const id of ['cybersecurity', 'aviation', 'healthcare', 'eu-trap', 'neutral'] as const) {
+      expect(stableAttractors(paramsFromPreset(PRESET_BY_ID[id])).length).toBeGreaterThanOrEqual(1)
     }
   })
 })

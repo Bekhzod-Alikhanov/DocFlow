@@ -284,8 +284,13 @@ export const PRESETS: Preset[] = [
       id: 'eu-trap',
       name: 'EU AI Act + PLD (the structural trap)',
       blurb:
-        'Maximum documentation duty AND maximum litigation exposure, but no privilege scaffold and weak separation. The key teaching case: piling on duty + exposure without protection does not reliably reach the learning attractor.',
-      expectedRegime: 'contested',
+        'Maximum documentation duty AND maximum litigation exposure, but no privilege scaffold and weak separation. The key teaching case: piling on duty + exposure without protection does not reach the learning attractor — it settles chilling, with high exposure, even though a learning attractor exists.',
+      // `expectedRegime` is the regime this preset actually SETTLES in from its own
+      // initial state, asserted against simulation (diagnostics V11.3). It is not a
+      // claim about how many attractors exist — this preset is bistable, which the
+      // blurb and the Tipping view convey. Before v0.3.0 it said 'contested' while
+      // the model produced 'chilling', so the UI displayed both at once (AUDIT F16).
+      expectedRegime: 'chilling',
       overrides: {
         privilege_strength: 0.1,
         just_culture: 0.35,
@@ -324,8 +329,10 @@ export const PRESETS: Preset[] = [
       id: 'neutral',
       name: 'Contested baseline',
       blurb:
-        'A mid-range regime sitting inside the bistable window: moderate privilege, separation, and translation, with no sector dominating. It loads in the chilling basin but can tip to learning when culture rises.',
-      expectedRegime: 'contested',
+        'A mid-range regime sitting inside the bistable window: moderate privilege, separation, and translation, with no sector dominating. It loads in the chilling basin but can tip to learning when culture rises — same levers, two destinations.',
+      // Settles chilling from its own initial state; the preset is bistable, which is
+      // the point of it. See the eu-trap note above for why this is not 'contested'.
+      expectedRegime: 'chilling',
       overrides: {
         privilege_strength: 0.5,
         just_culture: 0.1,

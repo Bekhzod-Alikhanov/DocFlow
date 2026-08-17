@@ -91,6 +91,7 @@ export const STRUCTURAL_KEYS = [
   'sigma',
   'td_baseline',
   'delta_TD',
+  'td_k',
   'gamma',
   // exposure (§2.3)
   'phi_doc',
@@ -103,6 +104,13 @@ export const STRUCTURAL_KEYS = [
   'lambda_C',
   'a_sep',
   'a_jc_c',
+  // v0.3.0 — closing the R1 loop (see MODEL.md §9). Culture now depends on the
+  // physical stocks via realised exposure and harm, not on f_doc alone.
+  'psi_E',
+  'E_k',
+  'psi_H',
+  'h_k',
+  'eps_C',
 ] as const
 export type StructuralKey = (typeof STRUCTURAL_KEYS)[number]
 

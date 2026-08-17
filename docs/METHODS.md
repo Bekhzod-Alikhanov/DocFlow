@@ -24,8 +24,22 @@
   validated against matrices with known spectra in `linalg.test.ts`.
 - Classification: `stable` (all Re < 0), `unstable` (all Re > 0), `saddle`
   (mixed), `marginal` (Re ≈ 0). A general damped-Newton finder is also provided.
-- **Demonstrated:** two stable attractors + an unstable separatrix for the
-  contested baseline (bistability); monostable presets otherwise.
+- **Observed (v0.3.0):** the contested baseline has two stable attractors plus an
+  unstable separatrix; all seven other shipped presets are monostable.
+
+> **This is an observation, not a demonstration, and it is not independent
+> evidence for bistability.** Several coefficients were originally chosen so that
+> bistability would appear — `gain`, `threshold`, `omega`, `psi` and `a_jc_c` all
+> carried registry notes reading "Calibrated for bistability." A model tuned to
+> produce a behaviour cannot then be cited as showing it (`docs/plan/AUDIT.md`
+> §6.1). The tuning language has been removed from the registry and a CI lint
+> (`docs/plan/VALIDATION.md` V11.1) now rejects it, but the defaults themselves
+> still carry that history and no independent re-derivation has been done.
+>
+> Note also that closing the R1 loop in v0.3.0 **reduced** the number of bistable
+> presets: `eu-trap` and `cybersecurity` previously reported two attractors, one
+> of which was a duplicate root produced by an enumeration bug now fixed. That
+> correction was accepted rather than tuned around.
 
 ## 3. Bifurcation, tipping & hysteresis (spec §3.3, §3.4)
 
