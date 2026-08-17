@@ -2,7 +2,8 @@
 // src/views/Tabletop/MeterRail.test.tsx
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
-import { MeterRail, INSTITUTIONAL_LOGIC, INCIDENT_LOGIC, SHIELD_LOGIC } from './MeterRail'
+import { MeterRail } from './MeterRail'
+import { INSTITUTIONAL_LOGIC, INCIDENT_LOGIC, SHIELD_LOGIC } from './scoringLogic'
 import type { ScoringLogicEntry } from './ScoringLogicPanel'
 import { useTabletopStore } from '../../state/tabletopStore'
 import { productionIncident } from '../../lib/tabletop/scenarios/production-incident'
