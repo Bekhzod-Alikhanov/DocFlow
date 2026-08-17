@@ -69,6 +69,7 @@ export const STRUCTURAL_KEYS = [
   'w_workflow',
   'w_records',
   'w_safe',
+  'pd_sharpness',
   // incident generation (§2.3)
   'base_incident_rate',
   'alpha_td',

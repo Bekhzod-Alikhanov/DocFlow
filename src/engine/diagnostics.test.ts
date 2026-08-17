@@ -18,9 +18,10 @@ import type { State } from './types'
 import { defaultParams, defaultInitState, PARAM_SPEC_BY_ID } from './registry'
 import { paramsFromPreset, initFromPreset } from './scenario'
 import { PRESETS, PRESET_BY_ID } from './presets'
-import { derivatives, computeAux } from './model'
+import { derivatives, computeAux, softplus } from './model'
 import { integrate, simulate } from './simulate'
 import { numericalJacobian, findAllEquilibria, isBistable } from './equilibria'
+import { sweep1D } from './bifurcation'
 import { eigenvalues } from './linalg'
 
 const S = { horizon: 120, dt: 0.5, solver: 'rk4' as const }
@@ -143,6 +144,75 @@ describe('V11.3 — preset labels match simulated behaviour (AUDIT.md F16)', () 
       return pr.expectedRegime !== actual
     }).map((pr) => `${pr.id}: declared=${pr.expectedRegime}`)
     expect(mismatches).toEqual([])
+  })
+})
+
+describe('F15 — the discoverability kink, and what smoothing it actually buys', () => {
+  it('softplus matches relu away from the crossing and is smooth at it', () => {
+    const beta = 20
+    // Far from zero the two agree to within floating-point noise.
+    expect(softplus(2, beta)).toBeCloseTo(2, 6)
+    expect(softplus(-2, beta)).toBeCloseTo(0, 6)
+    // At the crossing softplus is strictly positive — the price of differentiability.
+    expect(softplus(0, beta)).toBeCloseTo(Math.LN2 / beta, 10)
+    // And it is finite in both tails (no overflow/underflow).
+    expect(Number.isFinite(softplus(1e6, beta))).toBe(true)
+    expect(Number.isFinite(softplus(-1e6, beta))).toBe(true)
+  })
+
+  it('perceived discoverability is state-independent, so no trajectory crosses the kink', () => {
+    // This is why smoothing does NOT improve integration order, contrary to the
+    // obvious reading of F15. Pin it so the claim cannot drift back.
+    const p = paramsFromPreset(PRESET_BY_ID.cybersecurity)
+    const a = computeAux({ U: 1, D: 1, TD: 1, L: 1, E: 1, C: 0.1 }, p)
+    const b = computeAux({ U: 900, D: 40, TD: 300, L: 90, E: 400, C: 0.95 }, p)
+    expect(a.perceived_discoverability).toBe(b.perceived_discoverability)
+  })
+
+  it('the discoverability weights remain inert where PD is strongly negative', () => {
+    // Softplus does not fix this: softplus' = sigmoid(beta*x), which underflows for
+    // PD << 0. Recorded as an open limitation rather than claimed as fixed.
+    const p = paramsFromPreset(PRESET_BY_ID.aviation)
+    const f = (w: number) => computeAux(defaultInitState(), { ...p, w_priv: w }).f_doc
+    expect(Math.abs(f(1.0) - f(0.1))).toBeLessThan(1e-12)
+  })
+})
+
+describe('perf guards — a slowdown should fail loudly, not as an opaque timeout', () => {
+  // CI failed twice on 5000ms timeouts after the culture loop was closed, because
+  // cultureEquilibria lost its closed-form shortcut and had to relax the fast
+  // subsystem at every grid point. These budgets are deliberately generous — CI
+  // runners are ~4x slower than a dev machine and v8 coverage adds more on top —
+  // so they catch a 5-10x regression without flaking on ordinary variance.
+  it('findAllEquilibria stays well under budget', () => {
+    const p = paramsFromPreset(PRESET_BY_ID.neutral)
+    findAllEquilibria(p) // warm the JIT; we are guarding against algorithmic blowups
+    const t0 = performance.now()
+    findAllEquilibria(p)
+    const ms = performance.now() - t0
+    console.log(`findAllEquilibria: ${ms.toFixed(1)} ms (budget 800)`)
+    expect(ms).toBeLessThan(800)
+  })
+
+  it('a 30-step lever sweep stays well under budget', () => {
+    const p = paramsFromPreset(PRESET_BY_ID.neutral)
+    const t0 = performance.now()
+    sweep1D(p, 'just_culture', { steps: 30 })
+    const ms = performance.now() - t0
+    console.log(`sweep1D(30): ${ms.toFixed(1)} ms (budget 4000)`)
+    expect(ms).toBeLessThan(4000)
+  })
+
+  it('a full deterministic run is still effectively instant', () => {
+    const p = paramsFromPreset(PRESET_BY_ID.neutral)
+    const i = initFromPreset(PRESET_BY_ID.neutral)
+    simulate(i, p, S)
+    const t0 = performance.now()
+    for (let k = 0; k < 20; k++) simulate(i, p, S)
+    const ms = (performance.now() - t0) / 20
+    console.log(`simulate(): ${ms.toFixed(2)} ms/run (budget 25)`)
+    // The UI re-runs this synchronously on every slider drag.
+    expect(ms).toBeLessThan(25)
   })
 })
 

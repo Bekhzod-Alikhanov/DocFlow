@@ -5,7 +5,7 @@
 > decision-support and structured reasoning, not a calibrated forecast. All
 > coefficients are illustrative assumptions unless separately validated.
 
-Model version: **0.2.0** (see [`src/engine/version.ts`](../src/engine/version.ts)).
+Model version: **0.3.0** (see [`src/engine/version.ts`](../src/engine/version.ts)).
 
 ## 1. Stocks
 
@@ -18,9 +18,9 @@ Model version: **0.2.0** (see [`src/engine/version.ts`](../src/engine/version.ts
 | `E` | Litigation + regulatory exposure | exposure index | >= 0 | 10 |
 | `C` | Documentation culture / psychological safety | 0-1 | [0,1] | 0.4 |
 
-`E` is an observable: it accumulates discovery and regulatory pressure, but it
-does not feed back into other stocks. The chilling feedback enters through
-`backfire`, which affects culture.
+Through v0.2, `E` was a pure observable that fed nothing. **As of v0.3.0 it closes
+the R1 loop**: realised exposure and realised harm both subtract from the culture
+target, so `dC/dt` now depends on `E`, `TD` and `L`. See §5 and §9.
 
 ## 2. Levers
 
@@ -55,7 +55,7 @@ perceived_discoverability =
 
 drive_to_document =
       a_c * C + a_jc * just_culture + a_m * mandatory_reporting
-    - a_disc * relu(perceived_discoverability)
+    - a_disc * softplus(perceived_discoverability, pd_sharpness)
 
 f_doc = sigmoid(gain * (drive_to_document - threshold))
 ```
@@ -69,7 +69,8 @@ can still suppress documentation.
 ```
 capability_factor = max(0, 1 - beta_L * L/100)
 debt_ratio = TD / TD_ref
-debt_amplification = 1 + alpha_td * (debt_ratio / (1 + debt_ratio / td_sat))
+debt_amplification = 1 + alpha_td * td_sat * (1 - exp(-debt_ratio / td_sat))
+debt_availability  = TD / (TD + td_k)
 incident_inflow = max(0, base_incident_rate * debt_amplification * capability_factor)
 
 to_D = f_doc * incident_inflow
@@ -90,6 +91,7 @@ learning_gain =
 
 remediation =
     rho * D * (L/100) * (1 + challenge_remediation_boost * effective_challenge)
+        * debt_availability
 
 d_closeout = kappa_D * D
 belated_doc = mu * U * f_doc
@@ -110,8 +112,16 @@ protection_bundle = clamp01(
   + 0.10 * recipient_enforcer_separation
 )
 
-backfire = psi * phi_doc * f_doc * (1 - protection_bundle)
+backfire = psi * f_doc * (1 - protection_bundle)
+
+exposure_chill = psi_E * (E / (E + E_k))
+harm_chill     = psi_H * (harm_events / (harm_events + h_k))
 ```
+
+`phi_doc` was removed from `backfire` in v0.3.0: it is declared `exposure/incident`
+and was acting as a dimensionless culture gain, which was both a unit error and a
+hard parameter alias (it could not be varied in `dE/dt` without moving the culture
+loop). `psi`'s default absorbs the old product.
 
 Stock equations:
 
@@ -124,10 +134,22 @@ dE/dt  = phi_doc * to_D * (1 - privilege_strength)
        + phi_harm * harm_events
        + phi_pld * pld_penalty * to_U
        - theta_E * E
-dC/dt  = lambda_C * (a_jc_c * just_culture
+culture_target = clamp01(a_jc_c * just_culture
        + a_sep * recipient_enforcer_separation
-       + safety_wins - backfire - C) * C * (1 - C)
+       + safety_wins - backfire
+       - exposure_chill - harm_chill)
+
+kernel = eps_C + (1 - eps_C) * 4 * C * (1 - C)
+
+dC/dt  = lambda_C * (culture_target - C) * kernel
 ```
+
+Two v0.3.0 changes are load-bearing here. The `exposure_chill` and `harm_chill`
+terms are what make `dC/dt` depend on the physical stocks — before them the culture
+equation was autonomous and the R1 loop did not exist in the code. The `eps_C`
+kernel floor removes the absorbing states at `C = 0` and `C = 1`: with the pure
+logistic kernel, culture that reached a boundary could never be moved again by any
+policy change.
 
 ## 6. Derived Institutional Readouts
 
@@ -229,4 +251,4 @@ The test suite verifies these qualitative targets:
 |---|---|---|
 | 2026-06-21 | 0.1.0 | Initial model. Added saturating debt-to-incident amplification, natural debt retirement, and fraction-driven culture reinforcement to make the system well-posed and bistable. |
 | 2026-06-22 | 0.2.0 | Added institutional design levers and derived readouts while keeping the six-stock core. Added workflow protection, original-records boundary, safe harbor / non-admission, effective challenge, near-miss tier, and intermediary capacity. Updated presets for aviation, PSQIA, pharma, SR 11-7, nuclear, cyber, and EU AI Act + PLD. |
-| 2026-08-17 | 0.3.0 | **Correctness release following the Phase 0 audit (`docs/plan/AUDIT.md`).** (F1) **Closed the R1 loop** — `cultureTarget` now subtracts saturating terms in realised exposure and harm (`psi_E`, `E_k`, `psi_H`, `h_k`), so `dC/dt` depends on the physical stocks; through v0.2 it was an autonomous scalar equation and the documented loop did not exist. (F2) **`dTD/dt` reformulated** — remediation is gated by `TD/(TD+td_k)`, making `TD = 0` an invariant of the equations; clamp events across all presets went from 680+ to **zero**, and RK4 recovered 4th-order convergence on the affected presets. (F9) **Culture is no longer absorbing** — the logistic kernel is blended with a floor `eps_C`, so culture can recover from either boundary; `cultureTarget` is also clamped to [0,1]. (F12) **Pole removed** — Michaelis–Menten debt amplification replaced by a bounded exponential with the same low-debt slope and ceiling. (F7) **`phi_doc` removed from `backfire`** — it is an exposure/incident conversion and was acting as a dimensionless culture gain, which was both a unit error and a hard parameter alias; `psi`'s default absorbs the old product. (F13) `fastEquilibriumAt` no longer clamps inside its iteration and reports convergence; `findAllEquilibria` now deduplicates equilibria that polish to the same fixed point. (F16) `expectedRegime` corrected on `eu-trap` and `neutral`, which declared `contested` while simulating `chilling`. Added `src/engine/diagnostics.test.ts` as a permanent gate suite. **Behavioural consequence, accepted rather than tuned around: only the contested baseline remains bistable.** |
+| 2026-08-17 | 0.3.0 | **Correctness release following the Phase 0 audit (`docs/plan/AUDIT.md`).** (F1) **Closed the R1 loop** — `cultureTarget` now subtracts saturating terms in realised exposure and harm (`psi_E`, `E_k`, `psi_H`, `h_k`), so `dC/dt` depends on the physical stocks; through v0.2 it was an autonomous scalar equation and the documented loop did not exist. (F2) **`dTD/dt` reformulated** — remediation is gated by `TD/(TD+td_k)`, making `TD = 0` an invariant of the equations; clamp events across all presets went from 680+ to **zero**, and RK4 recovered 4th-order convergence on the affected presets. (F9) **Culture is no longer absorbing** — the logistic kernel is blended with a floor `eps_C`, so culture can recover from either boundary; `cultureTarget` is also clamped to [0,1]. (F12) **Pole removed** — Michaelis–Menten debt amplification replaced by a bounded exponential with the same low-debt slope and ceiling. (F7) **`phi_doc` removed from `backfire`** — it is an exposure/incident conversion and was acting as a dimensionless culture gain, which was both a unit error and a hard parameter alias; `psi`'s default absorbs the old product. (F13) `fastEquilibriumAt` no longer clamps inside its iteration and reports convergence; `findAllEquilibria` now deduplicates equilibria that polish to the same fixed point. (F16) `expectedRegime` corrected on `eu-trap` and `neutral`, which declared `contested` while simulating `chilling`. Added `src/engine/diagnostics.test.ts` as a permanent gate suite. **Behavioural consequence, accepted rather than tuned around: only the contested baseline remains bistable.** Follow-ups in the same release: (F15) `relu` → `softplus` on perceived discoverability, which removes a C⁰ corner from lever sweeps and sensitivity — note the audit overstated this, since PD is state-independent and the kink never affected integration order; (F14) `hysteresis` now measures a per-step equilibrium residual and refuses to report path dependence when the ramp has not relaxed, with the UI withholding the overlay and saying why; a 5×5 Newton solve for the fast subsystem (`findAllEquilibria` 139 ms → 11 ms) after the slow-manifold rewrite pushed CI past its test timeout; and wall-clock perf guards so a future slowdown fails loudly instead of as an opaque timeout. |

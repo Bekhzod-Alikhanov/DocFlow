@@ -6,6 +6,8 @@
 import { describe, it, expect } from 'vitest'
 // Vite `?raw` import — keeps this test free of Node type dependencies.
 import modelSource from './model.ts?raw'
+import modelDoc from '../../docs/MODEL.md?raw'
+import { MODEL_VERSION } from './version'
 import {
   READOUT_WEIGHT_SPECS,
   READOUT_WEIGHTS_BY_GROUP,
@@ -80,6 +82,36 @@ describe('readout weights: normalisation', () => {
     for (const blend of [PROTECTION_BUNDLE, POLICY_SCAFFOLD, ACCOUNTABILITY_LEGITIMACY]) {
       for (const k of Object.keys(blend)) expect(levers.has(k)).toBe(true)
     }
+  })
+})
+
+describe('doc drift: MODEL.md must track the implementation', () => {
+  // MODEL.md calls itself "Source of truth for the math". The audit's central
+  // finding (F1) was that the narrative described a causal architecture the
+  // equations did not have. These checks make the specific claim of THIS release
+  // — that the docs match the code — machine-verifiable rather than aspirational.
+  it('documents the v0.3.0 terms that are actually in the model', () => {
+    for (const token of [
+      'softplus', // relu was replaced
+      'exposure_chill', // R1 closure
+      'harm_chill',
+      'debt_availability', // TD = 0 invariance
+      'eps_C', // anti-absorbing kernel
+      'culture_target',
+    ]) {
+      expect(modelDoc, `MODEL.md should document \`${token}\``).toContain(token)
+    }
+  })
+
+  it('no longer shows equations the code has removed', () => {
+    // The old forms, which would now be actively misleading.
+    expect(modelDoc).not.toContain('psi * phi_doc * f_doc')
+    expect(modelDoc).not.toContain('a_disc * relu(')
+    expect(modelDoc).not.toContain('- C) * C * (1 - C)')
+  })
+
+  it('states the model version that the engine actually reports', () => {
+    expect(modelDoc).toContain(`**${MODEL_VERSION}**`)
   })
 })
 

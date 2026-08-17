@@ -135,13 +135,26 @@ export function TippingView() {
           sweep1.error ? (
             <ErrorBox msg={sweep1.error} />
           ) : sweep1.result ? (
-            <BifurcationChart
-              sweep={sweep1.result}
-              hysteresis={hyst.result}
-              leverLabel={leverLabel(leverId)}
-              metricLabel={METRIC_LABEL[metric]}
-              onPick={(v) => setParam(leverId, v)}
-            />
+            <>
+              <BifurcationChart
+                sweep={sweep1.result}
+                hysteresis={hyst.result?.relaxed === false ? null : hyst.result}
+                leverLabel={leverLabel(leverId)}
+                metricLabel={METRIC_LABEL[metric]}
+                onPick={(v) => setParam(leverId, v)}
+              />
+              {showHyst && hyst.result?.relaxed === false && (
+                <p
+                  role="status"
+                  className="mt-2 rounded-md border border-estimate/40 bg-estimate-soft px-3 py-2 text-[11px] leading-snug text-estimate"
+                >
+                  <strong>Hysteresis overlay withheld.</strong> The ramp did not reach equilibrium at every step
+                  (largest residual {hyst.result.maxResidual.toExponential(1)}), so a gap between the up and down
+                  branches would reflect transient lag rather than path dependence. Increase the horizon in
+                  settings. Critical slowing down near a fold makes this common.
+                </p>
+              )}
+            </>
           ) : (
             <ChartSkeleton label="Computing bifurcation…" />
           )

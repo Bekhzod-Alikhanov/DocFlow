@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { sweep1D, sweep2D, hysteresis, metricOfEquilibrium } from './bifurcation'
-import { paramsFromPreset } from './scenario'
+import { paramsFromPreset, initFromPreset } from './scenario'
 import { PRESET_BY_ID } from './presets'
 
 const contested = paramsFromPreset(PRESET_BY_ID.neutral)
@@ -32,9 +32,46 @@ describe('bifurcation: hysteresis (spec §3.4)', () => {
   it('ramping just_culture up then down traces a hysteresis loop', () => {
     const h = hysteresis(contested, 'just_culture', { steps: 24, metric: 'f_doc', settings: { horizon: 200, dt: 0.5, solver: 'rk4' } })
     expect(h.hasHysteresis).toBe(true)
+    // v0.3.0: the claim is only meaningful if every ramp step actually settled.
+    expect(h.relaxed).toBe(true)
+    expect(h.maxResidual).toBeLessThan(1e-4)
     // The up branch starts chilling; the down branch returns learning at the same low jc.
     expect(h.up[0].metric).toBeLessThan(0.3)
     expect(h.down[0].metric).toBeGreaterThan(0.7)
+  })
+
+  // AUDIT.md F14. The routine previously could not tell genuine bistability from
+  // transient lag: it reported hysteresis whenever the two branches differed, with
+  // no check that either had relaxed. This is the discriminating case — at a short
+  // horizon the BRANCH GAP IS ESSENTIALLY UNCHANGED (~0.998 vs ~0.999), so the gap
+  // alone carries no information. Only the residual distinguishes them.
+  it('refuses to report hysteresis when the ramp has not relaxed', () => {
+    const opts = { steps: 20, metric: 'f_doc' as const, init: initFromPreset(PRESET_BY_ID.neutral) }
+
+    const settled = hysteresis(contested, 'just_culture', {
+      ...opts,
+      settings: { horizon: 600, dt: 0.5, solver: 'rk4' },
+    })
+    const starved = hysteresis(contested, 'just_culture', {
+      ...opts,
+      settings: { horizon: 20, dt: 0.5, solver: 'rk4' },
+    })
+
+    const gapOf = (h: typeof settled) =>
+      Math.max(...h.up.map((u, k) => Math.abs(u.metric - h.down[k].metric)))
+
+    // Both show a large branch gap...
+    expect(gapOf(settled)).toBeGreaterThan(0.9)
+    expect(gapOf(starved)).toBeGreaterThan(0.9)
+
+    // ...but only the settled run has actually reached equilibrium.
+    expect(settled.relaxed).toBe(true)
+    expect(starved.relaxed).toBe(false)
+    expect(starved.maxResidual).toBeGreaterThan(settled.maxResidual * 100)
+
+    // So only the settled run may claim path dependence.
+    expect(settled.hasHysteresis).toBe(true)
+    expect(starved.hasHysteresis).toBe(false)
   })
 })
 

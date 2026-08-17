@@ -40,6 +40,42 @@ export function relu(x: number): number {
   return x > 0 ? x : 0
 }
 
+/**
+ * Smooth (C¹) approximation to `relu`: softplus_β(x) = ln(1 + e^{βx}) / β.
+ *
+ * v0.3.0, partially addressing AUDIT.md F15. Be precise about what this does and
+ * does not buy, because the obvious justification for it is wrong:
+ *
+ * WHAT IT DOES NOT FIX. `perceivedDiscoverability` is a function of PARAMETERS
+ * ONLY — it does not read the state — so PD is constant along any trajectory and
+ * an integrating solution can never cross the kink. The kink therefore does not
+ * degrade RK4's order, and it does not corrupt the STATE Jacobian used for
+ * stability classification. Measured: observed order is unchanged by this switch
+ * (cyber 2.26, contested 2.12, aviation 4.06 before and after).
+ *
+ * WHAT IT DOES FIX. The kink lives in *parameter* space, which is exactly the
+ * space the v0.3 analysis machinery works in. Lever sweeps, bifurcation
+ * continuation, tornado swings and Sobol/PRCC all differentiate or interpolate
+ * across PD = 0, and a C⁰ point there produces a spurious corner in every one of
+ * those curves.
+ *
+ * WHAT IT ALSO DOES NOT FIX. The nine discoverability weights are still
+ * effectively inert wherever PD ≪ 0 (six of eight presets): softplus′ = σ(βx), so
+ * at aviation's PD = −2.67 with β = 20 the gradient is ~1e-23. That inertness is a
+ * property of the one-sided penalty design, not of the kink, and it remains open.
+ *
+ * Cost: a small positive bias near the crossing, softplus_β(0) = ln2/β = 0.035 at
+ * the default β = 20. No shipped preset sits near PD = 0, so measured preset
+ * behaviour is unchanged to four decimal places.
+ */
+export function softplus(x: number, beta: number): number {
+  const z = beta * x
+  // Guard both tails: exp overflows above ~709 and underflows below ~-745.
+  if (z > 30) return x // ln(1+e^z)/β → x
+  if (z < -30) return Math.exp(z) / beta // → 0⁺
+  return Math.log1p(Math.exp(z)) / beta
+}
+
 function clamp01(x: number): number {
   return Math.min(1, Math.max(0, x))
 }
@@ -49,7 +85,10 @@ function clamp01(x: number): number {
  * and the PLD adverse-inference regime raise it; privilege, recipient–enforcer
  * separation, translation architecture, workflow protection, original-records
  * boundaries, and safe-harbor/non-admission rules lower it. Only its positive
- * part chills the drive to document (via relu in `driveToDocument`).
+ * part chills the drive to document (via softplus in `driveToDocument`).
+ *
+ * NOTE: this reads parameters only, never state, so PD is constant along a
+ * trajectory. Several properties elsewhere depend on that fact — see `softplus`.
  */
 export function perceivedDiscoverability(p: Params): number {
   return (
@@ -69,7 +108,12 @@ export function perceivedDiscoverability(p: Params): number {
  * and mandatory reporting add directly; positive perceived discoverability subtracts.
  */
 export function driveToDocument(C: number, pd: number, p: Params): number {
-  return p.a_c * C + p.a_jc * p.just_culture + p.a_m * p.mandatory_reporting - p.a_disc * relu(pd)
+  return (
+    p.a_c * C +
+    p.a_jc * p.just_culture +
+    p.a_m * p.mandatory_reporting -
+    p.a_disc * softplus(pd, p.pd_sharpness)
+  )
 }
 
 /** Documentation fraction f_doc ∈ (0,1): the central nonlinearity (spec §2.2). */
@@ -197,11 +241,11 @@ export function computeAux(s: State, p: Params): Auxiliaries {
       SAFE_TO_REPORT.original_records_boundary * p.original_records_boundary +
       SAFE_TO_REPORT.just_culture * p.just_culture +
       SAFE_TO_REPORT.intermediary_capacity * p.intermediary_capacity -
-      SAFE_TO_REPORT.discoverability_penalty * relu(perceived_discoverability),
+      SAFE_TO_REPORT.discoverability_penalty * softplus(perceived_discoverability, p.pd_sharpness),
   )
   const learning_yield = incident_inflow > 1e-9 ? learning_gain / incident_inflow : 0
   const litigation_pressure = clamp01(
-    LITIGATION_PRESSURE.discoverability * relu(perceived_discoverability) +
+    LITIGATION_PRESSURE.discoverability * softplus(perceived_discoverability, p.pd_sharpness) +
       LITIGATION_PRESSURE.pld_penalty * p.pld_penalty +
       LITIGATION_PRESSURE.mandatory_reporting * p.mandatory_reporting +
       LITIGATION_PRESSURE.unsafe_to_report * (1 - safe_to_report_score) +

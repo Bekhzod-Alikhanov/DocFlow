@@ -10,7 +10,9 @@
  *    (numerical continuation) → path dependence in the bistable window.
  */
 import type { State, Params, LeverKey, SimSettings } from './types'
+import { STOCK_KEYS } from './types'
 import { defaultInitState, defaultSettings } from './registry'
+import { derivatives } from './model'
 import { integrate, summarize, type Regime } from './simulate'
 import { findAllEquilibria, type Equilibrium } from './equilibria'
 
@@ -126,8 +128,22 @@ export interface HysteresisResult {
   metric: Metric
   up: { value: number; metric: number }[]
   down: { value: number; metric: number }[]
-  /** True if up and down branches differ meaningfully (path dependence). */
+  /**
+   * True only if the up and down branches differ meaningfully **and** every ramp
+   * step actually relaxed. See `relaxed` — a gap between branches means nothing
+   * unless both were allowed to settle.
+   */
   hasHysteresis: boolean
+  /**
+   * v0.3.0 (AUDIT.md F14). False if any ramp step finished with a residual above
+   * tolerance, i.e. the horizon was too short for the state to settle. Without
+   * this the routine could not tell genuine bistability from transient lag, and
+   * `hasHysteresis` fired on either. Critical slowing down near a fold makes this
+   * a live risk, not a theoretical one.
+   */
+  relaxed: boolean
+  /** Largest per-step equilibrium residual observed across both branches. */
+  maxResidual: number
 }
 
 /**
@@ -148,6 +164,18 @@ export function hysteresis(
   const up: { value: number; metric: number }[] = []
   const down: { value: number; metric: number }[] = []
 
+  // v0.3.0: track how far each ramp step is from equilibrium. `relaxed` is the
+  // guard that separates genuine bistability from incomplete relaxation.
+  let maxResidual = 0
+  const RELAX_TOL = 1e-4
+  const noteResidual = (s: State, p: Params) => {
+    const d = derivatives(s, p)
+    // Scale-relative so a large TD does not dominate a 0–1 culture residual.
+    let r = 0
+    for (const k of STOCK_KEYS) r = Math.max(r, Math.abs(d[k]) / (1 + Math.abs(s[k])))
+    maxResidual = Math.max(maxResidual, r)
+  }
+
   let state = opts.init ?? defaultInitState()
   for (let i = 0; i <= steps; i++) {
     const value = min + ((max - min) * i) / steps
@@ -155,6 +183,7 @@ export function hysteresis(
     const traj = integrate(state, p, settings)
     const s = summarize(traj)
     state = { ...s.finalState }
+    noteResidual(state, p)
     up.push({ value, metric: metricOfState(s.finalState, s.finalFdoc, metric) })
   }
   for (let i = steps; i >= 0; i--) {
@@ -163,11 +192,29 @@ export function hysteresis(
     const traj = integrate(state, p, settings)
     const s = summarize(traj)
     state = { ...s.finalState }
+    noteResidual(state, p)
     down.unshift({ value, metric: metricOfState(s.finalState, s.finalFdoc, metric) })
   }
 
   let maxGap = 0
   for (let i = 0; i <= steps; i++) maxGap = Math.max(maxGap, Math.abs(up[i].metric - down[i].metric))
-  const range = Math.max(...up.map((u) => u.metric), ...down.map((d) => d.metric)) - Math.min(...up.map((u) => u.metric), ...down.map((d) => d.metric))
-  return { leverId, metric, up, down, hasHysteresis: range > 0 && maxGap > 0.1 * Math.max(range, 1e-9) }
+  const range =
+    Math.max(...up.map((u) => u.metric), ...down.map((d) => d.metric)) -
+    Math.min(...up.map((u) => u.metric), ...down.map((d) => d.metric))
+
+  const relaxed = maxResidual < RELAX_TOL
+  const branchesDiffer = range > 0 && maxGap > 0.1 * Math.max(range, 1e-9)
+
+  return {
+    leverId,
+    metric,
+    up,
+    down,
+    // Both conditions required. A gap between branches that were never allowed to
+    // settle is transient lag, not path dependence, and must not be reported as
+    // hysteresis (AUDIT.md F14).
+    hasHysteresis: branchesDiffer && relaxed,
+    relaxed,
+    maxResidual,
+  }
 }
