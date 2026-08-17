@@ -25,8 +25,8 @@ import { PROVENANCE_TIER_LABEL, type ProvenanceTier } from './types'
 const EXPECTED: Record<ProvenanceTier, number> = {
   T1: 0,
   T2: 0,
-  T3: 8,
-  T4: 54,
+  T3: 13,
+  T4: 70,
 }
 
 function census(): Record<ProvenanceTier, number> {

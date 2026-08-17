@@ -30,7 +30,11 @@ describe('bifurcation: 1-parameter sweep / fold (spec §3.3)', () => {
 
 describe('bifurcation: hysteresis (spec §3.4)', () => {
   it('ramping just_culture up then down traces a hysteresis loop', () => {
-    const h = hysteresis(contested, 'just_culture', { steps: 24, metric: 'f_doc', settings: { horizon: 200, dt: 0.5, solver: 'rk4' } })
+    // v0.3.0 M3: horizon raised 200 -> 900 because the factual-record channel has a
+    // ~50-month time constant (delta_R1 = 0.02), so 200 months does not relax it.
+    // The F14 guard caught this rather than reporting transient lag as hysteresis —
+    // which is exactly what it exists to do.
+    const h = hysteresis(contested, 'just_culture', { steps: 24, metric: 'f_doc', settings: { horizon: 900, dt: 0.5, solver: 'rk4' } })
     expect(h.hasHysteresis).toBe(true)
     // v0.3.0: the claim is only meaningful if every ramp step actually settled.
     expect(h.relaxed).toBe(true)

@@ -25,18 +25,18 @@ import { sweep1D } from './bifurcation'
 import { eigenvalues } from './linalg'
 
 const S = { horizon: 120, dt: 0.5, solver: 'rk4' as const }
-const base: State = { U: 20, D: 5, TD: 10, L: 30, E: 10, C: 0.4 }
+const base: State = { U: 20, R1: 5, R2: 0, R3: 0, TD: 10, L: 30, E_pl: 10, E_reg: 0, E_fid: 0, C: 0.4 }
 
 // ---------------------------------------------------------------------------
 // GATES — these encode the audit's worst findings as pass/fail conditions.
 // ---------------------------------------------------------------------------
 
 describe('V1.3 — the R1 culture loop is closed (AUDIT.md F1)', () => {
-  it('dC/dt depends on realised exposure E', () => {
+  it('dC/dt depends on realised exposure', () => {
     const p = defaultParams()
     const J = numericalJacobian(base, p)
     const iC = STOCK_KEYS.indexOf('C')
-    const iE = STOCK_KEYS.indexOf('E')
+    const iE = STOCK_KEYS.indexOf('E_pl')
     // In v0.2 the culture row of the Jacobian was [0,0,0,0,0,∂C].
     expect(Math.abs(J[iC][iE])).toBeGreaterThan(1e-9)
   })
@@ -69,7 +69,18 @@ describe('V4.2 — non-negativity is structural, not clamped (AUDIT.md F2)', () 
         const spec = PARAM_SPEC_BY_ID[k]
         p[k] = spec.min + rand() * (spec.max - spec.min)
       }
-      const s: State = { U: rand() * 100, D: rand() * 100, TD: 0, L: rand() * 100, E: rand() * 200, C: rand() }
+      const s: State = {
+        U: rand() * 100,
+        R1: rand() * 100,
+        R2: rand() * 20,
+        R3: rand() * 20,
+        TD: 0,
+        L: rand() * 100,
+        E_pl: rand() * 200,
+        E_reg: rand() * 200,
+        E_fid: rand() * 100,
+        C: rand(),
+      }
       worst = Math.min(worst, derivatives(s, p).TD)
     }
     expect(worst).toBeGreaterThanOrEqual(-1e-12)
@@ -81,7 +92,7 @@ describe('V4.4 — culture has no absorbing states (AUDIT.md F9)', () => {
     const p = defaultParams()
     p.just_culture = 1
     p.recipient_enforcer_separation = 1
-    const d = derivatives({ ...base, C: 0, E: 0, TD: 0 }, p).C
+    const d = derivatives({ ...base, C: 0, E_pl: 0, E_reg: 0, E_fid: 0, TD: 0 }, p).C
     expect(d).toBeGreaterThan(1e-6)
   })
 
@@ -129,7 +140,7 @@ describe('V10.2 — no dead levers (AUDIT.md §5.1)', () => {
         Math.abs(hi.finalFdoc - lo.finalFdoc),
         Math.abs(hi.finalState.TD - lo.finalState.TD),
         Math.abs(hi.finalState.L - lo.finalState.L),
-        Math.abs(hi.finalState.E - lo.finalState.E),
+        Math.abs(hi.finalState.E_pl - lo.finalState.E_pl),
       )
       if (span < 1e-9) dead.push(lev)
     }
@@ -164,8 +175,8 @@ describe('F15 — the discoverability kink, and what smoothing it actually buys'
     // This is why smoothing does NOT improve integration order, contrary to the
     // obvious reading of F15. Pin it so the claim cannot drift back.
     const p = paramsFromPreset(PRESET_BY_ID.cybersecurity)
-    const a = computeAux({ U: 1, D: 1, TD: 1, L: 1, E: 1, C: 0.1 }, p)
-    const b = computeAux({ U: 900, D: 40, TD: 300, L: 90, E: 400, C: 0.95 }, p)
+    const a = computeAux({ U: 1, R1: 1, R2: 0, R3: 0, TD: 1, L: 1, E_pl: 1, E_reg: 0, E_fid: 0, C: 0.1 }, p)
+    const b = computeAux({ U: 900, R1: 40, R2: 0, R3: 0, TD: 300, L: 90, E_pl: 400, E_reg: 0, E_fid: 0, C: 0.95 }, p)
     expect(a.perceived_discoverability).toBe(b.perceived_discoverability)
   })
 
@@ -231,7 +242,7 @@ describe('census (logged for CI visibility)', () => {
       console.log(
         `${pr.id.padEnd(26)} regime=${s.regime.padEnd(10)} fdoc=${s.finalFdoc.toFixed(4)} ` +
           `TD=${s.finalState.TD.toFixed(1).padStart(7)} L=${s.finalState.L.toFixed(1).padStart(5)} ` +
-          `E=${s.finalState.E.toFixed(1).padStart(7)} C=${s.finalState.C.toFixed(4)} ` +
+          `E=${s.finalState.E_pl.toFixed(1).padStart(7)} C=${s.finalState.C.toFixed(4)} ` +
           `eq=${eqs.length} stable=${stable} bistable=${isBistable(p)}`,
       )
       expect(Number.isFinite(s.finalFdoc)).toBe(true)

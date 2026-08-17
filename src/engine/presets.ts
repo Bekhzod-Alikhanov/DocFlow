@@ -127,7 +127,7 @@ export const PRESETS: Preset[] = [
         near_miss_tier: 0.05,
         intermediary_capacity: 0.0,
       },
-      init: { C: 0.35, U: 25, D: 4, TD: 14, L: 25, E: 12 },
+      init: { C: 0.35, U: 25, R1: 4, TD: 14, L: 25, E_pl: 12 },
       citations: [
         {
           text: 'Schwarcz, Wolff & Woods, How Privilege Undermines Cybersecurity, 36 Harv. J.L. & Tech. 421 (2023).',
@@ -221,7 +221,7 @@ export const PRESETS: Preset[] = [
       near_miss_tier: 0.45,
       intermediary_capacity: 0.78,
     },
-    init: { C: 0.55, U: 16, D: 8, TD: 9, L: 35, E: 12 },
+    init: { C: 0.55, U: 16, R1: 8, TD: 9, L: 35, E_pl: 12 },
     citations: [
       { text: '21 C.F.R. Secs. 803.16, 314.80(k), 600.80(k) - adverse-event reports are not necessarily admissions of causation or fault.' },
       { text: 'FDCA Secs. 301, 303; United States v. Park, 421 U.S. 658 (1975) - non-reporting can carry criminal exposure for responsible officers.' },
@@ -247,7 +247,7 @@ export const PRESETS: Preset[] = [
       near_miss_tier: 0.35,
       intermediary_capacity: 0.45,
     },
-    init: { C: 0.52, U: 18, D: 8, TD: 12, L: 36, E: 12 },
+    init: { C: 0.52, U: 18, R1: 8, TD: 12, L: 36, E_pl: 12 },
     citations: [
       { text: 'Federal Reserve/OCC SR 11-7 - model development, independent validation, governance, model inventory, and effective challenge.' },
       { text: '12 C.F.R. Part 261; 12 U.S.C. Sec. 1828(x); bank-examiner privilege - supervisory confidentiality is regulator-held, not firm-owned.' },
@@ -273,7 +273,7 @@ export const PRESETS: Preset[] = [
       near_miss_tier: 0.75,
       intermediary_capacity: 0.95,
     },
-    init: { C: 0.58, U: 18, D: 9, TD: 10, L: 38, E: 11 },
+    init: { C: 0.58, U: 18, R1: 9, TD: 10, L: 38, E_pl: 11 },
     citations: [
       { text: '10 C.F.R. Secs. 50.72-50.73 - NRC prompt notifications and Licensee Event Reports provide the public mandatory floor.' },
       { text: 'Critical Mass Energy Project v. NRC, 975 F.2d 871 (D.C. Cir. 1992) - INPO peer-learning materials protected through FOIA Exemption 4.' },

@@ -11,7 +11,32 @@
 // ---------------------------------------------------------------------------
 
 /** Fixed ordering of the six stocks; used for vectors, Jacobians, and display. */
-export const STOCK_KEYS = ['U', 'D', 'TD', 'L', 'E', 'C'] as const
+/**
+ * v0.3.0 M3: the state vector now carries the paper's three-channel architecture
+ * and three opposing exposure gradients.
+ *
+ * `D` (documented incidents) is RETIRED: it conflated three artifacts with
+ * materially different evidentiary status, which is why v0.2 could not express the
+ * valve, the tripwire, or the Rule 407 hedge, and why the protection levers all
+ * collapsed onto a single pathway (AUDIT.md F6).
+ *
+ * `E` (lumped exposure) is RETIRED: the paper's central claim is that exposure
+ * gradients OPPOSE one another — candour raises products-liability exposure through
+ * discovery while suppression raises regulatory and fiduciary exposure — and a
+ * single lumped stock that fed nothing could not represent that at all.
+ */
+export const STOCK_KEYS = [
+  'U',
+  'R1',
+  'R2',
+  'R3',
+  'TD',
+  'L',
+  'E_pl',
+  'E_reg',
+  'E_fid',
+  'C',
+] as const
 export type StockKey = (typeof STOCK_KEYS)[number]
 
 /** The system state: one number per stock. */
@@ -105,6 +130,28 @@ export const STRUCTURAL_KEYS = [
   'lambda_C',
   'a_sep',
   'a_jc_c',
+  // v0.3.0 M3 — three channels, tripwire, decomposed exposure
+  'g_trip',
+  'tau_review',
+  'sev_k',
+  'kappa_2',
+  'delta_R1',
+  'delta_R2',
+  'delta_R3',
+  'rate_23',
+  'rate_13',
+  'c_rec_exp',
+  'disc_prob',
+  'xi_2',
+  'c_harm_exp',
+  'rate_harm',
+  'xi_duty',
+  'xi_pld',
+  'xi_board',
+  'bv_k',
+  'v_pl',
+  'v_reg',
+  'v_fid',
   // v0.3.0 — closing the R1 loop (see MODEL.md §9). Culture now depends on the
   // physical stocks via realised exposure and harm, not on f_doc alone.
   'psi_E',
@@ -240,6 +287,22 @@ export interface Auxiliaries {
   /** v0.3.0: R1 return arrows — realised exposure and harm chilling culture. */
   exposure_chill: number
   harm_chill: number
+  /** v0.3.0 M3: tripwire, channel routing and decomposed exposure flows. */
+  severity: number
+  trip: number
+  to_R1: number
+  to_R2: number
+  to_R3: number
+  privilege_survival: number
+  harm_rate: number
+  board_visibility: number
+  pl_from_records: number
+  pl_from_analysis: number
+  pl_from_harm: number
+  reg_from_duty: number
+  reg_from_pld: number
+  fid_from_blindness: number
+  E_tot: number
   near_miss_signal: number
   private_ordering_gap: number
   accountability_legitimacy: number
@@ -267,6 +330,21 @@ export const AUX_KEYS = [
   'backfire',
   'exposure_chill',
   'harm_chill',
+  'severity',
+  'trip',
+  'to_R1',
+  'to_R2',
+  'to_R3',
+  'privilege_survival',
+  'harm_rate',
+  'board_visibility',
+  'pl_from_records',
+  'pl_from_analysis',
+  'pl_from_harm',
+  'reg_from_duty',
+  'reg_from_pld',
+  'fid_from_blindness',
+  'E_tot',
   'near_miss_signal',
   'private_ordering_gap',
   'accountability_legitimacy',

@@ -132,7 +132,7 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   // closes the R1 loop (AUDIT.md F1). The chill terms are computed here rather than
   // inside the derivative so they are observable: the causal-loop view scores loop
   // dominance from them, and they can be charted.
-  const { U, D, TD, L, E, C } = s
+  const { U, R1, R2, R3, TD, L, E_pl, E_reg, E_fid, C } = s
 
   const perceived_discoverability = perceivedDiscoverability(p)
   const drive_to_document = driveToDocument(C, perceived_discoverability, p)
@@ -155,8 +155,16 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   const debtAmplification = 1 + p.alpha_td * p.td_sat * (1 - Math.exp(-debtRatio / p.td_sat))
   const incident_inflow = Math.max(0, p.base_incident_rate * debtAmplification * capabilityFactor)
 
-  /** Fraction of debt actually available to act on; → 0 as TD → 0. */
-  const debtAvailability = TD / (TD + p.td_k)
+  /**
+   * Fraction of debt actually available to act on; → 0 as TD → 0.
+   *
+   * The `TD > 0` guard is load-bearing, not defensive. Without it the Michaelis
+   * form returns a value ABOVE 1 for TD < −td_k (e.g. 1.37 at TD = −7.4), which
+   * scales remediation *up* in a region where there is no debt to remediate — and
+   * that admits a spurious negative-debt equilibrium. The v0.3.0 reliability gate
+   * caught exactly that: the learning attractor was resolving at TD = −7.4.
+   */
+  const debtAvailability = TD > 0 ? TD / (TD + p.td_k) : 0
 
   const to_D = f_doc * incident_inflow
   const to_U = (1 - f_doc) * incident_inflow
@@ -178,8 +186,10 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   // enforced by a clamp that fired on >83% of steps in the learning presets and
   // degraded RK4 to first order (AUDIT.md F2, F11).
   const remediation =
-    p.rho * D * (L / 100) * (1 + p.challenge_remediation_boost * p.effective_challenge) * debtAvailability
-  const d_closeout = p.kappa_D * D
+    p.rho * R3 * (L / 100) * (1 + p.challenge_remediation_boost * p.effective_challenge) * debtAvailability
+  // Channel Three closes out its own work orders; the old `d_closeout` was the
+  // closeout of the retired lumped `D` stock.
+  const d_closeout = p.delta_R3 * R3
 
   const belated_doc = p.mu * U * f_doc
   const u_to_debt = p.sigma * U
@@ -208,9 +218,46 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   // (AUDIT.md F7). psi's default absorbs the old product; see the registry note.
   const backfire = p.psi * f_doc * (1 - protectionBundle)
 
+  // --- v0.3.0 M3: tripwire and channel routing ---------------------------
+  //
+  // Severity is harm normalised onto 0-1 so the pre-committed threshold has a
+  // scale-free quantity to compare against. The tripwire is what makes entry to
+  // Channel Two a deliberate, preplanned legal step rather than a post-hoc one —
+  // which is the whole basis of the paper's privilege argument.
+  const severity = harm_events / (harm_events + p.sev_k)
+  const trip = sigmoid(p.g_trip * (severity - p.tau_review))
+
+  // Channel One is written REGARDLESS of legal posture: it is ordinary-course
+  // telemetry, discoverable by design. Channel Two exists only when the tripwire
+  // fires. Channel Three receives from Two (scaled by surviving privilege, since
+  // leakage limits what can safely be transmitted) and, for routine fixes, from One.
+  const to_R1 = to_D + belated_doc
+  const to_R2 = trip * to_D * p.kappa_2
+  const privilege_survival = clamp01(p.privilege_strength)
+  const to_R3 = R2 * p.rate_23 * privilege_survival + R1 * p.rate_13
+
+  // --- v0.3.0 M3: three opposing exposure gradients ----------------------
+  //
+  // This sign structure is the paper's core claim, and v0.2 could not express it:
+  //   E_pl  RISES with candour   (discovery of the record; unprotected analysis)
+  //   E_reg RISES with suppression (unmet Art. 73 duty; PLD Art. 9(1) presumption)
+  //   E_fid RISES with suppression (Caremark: the board cannot see what was not written)
+  const harm_rate = harm_events * p.rate_harm
+  const board_visibility = R1 / (R1 + p.bv_k)
+
+  const pl_from_records = p.c_rec_exp * R1 * p.disc_prob
+  const pl_from_analysis = (1 - privilege_survival) * p.xi_2 * R2
+  const pl_from_harm = p.c_harm_exp * harm_rate
+
+  // Undocumented incidents are exactly the ones a reporting duty was not met on.
+  const reg_from_duty = p.xi_duty * p.mandatory_reporting * to_U
+  const reg_from_pld = p.xi_pld * p.pld_penalty * to_U
+  const fid_from_blindness = p.xi_board * (1 - board_visibility) * harm_rate
+
   // The two return arrows of the R1 suppression spiral. Saturating so that
   // unbounded exposure or harm cannot drive the culture target arbitrarily negative.
-  const exposure_chill = p.psi_E * (E / (E + p.E_k))
+  const E_tot = p.v_pl * E_pl + p.v_reg * E_reg + p.v_fid * E_fid
+  const exposure_chill = p.psi_E * (E_tot / (E_tot + p.E_k))
   const harm_chill = p.psi_H * (harm_events / (harm_events + p.h_k))
 
   // The unweighted mean asserts that all seven private-ordering levers are equally
@@ -270,6 +317,21 @@ export function computeAux(s: State, p: Params): Auxiliaries {
     backfire,
     exposure_chill,
     harm_chill,
+    severity,
+    trip,
+    to_R1,
+    to_R2,
+    to_R3,
+    privilege_survival,
+    harm_rate,
+    board_visibility,
+    pl_from_records,
+    pl_from_analysis,
+    pl_from_harm,
+    reg_from_duty,
+    reg_from_pld,
+    fid_from_blindness,
+    E_tot,
     near_miss_signal,
     private_ordering_gap,
     accountability_legitimacy,
@@ -286,17 +348,19 @@ export function computeAux(s: State, p: Params): Auxiliaries {
  */
 export function derivativesFromAux(s: State, p: Params, a: Auxiliaries): State {
   const dU = a.to_U - a.belated_doc - a.u_to_debt
-  const dD = a.to_D + a.belated_doc - a.d_closeout
-  // REFINEMENT (MODEL.md): added −delta_TD·TD natural debt retirement (refactoring,
-  // deprecation, system replacement that happens independent of incident learning).
-  // The spec omitted it; without it the chilling regime has no finite TD equilibrium.
+
+  // Three channels with distinct evidentiary status (ADR/0002).
+  const dR1 = a.to_R1 - p.delta_R1 * s.R1
+  const dR2 = a.to_R2 - p.delta_R2 * s.R2
+  const dR3 = a.to_R3 - p.delta_R3 * s.R3
+
   const dTD = a.u_to_debt + p.td_baseline - a.remediation - p.delta_TD * s.TD
   const dL = a.learning_gain - p.delta_L * s.L
-  const dE =
-    p.phi_doc * a.to_D * (1 - p.privilege_strength) +
-    p.phi_harm * a.harm_events +
-    p.phi_pld * p.pld_penalty * a.to_U -
-    p.theta_E * s.E
+
+  // Opposing gradients (ADR/0003). Shared decay: exposure of every kind settles.
+  const dE_pl = a.pl_from_records + a.pl_from_analysis + a.pl_from_harm - p.theta_E * s.E_pl
+  const dE_reg = a.reg_from_duty + a.reg_from_pld - p.theta_E * s.E_reg
+  const dE_fid = a.fid_from_blindness - p.theta_E * s.E_fid
 
   // --- Culture (v0.3.0: the R1 loop is now actually closed) ---------------------
   //
@@ -326,7 +390,7 @@ export function derivativesFromAux(s: State, p: Params, a: Auxiliaries): State {
   const kernel = p.eps_C + (1 - p.eps_C) * 4 * s.C * (1 - s.C)
   const dC = p.lambda_C * (cultureTarget - s.C) * kernel
 
-  return { U: dU, D: dD, TD: dTD, L: dL, E: dE, C: dC }
+  return { U: dU, R1: dR1, R2: dR2, R3: dR3, TD: dTD, L: dL, E_pl: dE_pl, E_reg: dE_reg, E_fid: dE_fid, C: dC }
 }
 
 /** Convenience: derivatives with aux computed internally. */

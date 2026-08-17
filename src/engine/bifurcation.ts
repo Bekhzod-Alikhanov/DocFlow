@@ -16,15 +16,17 @@ import { derivatives } from './model'
 import { integrate, summarize, type Regime } from './simulate'
 import { findAllEquilibria, type Equilibrium } from './equilibria'
 
-export type Metric = 'f_doc' | 'TD' | 'L' | 'C' | 'E' | 'U' | 'D'
+export type Metric = 'f_doc' | 'TD' | 'L' | 'C' | 'E_tot' | 'E_pl' | 'E_reg' | 'E_fid' | 'U' | 'R1' | 'R2' | 'R3'
 
 export function metricOfEquilibrium(eq: Equilibrium, metric: Metric): number {
   if (metric === 'f_doc') return eq.fdoc
+  if (metric === 'E_tot') return eq.eTot
   return eq.state[metric]
 }
 
-function metricOfState(s: State, fdoc: number, metric: Metric): number {
+function metricOfState(s: State, fdoc: number, metric: Metric, eTot: number): number {
   if (metric === 'f_doc') return fdoc
+  if (metric === 'E_tot') return eTot
   return s[metric]
 }
 
@@ -114,7 +116,7 @@ export function sweep2D(
     for (let i = 0; i < nx; i++) {
       const p = { ...params, [xId]: xs[i], [yId]: ys[j] }
       const summary = summarize(integrate(init, p, settings))
-      zr.push(metricOfState(summary.finalState, summary.finalFdoc, metric))
+      zr.push(metricOfState(summary.finalState, summary.finalFdoc, metric, summary.finalETot))
       rr.push(summary.regime)
     }
     z.push(zr)
@@ -184,7 +186,7 @@ export function hysteresis(
     const s = summarize(traj)
     state = { ...s.finalState }
     noteResidual(state, p)
-    up.push({ value, metric: metricOfState(s.finalState, s.finalFdoc, metric) })
+    up.push({ value, metric: metricOfState(s.finalState, s.finalFdoc, metric, s.finalETot) })
   }
   for (let i = steps; i >= 0; i--) {
     const value = min + ((max - min) * i) / steps
@@ -193,7 +195,7 @@ export function hysteresis(
     const s = summarize(traj)
     state = { ...s.finalState }
     noteResidual(state, p)
-    down.unshift({ value, metric: metricOfState(s.finalState, s.finalFdoc, metric) })
+    down.unshift({ value, metric: metricOfState(s.finalState, s.finalFdoc, metric, s.finalETot) })
   }
 
   let maxGap = 0

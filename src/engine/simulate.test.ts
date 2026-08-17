@@ -49,7 +49,11 @@ describe('simulate: behavior reproduction — R1 and R2 are both reachable (spec
   it('the EU AI Act + PLD trap does NOT reach the learning attractor, with high exposure', () => {
     const { summary } = simulate(initFromPreset(PRESET_BY_ID['eu-trap']), paramsFromPreset(PRESET_BY_ID['eu-trap']), LONG)
     expect(summary.regime).not.toBe('learning')
-    expect(summary.finalState.E).toBeGreaterThan(50) // duty+exposure without privilege ⇒ exposure piles up
+    // v0.3.0 M3: the EU trap's signature is now expressible as the specific channel
+    // it loads — REGULATORY exposure from maximum duty and PLD pressure with no
+    // protective scaffold. v0.2 could only say "exposure went up" in aggregate.
+    expect(summary.finalExposure.reg).toBeGreaterThan(30)
+    expect(summary.finalExposure.reg).toBeGreaterThan(summary.finalExposure.pl)
   })
 
   it('the Contested baseline is path-dependent: low initial culture → chilling, high → learning', () => {

@@ -18,16 +18,24 @@ const METRIC_OPTS: { value: Metric; label: string }[] = [
   { value: 'TD', label: 'Technical debt' },
   { value: 'L', label: 'Learning' },
   { value: 'C', label: 'Culture' },
-  { value: 'E', label: 'Exposure' },
+  { value: 'E_tot', label: 'Total exposure' },
+  { value: 'E_pl', label: 'Exposure — products liability' },
+  { value: 'E_reg', label: 'Exposure — regulatory' },
+  { value: 'E_fid', label: 'Exposure — fiduciary' },
 ]
 const METRIC_LABEL: Record<Metric, string> = {
   f_doc: 'Documentation fraction',
   TD: 'Technical debt',
   L: 'Learning',
   C: 'Culture',
-  E: 'Exposure',
+  E_tot: 'Total exposure',
+  E_pl: 'Exposure — products liability',
+  E_reg: 'Exposure — regulatory',
+  E_fid: 'Exposure — fiduciary',
   U: 'Undocumented',
-  D: 'Documented',
+  R1: 'Channel One — factual',
+  R2: 'Channel Two — privileged',
+  R3: 'Channel Three — remediation',
 }
 const leverLabel = (k: LeverKey) => PARAM_SPEC_BY_ID[k].label
 

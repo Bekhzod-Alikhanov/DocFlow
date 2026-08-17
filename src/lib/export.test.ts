@@ -33,7 +33,7 @@ describe('export', () => {
     const lines = csv.split('\n')
     expect(lines[0]).toBe(`# ${NO_FORECAST_LINE}`)
     const header = lines.find((l) => l.startsWith('t,'))!
-    expect(header).toBe('t,U,D,TD,L,E,C,f_doc,harm_events')
+    expect(header).toBe('t,U,R1,R2,R3,TD,L,E_pl,E_reg,E_fid,C,f_doc,harm_events')
     // One data row per timestep.
     const dataRows = lines.filter((l) => /^[0-9]/.test(l))
     expect(dataRows.length).toBe(c.trajectory.t.length)

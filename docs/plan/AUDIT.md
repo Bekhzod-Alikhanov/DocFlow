@@ -23,10 +23,10 @@ executable gate · 🟡 = materially improved, not closed · ⬜ = open. Everyth
 | **F1** | **The advertised R1 chilling loop is not implemented.** `dC/dt` depends only on `C` and parameters — not on `TD`, `E`, `harm_events`, or `L`. The 6-D "system dynamics" model is a **1-D autonomous culture equation driving a 5-D slave cascade**. | **Critical** | ✅ v0.3.0 — `psi_E`/`psi_H` chill terms; gate V1.3 |
 | **F2** | **The "learning attractor" is a clamp artifact.** `TD` is pinned at its lower bound on >83% of steps in all five learning presets, while `diverged` reports `false`. | **Critical** | ✅ v0.3.0 — `dTD/dt` gated by `TD/(TD+td_k)`; clamps 680+ → **0**; gates V4.2, V5.3. Also a distinct **`saturated`** flag with `saturatedFraction`, surfaced in the headline readout, so boundary residence can never again read as healthy. |
 | **F3** | **Zero of 55 registered parameters is empirically anchored.** All 55 are `illustrative-assumption`. The one named calibration target (`f_doc ≈ 0.05`) is **missed by ~45%** (actual 0.0721). | **Critical** | ⬜ Open — and inherent. See `CALIBRATION.md`; expected T1 census remains 0 |
-| **F4** | **Five presets are dynamically indistinguishable** — aviation, healthcare, pharma, SR 11-7, nuclear all reach exactly `C = 1.0000`, `f_doc = 1.0000`. Zero discriminative power among institutional designs. | **Critical** | 🟡 v0.3.0 — now differ on `TD`/`L`/`E`; `f_doc` still saturates at 1.0. Full fix needs the three-channel split (M3) |
+| **F4** | **Five presets are dynamically indistinguishable** — aviation, healthcare, pharma, SR 11-7, nuclear all reach exactly `C = 1.0000`, `f_doc = 1.0000`. Zero discriminative power among institutional designs. | **Critical** | 🟡 v0.3.0 M3 — they now differ across `R1` (113–120), `R3` (45–48), `TD`, `L` and all three exposure channels. `f_doc` still saturates at 1.0, so discrimination comes from the channels rather than the headline fraction. |
 | **F5** | **Bistability is a tuned target, not a finding**, and holds in only 2 of 8 presets (not at registry defaults). Six coefficients carry registry notes saying so. | **High** | 🟡 v0.3.0 — tuning language removed from the registry; `METHODS.md` now says "Observed," not "Demonstrated." Defaults still carry the history |
 | **F6** | **Five levers enter the documentation pathway through one scalar** → exact structural non-identifiability. Three levers have *identically zero* effect on `f_doc` at baseline. | **High** | 🟡 v0.3.0 — dead levers 3 → **0**; pairs at \|r\|>0.999 went 7/36 → 3/42. The single-scalar collapse itself needs the three-channel split (M3) |
-| **F7** | **At least five dimensional inconsistencies**, worst: `phi_doc` (`exposure/incident`) reused as a gain in the culture equation; `harm_events` (a level) used as a flow. | **High** | 🟡 v0.3.0 — the `phi_doc` alias is removed. `harm_events` level-vs-rate and the `TD`/incident conversion remain |
+| **F7** | **At least five dimensional inconsistencies**, worst: `phi_doc` (`exposure/incident`) reused as a gain in the culture equation; `harm_events` (a level) used as a flow. | **High** | ✅ v0.3.0 M3 — `phi_doc` alias removed; `rate_harm` now converts the harm LEVEL to a rate before it enters `dE/dt`; `c_rec_exp` and `c_harm_exp` name the conversions that were previously folded invisibly into `phi_doc`/`phi_harm`. |
 | **F8** | **~34 unregistered magic coefficients** drive the six headline institutional readouts. True parameter count ≈ **89**, not 55. | **High** | 🟡 v0.3.0 — the **29 in `computeAux`** are extracted to `src/engine/readouts.ts` with metadata, rendered in the Assumptions panel, and guarded by a source-scan test. **20 remain unregistered in the tabletop engine** (`boundary.ts` 15, `score.ts` 3, `outcome.ts` 2) — the source scan covers `computeAux` only. All registered ones are also still outside the swept space. *Corrected 2026-08-17: this row previously read ✅, which overstated the fix.* |
 | **F9** | **`C = 0` and `C = 1` are absorbing states.** Culture becomes permanently irreversible; five presets terminate exactly there. Advertised hysteresis is one-way. | **High** | ✅ v0.3.0 — `eps_C` kernel floor; gate V4.4 |
 | **F10** | **Monte Carlo `uniform` (the app default) discards the scenario.** The band drawn around every preset is the `[0,1]¹²` hypercube band. | **High** — user-visible | ✅ v0.3.0 — new `scenario` distribution is the UI default; band labelled in the Workbench |
@@ -41,6 +41,29 @@ executable gate · 🟡 = materially improved, not closed · ⬜ = open. Everyth
 | — | **Not stiff.** Worst ratio 87.6; `dt·max|Re| ≤ 0.385` vs RK4 limit ≈ 2.79. | *No defect — recorded because checked* | — |
 
 ### Behavioural consequences of the v0.3.0 fixes, recorded rather than tuned around
+
+**M3 (three channels + exposure decomposition):**
+
+- **The opposing gradients are now visible and behave as the paper claims.** Chilling
+  presets carry `E_reg` 12.8–43.5 and `E_fid` 18.9–23.7; the five learning presets carry
+  **exactly 0.0 on both**. `eu-trap` loads the most regulatory exposure of any preset
+  (43.5), which is precisely its teaching point — maximum duty and PLD pressure with no
+  protective scaffold.
+- **`E_pl` does *not* discriminate well** (14–17 across every preset). Chilling reaches it
+  through realised harm, learning through discovery of a large factual record. Two
+  different routes to a similar level. Recorded as a limitation, not smoothed away.
+- **A spurious negative-debt equilibrium was found and fixed.** The learning attractor was
+  resolving at `TD = −7.4`, because `debtAvailability = TD/(TD+td_k)` returns **1.37** for
+  `TD < −td_k` — scaling remediation *up* where there is no debt to remediate. The M2
+  reliability gate caught it; `debtAvailability` is now `0` for `TD ≤ 0`. Worth noting
+  that a defect introduced in M3 was caught by a guard added in M2.
+- **`R2` is small in every preset** (0.02–0.17), for defensible reasons: in the chilling
+  regime almost nothing is documented so almost nothing reaches the privileged channel,
+  and in the learning regime harm is low so the tripwire rarely fires.
+- **The hysteresis horizon had to rise 200 → 900 months**, because `R1` has a ~50-month
+  time constant. The F14 guard reported the ramp as unrelaxed rather than reporting
+  transient lag as path dependence.
+
 
 - **Only the contested baseline remains bistable.** `cybersecurity` and `eu-trap` previously reported
   two attractors; those were **duplicate roots** from the enumeration bug, not second attractors.

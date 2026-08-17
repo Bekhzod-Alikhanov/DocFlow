@@ -1,34 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { loopActivity, dominantLoop } from './loops'
 import type { Auxiliaries } from '../engine'
+import { AUX_KEYS } from '../engine'
 
 function aux(over: Partial<Auxiliaries>): Auxiliaries {
-  const zero: Auxiliaries = {
-    perceived_discoverability: 0,
-    drive_to_document: 0,
-    f_doc: 0,
-    incident_inflow: 0,
-    to_D: 0,
-    to_U: 0,
-    translation_layer_efficiency: 0,
-    learning_gain: 0,
-    remediation: 0,
-    d_closeout: 0,
-    belated_doc: 0,
-    u_to_debt: 0,
-    harm_events: 0,
-    safety_wins: 0,
-    backfire: 0,
-    exposure_chill: 0,
-    harm_chill: 0,
-    near_miss_signal: 0,
-    private_ordering_gap: 0,
-    accountability_legitimacy: 0,
-    safe_to_report_score: 0,
-    learning_yield: 0,
-    litigation_pressure: 0,
-    policy_scaffold_dependency: 0,
-  }
+  // Built from AUX_KEYS so adding an auxiliary to the model cannot silently
+  // leave this fixture stale.
+  const zero = Object.fromEntries(AUX_KEYS.map((k) => [k, 0])) as unknown as Auxiliaries
   return { ...zero, ...over }
 }
 

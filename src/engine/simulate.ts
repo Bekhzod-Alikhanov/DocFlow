@@ -121,6 +121,10 @@ export interface SummaryMetrics {
   finalState: State
   finalFdoc: number
   finalHarm: number
+  /** Weighted total exposure at the end of the run (v0.3.0 M3). */
+  finalETot: number
+  /** Per-channel exposure at the end of the run. */
+  finalExposure: { pl: number; reg: number; fid: number }
   cumulativeExposure: number
   cumulativeHarm: number
   /** First time f_doc crosses 0.5 relative to its starting side, or null. */
@@ -154,8 +158,14 @@ export function summarize(traj: Trajectory): SummaryMetrics {
   const finalState = traj.states[last]
   const finalFdoc = traj.aux[last].f_doc
   const finalHarm = traj.aux[last].harm_events
+  const finalETot = traj.aux[last].E_tot
+  const finalExposure = {
+    pl: finalState.E_pl,
+    reg: finalState.E_reg,
+    fid: finalState.E_fid,
+  }
 
-  const exposureSeries = traj.states.map((s) => s.E)
+  const exposureSeries = traj.aux.map((a) => a.E_tot)
   const harmSeries = traj.aux.map((a) => a.harm_events)
   const cumulativeExposure = trapz(exposureSeries, traj.t)
   const cumulativeHarm = trapz(harmSeries, traj.t)
@@ -179,6 +189,8 @@ export function summarize(traj: Trajectory): SummaryMetrics {
     finalState,
     finalFdoc,
     finalHarm,
+    finalETot,
+    finalExposure,
     cumulativeExposure,
     cumulativeHarm,
     timeToTip,

@@ -11,7 +11,9 @@ import {
 import { defaultParams } from './registry'
 import type { State } from './types'
 
-const baseState: State = { U: 20, D: 5, TD: 10, L: 30, E: 10, C: 0.4 }
+// v0.3.0 M3: R3 > 0 because remediation is now driven by the remediation
+// channel rather than the retired lumped `D` stock.
+const baseState: State = { U: 20, R1: 5, R2: 2, R3: 4, TD: 10, L: 30, E_pl: 10, E_reg: 3, E_fid: 1, C: 0.4 }
 
 describe('model: primitives', () => {
   it('sigmoid is monotonic, bounded (0,1), symmetric at 0', () => {
@@ -115,15 +117,45 @@ describe('model: flow accounting & signs (spec §2.3)', () => {
 
   it('derivatives return one rate per stock and are finite', () => {
     const d = derivatives(baseState, defaultParams())
-    expect(Object.keys(d).sort()).toEqual(['C', 'D', 'E', 'L', 'TD', 'U'])
+    expect(Object.keys(d).sort()).toEqual(
+      ['C', 'E_fid', 'E_pl', 'E_reg', 'L', 'R1', 'R2', 'R3', 'TD', 'U'],
+    )
     for (const v of Object.values(d)) expect(Number.isFinite(v)).toBe(true)
   })
 
-  it('exposure rises with documenting when privilege is weak, and is protected when strong', () => {
-    const p = defaultParams()
-    const weak = derivatives(baseState, { ...p, privilege_strength: 0 }).E
-    const strong = derivatives(baseState, { ...p, privilege_strength: 1 }).E
+  // v0.3.0 M3: exposure is decomposed, and this test now checks the OPPOSING
+  // gradients that are the paper's core claim (ADR/0003) rather than a single
+  // lumped quantity.
+  it('products-liability exposure falls with privilege; regulatory exposure does not', () => {
+    const p = { ...defaultParams(), privilege_strength: 0 }
+    const withR2: State = { ...baseState, R2: 8 }
+    const weak = derivatives(withR2, { ...p, privilege_strength: 0 }).E_pl
+    const strong = derivatives(withR2, { ...p, privilege_strength: 1 }).E_pl
+    // Privilege shields the ANALYSIS channel, so PL exposure drops.
     expect(weak).toBeGreaterThan(strong)
+    // Privilege also touches regulatory exposure, but only INDIRECTLY: it lowers
+    // perceived discoverability, which raises f_doc, which leaves fewer
+    // undocumented incidents for a reporting duty to bite on. That indirect path is
+    // an order of magnitude weaker than the direct shielding of Channel Two.
+    const regWeak = derivatives(withR2, { ...p, privilege_strength: 0 }).E_reg
+    const regStrong = derivatives(withR2, { ...p, privilege_strength: 1 }).E_reg
+    const plEffect = Math.abs(weak - strong)
+    const regEffect = Math.abs(regWeak - regStrong)
+    expect(regEffect).toBeLessThan(plEffect * 0.1)
+  })
+
+  it('the three exposure channels move in OPPOSING directions with candour', () => {
+    const p = defaultParams()
+    // Suppressed: little factual record, many undocumented incidents.
+    const suppressed: State = { ...baseState, R1: 1, R2: 0, C: 0.05 }
+    // Candid: a full factual record.
+    const candid: State = { ...baseState, R1: 60, R2: 0, C: 0.95 }
+    const sup = derivatives(suppressed, p)
+    const can = derivatives(candid, p)
+    // Candour RAISES products-liability exposure (discovery of the record) ...
+    expect(can.E_pl).toBeGreaterThan(sup.E_pl)
+    // ... and LOWERS fiduciary exposure (the board can finally see).
+    expect(can.E_fid).toBeLessThan(sup.E_fid)
   })
 
   it('stronger safe harbor lowers backfire and litigation pressure', () => {
@@ -149,7 +181,7 @@ describe('model: flow accounting & signs (spec §2.3)', () => {
     const weak = computeAux(baseState, weakP)
     const strong = computeAux(baseState, strongP)
     expect(strong.learning_gain).toBeGreaterThan(weak.learning_gain)
-    expect(derivatives(baseState, strongP).E).toBeCloseTo(derivatives(baseState, weakP).E, 10)
+    expect(derivatives(baseState, strongP).E_pl).toBeCloseTo(derivatives(baseState, weakP).E_pl, 10)
   })
 
   it('mandatory reporting without protection can still chill documentation', () => {
@@ -179,7 +211,7 @@ describe('model: flow accounting & signs (spec §2.3)', () => {
     const p = defaultParams()
     // Strong pro-documentation regime ⇒ target well above 0 ⇒ C must rise off 0.
     const good = { ...p, just_culture: 1, recipient_enforcer_separation: 1 }
-    expect(derivatives({ ...baseState, C: 0, E: 0, TD: 0 }, good).C).toBeGreaterThan(0)
+    expect(derivatives({ ...baseState, C: 0, E_pl: 0, E_reg: 0, E_fid: 0, TD: 0 }, good).C).toBeGreaterThan(0)
 
     // Strip every source of culture support ⇒ target below 1 ⇒ C must fall off 1.
     const bad = { ...p, just_culture: 0, recipient_enforcer_separation: 0, omega: 0 }

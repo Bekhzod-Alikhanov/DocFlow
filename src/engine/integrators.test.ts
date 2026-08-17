@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { STOCK_KEYS } from './types'
 import { stepEuler, stepRK4, clampState, RUNAWAY_BOUND } from './integrators'
 import { integrate } from './simulate'
 import { defaultParams } from './registry'
@@ -6,7 +7,7 @@ import { paramsFromPreset, initFromPreset } from './scenario'
 import { PRESET_BY_ID } from './presets'
 import type { State, SimSettings } from './types'
 
-const s0: State = { U: 20, D: 5, TD: 10, L: 30, E: 10, C: 0.4 }
+const s0: State = { U: 20, R1: 5, R2: 0, R3: 0, TD: 10, L: 30, E_pl: 10, E_reg: 0, E_fid: 0, C: 0.4 }
 
 describe('integrators: step functions', () => {
   it('Euler and RK4 produce finite next states', () => {
@@ -20,7 +21,7 @@ describe('integrators: step functions', () => {
     const p = defaultParams()
     const e = stepEuler(s0, p, 1e-4)
     const r = stepRK4(s0, p, 1e-4)
-    for (const k of ['U', 'D', 'TD', 'L', 'E', 'C'] as const) {
+    for (const k of STOCK_KEYS) {
       expect(r[k]).toBeCloseTo(e[k], 6)
     }
   })
@@ -28,7 +29,7 @@ describe('integrators: step functions', () => {
 
 describe('integrators: clamping never hides divergence (spec §2.1, §4.5)', () => {
   it('clamps negative stocks to 0 and records min events', () => {
-    const { state, events } = clampState({ U: -5, D: 5, TD: 10, L: 30, E: 10, C: 0.4 }, 3, 1.5)
+    const { state, events } = clampState({ U: -5, R1: 5, R2: 0, R3: 0, TD: 10, L: 30, E_pl: 10, E_reg: 0, E_fid: 0, C: 0.4 }, 3, 1.5)
     expect(state.U).toBe(0)
     expect(events.some((e) => e.stock === 'U' && e.kind === 'min')).toBe(true)
   })

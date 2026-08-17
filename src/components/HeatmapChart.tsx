@@ -29,7 +29,7 @@ export function HeatmapChart({
         z: sweep.z,
         type: 'heatmap',
         colorscale: 'RdYlGn',
-        reversescale: sweep.metric === 'TD' || sweep.metric === 'E', // high debt/exposure = bad = red
+        reversescale: sweep.metric === 'TD' || sweep.metric.startsWith('E'), // high debt/exposure = bad = red
         colorbar: { title: { text: metricLabel }, thickness: 12 },
         hovertemplate: `${xLabel}: %{x:.2f}<br>${yLabel}: %{y:.2f}<br>${metricLabel}: %{z:.3f}<extra></extra>`,
       } as Data,

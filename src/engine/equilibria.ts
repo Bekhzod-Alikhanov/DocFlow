@@ -13,7 +13,7 @@
  */
 import type { State, Params } from './types'
 import { STOCK_KEYS } from './types'
-import { STOCK_SPECS } from './registry'
+import { STOCK_SPECS, defaultInitState } from './registry'
 import { derivatives, computeAux } from './model'
 import { eigenvalues, maxRealPart, solveLinear, type Complex, type Matrix } from './linalg'
 
@@ -29,6 +29,8 @@ export interface Equilibrium {
   stability: StabilityClass
   /** Culture value (convenient discriminator between attractors). */
   C: number
+  /** Weighted total exposure at this equilibrium (v0.3.0 M3). */
+  eTot: number
 }
 
 const N = STOCK_KEYS.length
@@ -120,6 +122,7 @@ export function findEquilibrium(
     maxRealPart: maxRealPart(eigs),
     stability: classifyStability(eigs),
     C: state.C,
+    eTot: computeAux(state, p).E_tot,
   }
 }
 
@@ -237,7 +240,7 @@ export interface FastEquilibriumOpts {
  * ~6 s, which is too slow for the Tipping view.
  */
 /** The five stocks that relax fast relative to culture. */
-const FAST_KEYS = ['U', 'D', 'TD', 'L', 'E'] as const
+const FAST_KEYS = ['U', 'R1', 'R2', 'R3', 'TD', 'L', 'E_pl', 'E_reg', 'E_fid'] as const
 
 /**
  * Newton solve for the fast subsystem with C pinned. Quadratically convergent, so
@@ -265,8 +268,9 @@ function fastEquilibriumNewton(C: number, p: Params, guess: State, tol: number):
     if (norm(f) < tol) return toState(cur)
 
     // 5×5 numerical Jacobian by central differences.
-    const J: number[][] = Array.from({ length: 5 }, () => new Array<number>(5).fill(0))
-    for (let j = 0; j < 5; j++) {
+    const n = FAST_KEYS.length
+    const J: number[][] = Array.from({ length: n }, () => new Array<number>(n).fill(0))
+    for (let j = 0; j < n; j++) {
       const h = 1e-6 * Math.max(1, Math.abs(cur[j]))
       const up = cur.slice()
       const dn = cur.slice()
@@ -274,7 +278,7 @@ function fastEquilibriumNewton(C: number, p: Params, guess: State, tol: number):
       dn[j] -= h
       const fu = residual(up)
       const fd = residual(dn)
-      for (let i = 0; i < 5; i++) J[i][j] = (fu[i] - fd[i]) / (2 * h)
+      for (let i = 0; i < n; i++) J[i][j] = (fu[i] - fd[i]) / (2 * h)
     }
 
     const step = solveLinear(
@@ -308,7 +312,7 @@ export function fastEquilibriumDetail(
 ): FastEquilibriumResult {
   const tol = opts.tol ?? 1e-9
   const maxIter = opts.maxIter ?? 4000
-  const seed: State = guess ? { ...guess, C } : { U: 20, D: 5, TD: 10, L: 30, E: 10, C }
+  const seed: State = guess ? { ...guess, C } : { ...defaultInitState(), C }
 
   // Fast path. Newton is tried first and succeeds on the overwhelming majority of
   // points, especially when warm-started along a continuation scan.
@@ -327,15 +331,9 @@ export function fastEquilibriumDetail(
     // Unclamped: the equations now keep the non-negative stocks non-negative on
     // their own (TD = 0 is invariant via debtAvailability), so a clamp here would
     // only hide a genuine out-of-domain equilibrium.
-    const next: State = {
-      U: s.U + dt * d.U,
-      D: s.D + dt * d.D,
-      TD: s.TD + dt * d.TD,
-      L: s.L + dt * d.L,
-      E: s.E + dt * d.E,
-      C,
-    }
-    if (!Number.isFinite(next.U + next.D + next.TD + next.L + next.E)) break
+    const next = { C } as State
+    for (const k of FAST_KEYS) next[k] = s[k] + dt * d[k]
+    if (!FAST_KEYS.every((k) => Number.isFinite(next[k]))) break
     let delta = 0
     for (const k of STOCK_KEYS) delta += Math.abs(next[k] - s[k])
     s = next
@@ -390,6 +388,7 @@ function refineAt(C: number, fast: State, p: Params): Equilibrium {
     maxRealPart: maxRealPart(eigs),
     stability: classifyStability(eigs),
     C,
+    eTot: computeAux(state, p).E_tot,
   }
 }
 
