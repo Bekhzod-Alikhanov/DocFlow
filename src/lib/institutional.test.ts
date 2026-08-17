@@ -46,7 +46,7 @@ describe('institutional decision recommendations', () => {
   it('separates private controls from statutory asks when private-ordering gap is high', () => {
     const params = {
       ...defaultParams(),
-      privilege_strength: 1,
+      precommit: 1,
       workflow_protection: 1,
       safe_harbor_non_admission: 1,
       original_records_boundary: 0,

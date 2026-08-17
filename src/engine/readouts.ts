@@ -72,7 +72,7 @@ const SRC_PLAYBOOK = 'AI Incident Playbook §2.2 (organizational conditions); or
 
 /** Gates `backfire`: how much each mechanism protects a candid record. */
 export const PROTECTION_BUNDLE = {
-  privilege_strength: 0.36,
+  privilege_survival: 0.36,
   workflow_protection: 0.22,
   safe_harbor_non_admission: 0.18,
   original_records_boundary: 0.14,
@@ -94,7 +94,7 @@ export const PRIVATE_ORDERING = {
 export const POLICY_SCAFFOLD = {
   safe_harbor_non_admission: 0.42,
   workflow_protection: 0.34,
-  privilege_strength: 0.24,
+  privilege_survival: 0.24,
 } as const
 
 /** Whether the accountability story would survive outside scrutiny. */
@@ -108,7 +108,7 @@ export const ACCOUNTABILITY_LEGITIMACY = {
 
 /** Whether an individual engineer can rationally expect recording to be safe. */
 export const SAFE_TO_REPORT = {
-  privilege_strength: 0.22,
+  privilege_survival: 0.22,
   recipient_enforcer_separation: 0.18,
   workflow_protection: 0.18,
   safe_harbor_non_admission: 0.16,
@@ -143,7 +143,7 @@ function spec(
 
 export const READOUT_WEIGHT_SPECS: ReadoutWeightSpec[] = [
   // protection bundle
-  spec('protection_bundle', 'privilege_strength', 'Privilege strength', PROTECTION_BUNDLE.privilege_strength, 'Largest single share: a credible privilege architecture is the strongest protection against a candid record being weaponised.', SRC_PLAYBOOK),
+  spec('protection_bundle', 'privilege_survival', 'Privilege strength', PROTECTION_BUNDLE.privilege_survival, 'Largest single share: a credible privilege architecture is the strongest protection against a candid record being weaponised.', SRC_PLAYBOOK),
   spec('protection_bundle', 'workflow_protection', 'Workflow protection', PROTECTION_BUNDLE.workflow_protection, 'PSQIA-style protection of a defined evaluation process rather than a single document.', SRC_PLAYBOOK),
   spec('protection_bundle', 'safe_harbor_non_admission', 'Safe harbor / non-admission', PROTECTION_BUNDLE.safe_harbor_non_admission, 'Reporting treated as a signal rather than an admission of fault.'),
   spec('protection_bundle', 'original_records_boundary', 'Original-records boundary', PROTECTION_BUNDLE.original_records_boundary, 'A clean factual/analytic split makes the protected channel defensible.'),
@@ -159,7 +159,7 @@ export const READOUT_WEIGHT_SPECS: ReadoutWeightSpec[] = [
   // policy scaffold
   spec('policy_scaffold', 'safe_harbor_non_admission', 'Safe harbor / non-admission', POLICY_SCAFFOLD.safe_harbor_non_admission, 'The most statute-dependent of the three: non-admission rules require legislation.', SRC_PLAYBOOK),
   spec('policy_scaffold', 'workflow_protection', 'Workflow protection', POLICY_SCAFFOLD.workflow_protection, 'PSQIA-style workflow privilege exists only where a statute creates it.'),
-  spec('policy_scaffold', 'privilege_strength', 'Privilege strength', POLICY_SCAFFOLD.privilege_strength, 'Least statute-dependent: attorney-client privilege exists at common law, though its application to incident forensics is contested.'),
+  spec('policy_scaffold', 'privilege_survival', 'Privilege strength', POLICY_SCAFFOLD.privilege_survival, 'Least statute-dependent: attorney-client privilege exists at common law, though its application to incident forensics is contested.'),
 
   // accountability legitimacy
   spec('accountability_legitimacy', 'original_records_boundary', 'Original-records boundary', ACCOUNTABILITY_LEGITIMACY.original_records_boundary, 'Largest share: a preserved discoverable factual core is what makes the arrangement legitimate rather than concealment.', SRC_PLAYBOOK),
@@ -169,7 +169,7 @@ export const READOUT_WEIGHT_SPECS: ReadoutWeightSpec[] = [
   spec('accountability_legitimacy', 'near_miss_tier', 'Near-miss tier', ACCOUNTABILITY_LEGITIMACY.near_miss_tier, 'Retaining weak signals is evidence of good faith.'),
 
   // safe to report
-  spec('safe_to_report', 'privilege_strength', 'Privilege strength', SAFE_TO_REPORT.privilege_strength, 'What the individual engineer can rationally expect to be protected.'),
+  spec('safe_to_report', 'privilege_survival', 'Privilege strength', SAFE_TO_REPORT.privilege_survival, 'What the individual engineer can rationally expect to be protected.'),
   spec('safe_to_report', 'recipient_enforcer_separation', 'Recipient–enforcer separation', SAFE_TO_REPORT.recipient_enforcer_separation, 'The reporter is not reporting to the party that can punish them.', SRC_PLAYBOOK),
   spec('safe_to_report', 'workflow_protection', 'Workflow protection', SAFE_TO_REPORT.workflow_protection, 'Protection attaches to the process, so the engineer need not judge document-by-document.'),
   spec('safe_to_report', 'safe_harbor_non_admission', 'Safe harbor / non-admission', SAFE_TO_REPORT.safe_harbor_non_admission, 'Reporting is not itself evidence of fault.'),

@@ -22,7 +22,7 @@ describe('engine-forward Aftermath', () => {
   })
 
   it('recurrence risk is 0–100 and higher for a chilling config than a learning one', () => {
-    const chilling = stateWith({ ...defaultParams(), privilege_strength: 0.9, pld_penalty: 0.8, workflow_protection: 0.05, safe_harbor_non_admission: 0.05 })
+    const chilling = stateWith({ ...defaultParams(), precommit: 0.9, pld_penalty: 0.8, workflow_protection: 0.05, safe_harbor_non_admission: 0.05 })
     const learning = stateWith({ ...defaultParams(), workflow_protection: 0.9, safe_harbor_non_admission: 0.9, effective_challenge: 0.9, translation_layer: 0.9, just_culture: 0.9 })
     const rc = engineForwardOutcome(chilling).recurrenceRisk
     const rl = engineForwardOutcome(learning).recurrenceRisk

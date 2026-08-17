@@ -80,11 +80,11 @@ describe('parameter registry', () => {
   })
 
   it('clampParam and sanitizeParams enforce ranges and reject non-finite (spec §7.5)', () => {
-    expect(clampParam('privilege_strength', 5)).toBe(1)
-    expect(clampParam('privilege_strength', -5)).toBe(0)
+    expect(clampParam('precommit', 5)).toBe(1)
+    expect(clampParam('precommit', -5)).toBe(0)
     expect(clampParam('gain', Number.NaN)).toBe(PARAM_SPEC_BY_ID.gain.default)
-    const cleaned = sanitizeParams({ privilege_strength: 9, just_culture: Number.POSITIVE_INFINITY })
-    expect(cleaned.privilege_strength).toBe(1)
+    const cleaned = sanitizeParams({ precommit: 9, just_culture: Number.POSITIVE_INFINITY })
+    expect(cleaned.precommit).toBe(1)
     expect(cleaned.just_culture).toBe(PARAM_SPEC_BY_ID.just_culture.default)
     // Untouched keys fall back to defaults.
     expect(cleaned.gain).toBe(PARAM_SPEC_BY_ID.gain.default)

@@ -81,7 +81,7 @@ describe('bifurcation: hysteresis (spec §3.4)', () => {
 
 describe('bifurcation: 2-parameter tipping heatmap (spec §3.3, §5.5)', () => {
   it('sweep2D returns a grid with both regimes represented', () => {
-    const r = sweep2D(contested, 'privilege_strength', 'just_culture', { nx: 8, ny: 8, metric: 'TD' })
+    const r = sweep2D(contested, 'precommit', 'just_culture', { nx: 8, ny: 8, metric: 'TD' })
     expect(r.xs.length).toBe(8)
     expect(r.ys.length).toBe(8)
     expect(r.z.length).toBe(8)

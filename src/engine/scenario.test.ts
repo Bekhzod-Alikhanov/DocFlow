@@ -83,7 +83,7 @@ describe('scenario regressions: institutional analogs', () => {
       initFromPreset(PRESET_BY_ID['eu-trap']),
       {
         ...eu,
-        privilege_strength: 0.7,
+        precommit: 0.7,
         workflow_protection: 0.9,
         original_records_boundary: 0.9,
         safe_harbor_non_admission: 0.9,
@@ -103,7 +103,7 @@ describe('scenario regressions: institutional analogs', () => {
       initFromPreset(PRESET_BY_ID['pharma-safe-report']),
       {
         ...p,
-        privilege_strength: 0.05,
+        precommit: 0.05,
         workflow_protection: 0,
         original_records_boundary: 0.2,
         safe_harbor_non_admission: 0,
@@ -148,7 +148,7 @@ describe('scenario construction', () => {
 
   it('preset overrides actually change levers from the defaults', () => {
     const cyber = paramsFromPreset(PRESET_BY_ID.cybersecurity)
-    expect(cyber.privilege_strength).toBe(0.05)
+    expect(cyber.precommit).toBe(0.05)
   })
 
   it('initFromPreset merges preset init over the default init', () => {

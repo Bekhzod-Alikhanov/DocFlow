@@ -80,6 +80,76 @@ function clamp01(x: number): number {
   return Math.min(1, Math.max(0, x))
 }
 
+
+// ---------------------------------------------------------------------------
+// Endogenous privilege — v0.3.0 M3b (MODEL_v3_SPEC section 5)
+// ---------------------------------------------------------------------------
+
+export interface PrivilegeResult {
+  /** Leakage of causal conclusions out of the protected channel, 0-1. */
+  lambda: number
+  /** Probability a waiver finding follows from that leakage. */
+  waiver: number
+  /** Survival probability BEFORE the untested-device discount. */
+  piRaw: number
+  /** Survival probability after waiver loss. */
+  pi: number
+  /** Effective survival: pi scaled by P(court credits the tripwire). */
+  piEff: number
+}
+
+/**
+ * Privilege survival as an OUTCOME of design choices, not an input dial.
+ *
+ * Through v0.2, `privilege_strength` was a slider — the modeller simply asserted
+ * how protected the firm was. That is not how the doctrine works. Courts evaluate
+ * a claim after the fact against a small set of factors, and the claim can fail
+ * entirely. The four factors below are the ones the paper's cases actually turn on:
+ *
+ *   pre-commitment   In re Target (2015) survived; In re Capital One (2020),
+ *                    In re Rutter's (2021) and Guo Wengui (2021) failed, on
+ *                    whether entry was fixed in advance or arranged afterwards.
+ *   separation       The "would have been done anyway" test. Modelled by
+ *                    `workflow_protection`: PSQIA-style protection attaches to a
+ *                    defined process that is demonstrably not ordinary-course.
+ *   purpose          In re Kellogg Brown & Root (2014): protection can survive a
+ *                    parallel regulatory purpose provided legal advice was A
+ *                    significant purpose.
+ *   valve integrity  Leakage of conclusions outward risks waiver.
+ *
+ * THE COEFFICIENTS ARE NOT CALIBRATED. Per the session decision, the case-law
+ * coding protocol that would estimate them is specified in CALIBRATION.md section 3
+ * and has NOT been executed. They are T4 with stated bounds, and `pi` must never be
+ * displayed as a bare number — only as a range over p_court and the coefficient
+ * intervals (EPISTEMICS.md 3.4). This is not legal advice and cannot predict a ruling.
+ */
+export function privilegeSurvival(p: Params): PrivilegeResult {
+  // Leakage rises with base organisational pressure to explain causes in the
+  // operational record, falls with valve discipline, and rises again when an
+  // outside evaluator widens the circle (Kovel).
+  const lambda = clamp01(p.lambda_base * (1 - p.valve_discipline) + p.l_kovel * p.kovel_evaluator)
+
+  // The cliff. Waiver is adjudicated, not gradual: a court finds privilege waived
+  // or it does not, and subject-matter waiver can reach beyond the leaked document.
+  // A smooth ramp would misrepresent that. g_valve is free and its influence is
+  // reported by the steepness sweep rather than hidden.
+  const waiver = sigmoid(p.g_valve * (lambda - p.lambda_crit))
+
+  const z =
+    p.b0 +
+    p.b_pre * p.precommit +
+    p.b_sep * p.workflow_protection +
+    p.b_purp * p.significant_purpose +
+    p.b_valve * (1 - lambda)
+
+  const piRaw = sigmoid(z)
+  const pi = clamp01(piRaw * (1 - p.w_max * waiver))
+  // The untested device: no court has ruled on a pre-committed telemetry tripwire.
+  // Sweep p_court; never quote piEff at a point.
+  const piEff = clamp01(pi * p.p_court)
+  return { lambda, waiver, piRaw, pi, piEff }
+}
+
 /**
  * Perceived discoverability (spec §2.2). Signed: compulsion (mandatory reporting)
  * and the PLD adverse-inference regime raise it; privilege, recipient–enforcer
@@ -94,7 +164,7 @@ export function perceivedDiscoverability(p: Params): number {
   return (
     p.w_m * p.mandatory_reporting +
     p.w_p * p.pld_penalty -
-    p.w_priv * p.privilege_strength -
+    p.w_priv * privilegeSurvival(p).pi -
     p.w_sep * p.recipient_enforcer_separation -
     p.w_tl * p.translation_layer -
     p.w_workflow * p.workflow_protection -
@@ -133,6 +203,9 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   // inside the derivative so they are observable: the causal-loop view scores loop
   // dominance from them, and they can be charted.
   const { U, R1, R2, R3, TD, L, E_pl, E_reg, E_fid, C } = s
+
+  // v0.3.0 M3b: privilege is computed from design choices, not read off a slider.
+  const priv = privilegeSurvival(p)
 
   const perceived_discoverability = perceivedDiscoverability(p)
   const drive_to_document = driveToDocument(C, perceived_discoverability, p)
@@ -206,7 +279,7 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   // privilege (backfire). This is what makes the culture loop genuinely bistable.
   const safety_wins = p.omega * f_doc * translation_layer_efficiency
   const protectionBundle = clamp01(
-    PROTECTION_BUNDLE.privilege_strength * p.privilege_strength +
+    PROTECTION_BUNDLE.privilege_survival * priv.pi +
       PROTECTION_BUNDLE.workflow_protection * p.workflow_protection +
       PROTECTION_BUNDLE.safe_harbor_non_admission * p.safe_harbor_non_admission +
       PROTECTION_BUNDLE.original_records_boundary * p.original_records_boundary +
@@ -233,8 +306,7 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   // leakage limits what can safely be transmitted) and, for routine fixes, from One.
   const to_R1 = to_D + belated_doc
   const to_R2 = trip * to_D * p.kappa_2
-  const privilege_survival = clamp01(p.privilege_strength)
-  const to_R3 = R2 * p.rate_23 * privilege_survival + R1 * p.rate_13
+  const to_R3 = R2 * p.rate_23 * priv.piEff + R1 * p.rate_13
 
   // --- v0.3.0 M3: three opposing exposure gradients ----------------------
   //
@@ -246,7 +318,12 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   const board_visibility = R1 / (R1 + p.bv_k)
 
   const pl_from_records = p.c_rec_exp * R1 * p.disc_prob
-  const pl_from_analysis = (1 - privilege_survival) * p.xi_2 * R2
+  const pl_from_analysis = (1 - priv.piEff) * p.xi_2 * R2
+  // Leakage costs TWICE: it risks waiver (above) and it creates independent
+  // admissions that may remain admissible even where Rule 407 excludes the
+  // remedial measure itself (ADR/0004).
+  const independent_admissions = p.adm * priv.lambda * R2
+  const pl_from_admissions = p.xi_adm * independent_admissions
   const pl_from_harm = p.c_harm_exp * harm_rate
 
   // Undocumented incidents are exactly the ones a reporting duty was not met on.
@@ -268,7 +345,7 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   const policy_scaffold_dependency = clamp01(
     POLICY_SCAFFOLD.safe_harbor_non_admission * p.safe_harbor_non_admission +
       POLICY_SCAFFOLD.workflow_protection * p.workflow_protection +
-      POLICY_SCAFFOLD.privilege_strength * p.privilege_strength,
+      POLICY_SCAFFOLD.privilege_survival * priv.pi,
   )
   const private_ordering_gap = clamp01(
     policy_scaffold_dependency - PRIVATE_ORDERING.capacity_offset * privateOrderableCapacity,
@@ -281,7 +358,7 @@ export function computeAux(s: State, p: Params): Auxiliaries {
       ACCOUNTABILITY_LEGITIMACY.near_miss_tier * p.near_miss_tier,
   )
   const safe_to_report_score = clamp01(
-    SAFE_TO_REPORT.privilege_strength * p.privilege_strength +
+    SAFE_TO_REPORT.privilege_survival * priv.pi +
       SAFE_TO_REPORT.recipient_enforcer_separation * p.recipient_enforcer_separation +
       SAFE_TO_REPORT.workflow_protection * p.workflow_protection +
       SAFE_TO_REPORT.safe_harbor_non_admission * p.safe_harbor_non_admission +
@@ -322,7 +399,12 @@ export function computeAux(s: State, p: Params): Auxiliaries {
     to_R1,
     to_R2,
     to_R3,
-    privilege_survival,
+    privilege_survival: priv.pi,
+    privilege_survival_eff: priv.piEff,
+    valve_leakage: priv.lambda,
+    waiver_probability: priv.waiver,
+    independent_admissions,
+    pl_from_admissions,
     harm_rate,
     board_visibility,
     pl_from_records,
@@ -358,7 +440,8 @@ export function derivativesFromAux(s: State, p: Params, a: Auxiliaries): State {
   const dL = a.learning_gain - p.delta_L * s.L
 
   // Opposing gradients (ADR/0003). Shared decay: exposure of every kind settles.
-  const dE_pl = a.pl_from_records + a.pl_from_analysis + a.pl_from_harm - p.theta_E * s.E_pl
+  const dE_pl =
+    a.pl_from_records + a.pl_from_analysis + a.pl_from_admissions + a.pl_from_harm - p.theta_E * s.E_pl
   const dE_reg = a.reg_from_duty + a.reg_from_pld - p.theta_E * s.E_reg
   const dE_fid = a.fid_from_blindness - p.theta_E * s.E_fid
 

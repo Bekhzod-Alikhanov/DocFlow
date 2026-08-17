@@ -234,7 +234,7 @@ export const CHAPTER3_STEPS: ChapterNarrativeStep[] = [
     title: 'Cyber chills documentation',
     thesis: 'Privilege-first incident response can make silence feel safer than analysis.',
     presetId: 'cybersecurity',
-    keyLevers: ['privilege_strength', 'workflow_protection', 'recipient_enforcer_separation'],
+    keyLevers: ['precommit', 'workflow_protection', 'recipient_enforcer_separation'],
     watchReadouts: ['litigation_pressure', 'safe_to_report_score'],
     takeaway: 'Chapter 3 starts from the pathology: fragile privilege suppresses the factual memory a safety system needs.',
   },
@@ -389,7 +389,7 @@ export function decisionRecommendations(params: Params, traj: Trajectory): Decis
       why: 'The scenario relies on protections that a lab cannot fully create alone.',
       doNow: 'Write the internal workflow now, but label safe harbor, privilege, and admissibility as regulator/statute dependencies.',
       dependency: 'mixed',
-      linkedLevers: ['workflow_protection', 'safe_harbor_non_admission', 'privilege_strength'],
+      linkedLevers: ['workflow_protection', 'safe_harbor_non_admission', 'significant_purpose'],
       confidence: 'medium',
       caveat: 'This is a planning distinction, not a legal conclusion about any jurisdiction.',
     })
@@ -498,7 +498,7 @@ export function topRegimeMatches(params: Params): RegimeRecord[] {
   const scores = REGIME_MATRIX.map((r) => {
     let score: number
     if (r.id === 'asrs-asap') score = params.recipient_enforcer_separation + params.near_miss_tier + params.intermediary_capacity
-    else if (r.id === 'psqia') score = params.workflow_protection + params.original_records_boundary + params.privilege_strength
+    else if (r.id === 'psqia') score = params.workflow_protection + params.original_records_boundary + params.precommit
     else if (r.id === 'pharma') score = params.mandatory_reporting + params.safe_harbor_non_admission + params.original_records_boundary
     else if (r.id === 'sr11') score = params.effective_challenge + params.translation_layer + params.original_records_boundary
     else if (r.id === 'nuclear') score = params.mandatory_reporting + params.intermediary_capacity + params.recipient_enforcer_separation

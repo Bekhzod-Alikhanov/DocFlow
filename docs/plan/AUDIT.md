@@ -42,6 +42,27 @@ executable gate · 🟡 = materially improved, not closed · ⬜ = open. Everyth
 
 ### Behavioural consequences of the v0.3.0 fixes, recorded rather than tuned around
 
+**M3b (endogenous privilege + the one-way valve):**
+
+- **`privilege_strength` is gone as a lever.** Privilege is now computed from four
+  factors the paper's cases actually turn on — pre-commitment, separation from the
+  ordinary course, significant legal purpose, valve integrity — and it can fail.
+  Measured `π`: cyber **0.065**, eu-trap **0.147**, contested **0.647**, aviation
+  **0.966**, healthcare **0.989**. The ordering follows *Capital One* / *Rutter's*
+  (post-hoc engagement pierced) versus PSQIA workflow protection.
+- **The valve behaves as a cliff, as intended.** Valve discipline 0.3 → 0.5 moves `π`
+  from 0.41 to 0.91, against a nearly flat response in the well-disciplined tail.
+- **`p_court` is swept, never estimated.** Effective privilege scales linearly from 0
+  to `π`; no point value is reported anywhere.
+- **A misuse of the model was caught and fixed mid-milestone.** Wiring real `π` into
+  `perceivedLegalShield` broke two tabletop tests — correctly, because that function
+  is documented as modelling the *illusion* that makes the keep-it-oral move feel
+  safe, and real `π` is not an illusion. It is now split into `perceivedLegalShield`
+  (naive belief: counsel involved, nothing written down), `actualLegalShield` (the
+  doctrinal reality) and `legalShieldIllusion` (the gap). **The gap is the more
+  interesting quantity and is the cybersecurity failure mode the paper is written
+  against** — measured >0.5 for the naive posture, shrinking as discipline rises.
+
 **M3 (three channels + exposure decomposition):**
 
 - **The opposing gradients are now visible and behave as the paper claims.** Chilling

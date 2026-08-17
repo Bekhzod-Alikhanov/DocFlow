@@ -53,7 +53,7 @@ export const crossBorder: TabletopScenario = {
     mandatory_reporting: 0.35,
     workflow_protection: 0.25,
     safe_harbor_non_admission: 0.2,
-    privilege_strength: 0.35,
+    significant_purpose: 0.35,
     original_records_boundary: 0.3,
     effective_challenge: 0.3,
     just_culture: 0.45,
@@ -166,7 +166,7 @@ export const crossBorder: TabletopScenario = {
             'The bare-file approach prioritizes the short-term legal shield over the structural ' +
             'integrity of the disclosure posture.',
           leverDeltas: {
-            privilege_strength: 0.4,
+            significant_purpose: 0.4,
             pld_penalty: 0.3,
             mandatory_reporting: 0.1,
             workflow_protection: -0.25,
@@ -294,7 +294,7 @@ export const crossBorder: TabletopScenario = {
             'The bare-file architecture has no factual record to produce in lieu of the privileged ' +
             'analysis — so the challenge, if it fails, leaves the firm with no alternative.',
           leverDeltas: {
-            privilege_strength: 0.3,
+            significant_purpose: 0.3,
             pld_penalty: 0.25,
             mandatory_reporting: -0.15,
             safe_harbor_non_admission: -0.2,

@@ -37,7 +37,7 @@ export const productionIncident: TabletopScenario = {
   startLevers: {
     workflow_protection: 0.35,
     safe_harbor_non_admission: 0.35,
-    privilege_strength: 0.3,
+    significant_purpose: 0.3,
     original_records_boundary: 0.4,
     effective_challenge: 0.4,
   },
@@ -98,7 +98,7 @@ export const productionIncident: TabletopScenario = {
             'This raises the perceived legal shield but delays formal capture and ' +
             'risks the EU AI Act 15-day reporting clock.',
           leverDeltas: {
-            privilege_strength: 0.2,
+            significant_purpose: 0.2,
             workflow_protection: -0.1,
             mandatory_reporting: -0.1,
           },
@@ -178,7 +178,7 @@ export const productionIncident: TabletopScenario = {
             'The cyber privilege-first analog shows this is a common move — ' +
             'but it also destroys the evidence needed for remediation and future defense.',
           leverDeltas: {
-            privilege_strength: 0.15,
+            significant_purpose: 0.15,
             original_records_boundary: -0.15,
             workflow_protection: -0.1,
           },
@@ -259,7 +259,7 @@ export const productionIncident: TabletopScenario = {
             'but the safety architecture is gutted: no translation layer, no workflow protection, ' +
             'no effective challenge. Mirrors the cyber privilege-first pattern.',
           leverDeltas: {
-            privilege_strength: 0.4,
+            significant_purpose: 0.4,
             workflow_protection: -0.3,
             safe_harbor_non_admission: -0.3,
             translation_layer: -0.2,

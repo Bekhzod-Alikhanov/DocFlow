@@ -49,7 +49,7 @@ export const stalledEscalation: TabletopScenario = {
     translation_layer: 0.2,
     just_culture: 0.45,
     recipient_enforcer_separation: 0.2,
-    privilege_strength: 0.35,
+    significant_purpose: 0.35,
     original_records_boundary: 0.3,
     intermediary_capacity: 0.2,
   },
@@ -130,7 +130,7 @@ export const stalledEscalation: TabletopScenario = {
             near_miss_tier: -0.15,
             translation_layer: -0.1,
             original_records_boundary: -0.1,
-            privilege_strength: 0.1,
+            significant_purpose: 0.1,
           },
           incidentEffects: {
             signal_fidelity: -10,
@@ -223,7 +223,7 @@ export const stalledEscalation: TabletopScenario = {
             'rather than the engineer\'s actual finding ("three consecutive cycles of upward drift ' +
             'that individually cleared the variance band but collectively show a trend").',
           leverDeltas: {
-            privilege_strength: 0.3,
+            significant_purpose: 0.3,
             translation_layer: -0.2,
             original_records_boundary: -0.2,
             workflow_protection: -0.15,
@@ -333,7 +333,7 @@ export const stalledEscalation: TabletopScenario = {
             'The signal\'s technical nuance — three consecutive cycles of upward drift — ' +
             'does not survive this hop. Board_oversight_visibility drops to near zero.',
           leverDeltas: {
-            privilege_strength: 0.4,
+            significant_purpose: 0.4,
             effective_challenge: -0.25,
             workflow_protection: -0.3,
             safe_harbor_non_admission: -0.3,
@@ -434,7 +434,7 @@ export const stalledEscalation: TabletopScenario = {
             'means the board is exercising no real oversight function — it is absorbing the ' +
             'normalization-of-deviance outcome as if it were a governance decision.',
           leverDeltas: {
-            privilege_strength: 0.25,
+            significant_purpose: 0.25,
             effective_challenge: -0.2,
             recipient_enforcer_separation: -0.15,
             near_miss_tier: -0.1,

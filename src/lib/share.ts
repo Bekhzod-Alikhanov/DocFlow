@@ -34,7 +34,13 @@ interface ShareCodecV1 {
   a?: string
 }
 
-const LEGACY_PARAM_KEYS_V1: ParamKey[] = [
+/**
+ * Positional key order for v1 share hashes. Kept as plain strings, not ParamKey[]:
+ * `privilege_strength` was RETIRED in v0.3.0 M3b (privilege became a computed
+ * outcome), so an old link carries a value with nowhere to go. Decoding skips any
+ * key that is no longer in the registry rather than failing the whole link.
+ */
+const LEGACY_PARAM_KEYS_V1: string[] = [
   'privilege_strength',
   'just_culture',
   'mandatory_reporting',
@@ -118,7 +124,7 @@ export function decodeScenarioFromHash(hash: string): Scenario | null {
     const keyOrder = Array.isArray(data.k) ? data.k.filter((k): k is ParamKey => (ALL_PARAM_KEYS as readonly string[]).includes(k)) : LEGACY_PARAM_KEYS_V1
     keyOrder.forEach((k, idx) => {
       const val = data.p![idx]
-      if (typeof val === 'number' && Number.isFinite(val)) raw[k] = val
+      if (typeof val === 'number' && Number.isFinite(val)) raw[k as ParamKey] = val
     })
     const params: Params = sanitizeParams({ ...defaultParams(), ...raw })
     const init: State = { ...defaultInitState(), ...(data.i ?? {}) }

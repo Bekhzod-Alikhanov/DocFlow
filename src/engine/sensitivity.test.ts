@@ -70,13 +70,13 @@ describe('sensitivity: model Sobol / PRCC / tornado', () => {
   })
 
   it('PRCC recovers a near-perfect monotone dependence', () => {
-    // Output = privilege_strength itself ⇒ PRCC for privilege ≈ 1, others ≈ 0.
-    const out = (p: typeof base) => p.privilege_strength
+    // Output = precommit itself ⇒ PRCC for privilege ≈ 1, others ≈ 0.
+    const out = (p: typeof base) => p.precommit
     const r = prccAnalysis(base, [...LEVER_KEYS], out, { n: 200, seed: 3 })
-    const idx = r.keys.indexOf('privilege_strength')
+    const idx = r.keys.indexOf('precommit')
     expect(Math.abs(r.prcc[idx])).toBeGreaterThan(0.95)
     r.keys.forEach((k, i) => {
-      if (k !== 'privilege_strength') expect(Math.abs(r.prcc[i])).toBeLessThan(0.3)
+      if (k !== 'precommit') expect(Math.abs(r.prcc[i])).toBeLessThan(0.3)
     })
   })
 

@@ -76,11 +76,16 @@ describe('readout weights: normalisation', () => {
     expect(sum(LITIGATION_PRESSURE)).toBeCloseTo(1, 10)
   })
 
-  it('every lever named in a blend is a real lever', () => {
+  it('every blend input is either a real lever or a documented computed quantity', () => {
     const levers = new Set<string>(LEVER_KEYS)
+    // v0.3.0 M3b: `privilege_survival` is not a lever — privilege became a computed
+    // outcome — but it is a legitimate blend input. Anything else must be a lever.
+    const COMPUTED = new Set(['privilege_survival'])
     for (const k of PRIVATE_ORDERABLE_LEVERS) expect(levers.has(k)).toBe(true)
     for (const blend of [PROTECTION_BUNDLE, POLICY_SCAFFOLD, ACCOUNTABILITY_LEGITIMACY]) {
-      for (const k of Object.keys(blend)) expect(levers.has(k)).toBe(true)
+      for (const k of Object.keys(blend)) {
+        expect(levers.has(k) || COMPUTED.has(k), `unknown blend input: ${k}`).toBe(true)
+      }
     }
   })
 })

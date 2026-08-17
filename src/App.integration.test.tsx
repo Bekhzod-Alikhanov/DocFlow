@@ -30,9 +30,9 @@ describe('App happy path', () => {
     await screen.findByText('Documented', undefined, { timeout: 5000 })
 
     // Moving a lever flows through to the store (UI → store → recomputed run).
-    const privLabel = PARAM_SPEC_BY_ID['privilege_strength'].label
+    const privLabel = PARAM_SPEC_BY_ID['precommit'].label
     fireEvent.change(screen.getByLabelText(`${privLabel} value`), { target: { value: '1' } })
-    expect(useStore.getState().params.privilege_strength).toBe(1)
+    expect(useStore.getState().params.precommit).toBe(1)
     expect(useStore.getState().activePresetId).toBeNull() // editing detaches from preset
 
     // Preset basis drawers expose lever-level rationale metadata.

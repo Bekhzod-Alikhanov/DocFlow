@@ -27,7 +27,7 @@ const captureChoice: Choice = {
 const boundaryBottleneck: Choice = {
   id: 'legal-owns', label: 'Route everything through counsel', role: 'counsel', chapter: 2,
   rationale: 'Counsel owns the record; fewer records get written.',
-  leverDeltas: { privilege_strength: 0.2 },
+  leverDeltas: { precommit: 0.2 },
   incidentEffects: {}, flags: ['legal_owns_record'], analogRefs: ['cyber'], citations: [], next: 'n3',
 }
 
@@ -47,9 +47,9 @@ describe('applyChoice', () => {
 
   it('clamps levers into [0,1]', () => {
     const s = baseState()
-    s.params = { ...s.params, privilege_strength: 0.95 }
-    const next = applyChoice(s, { ...boundaryBottleneck, leverDeltas: { privilege_strength: 0.5 } })
-    expect(next.params.privilege_strength).toBe(1)
+    s.params = { ...s.params, precommit: 0.95 }
+    const next = applyChoice(s, { ...boundaryBottleneck, leverDeltas: { precommit: 0.5 } })
+    expect(next.params.precommit).toBe(1)
   })
 
   it('recomputes record_capturability from capture flags', () => {

@@ -39,7 +39,7 @@ export const malfunctionNearMiss: TabletopScenario = {
     near_miss_tier: 0.25,
     workflow_protection: 0.3,
     safe_harbor_non_admission: 0.3,
-    privilege_strength: 0.35,
+    significant_purpose: 0.35,
     original_records_boundary: 0.35,
     effective_challenge: 0.35,
     just_culture: 0.4,
@@ -110,7 +110,7 @@ export const malfunctionNearMiss: TabletopScenario = {
             'This is the normalization-of-deviance move: a deliberate decision not to let the signal register. ' +
             'It wins short-term legal safety but destroys the near-miss learning tier.',
           leverDeltas: {
-            privilege_strength: 0.2,
+            significant_purpose: 0.2,
             near_miss_tier: -0.2,
             original_records_boundary: -0.15,
             workflow_protection: -0.1,
@@ -194,7 +194,7 @@ export const malfunctionNearMiss: TabletopScenario = {
             'But after retraining, the failure is no longer reproducible — and the summary note, ' +
             'without the artifact, is insufficient to support any meaningful remediation.',
           leverDeltas: {
-            privilege_strength: 0.15,
+            significant_purpose: 0.15,
             original_records_boundary: -0.2,
             translation_layer: -0.15,
             workflow_protection: -0.1,
@@ -283,7 +283,7 @@ export const malfunctionNearMiss: TabletopScenario = {
             'before it reaches the safety committee. The perceived legal shield is highest, ' +
             'but signal fidelity is lost at the boundary — the committee receives a legal frame, not a safety artifact.',
           leverDeltas: {
-            privilege_strength: 0.4,
+            significant_purpose: 0.4,
             workflow_protection: -0.25,
             safe_harbor_non_admission: -0.25,
             translation_layer: -0.2,

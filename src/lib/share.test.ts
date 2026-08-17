@@ -43,7 +43,7 @@ describe('share codec', () => {
 
   it('decodes v0.1 positional hashes without shifting newly added levers', () => {
     const legacyOrder: ParamKey[] = [
-      'privilege_strength',
+      'precommit',
       'just_culture',
       'mandatory_reporting',
       'pld_penalty',

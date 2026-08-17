@@ -39,7 +39,7 @@ export const redteamLatentCapability: TabletopScenario = {
   startLevers: {
     workflow_protection: 0.3,
     safe_harbor_non_admission: 0.3,
-    privilege_strength: 0.35,
+    significant_purpose: 0.35,
     original_records_boundary: 0.35,
     effective_challenge: 0.4,
     translation_layer: 0.3,
@@ -108,7 +108,7 @@ export const redteamLatentCapability: TabletopScenario = {
             'the cyber privilege-first move. But the finding still exists in the red-teamers\' memory — ' +
             'and without an artifact, you cannot build a monitor or a patch.',
           leverDeltas: {
-            privilege_strength: 0.3,
+            significant_purpose: 0.3,
             original_records_boundary: -0.2,
             workflow_protection: -0.1,
             translation_layer: -0.15,
@@ -201,7 +201,7 @@ export const redteamLatentCapability: TabletopScenario = {
             'the finding harder to act on technically — the monitor cannot be built from a vague description, ' +
             'and the next retrain may or may not address a finding that was never precisely specified.',
           leverDeltas: {
-            privilege_strength: 0.4,
+            significant_purpose: 0.4,
             workflow_protection: -0.25,
             safe_harbor_non_admission: -0.3,
             translation_layer: -0.2,
@@ -287,7 +287,7 @@ export const redteamLatentCapability: TabletopScenario = {
             'the scoped response becomes evidence of knowing concealment — a far worse posture ' +
             'than voluntary disclosure.',
           leverDeltas: {
-            privilege_strength: 0.35,
+            significant_purpose: 0.35,
             mandatory_reporting: -0.15,
             safe_harbor_non_admission: -0.15,
             workflow_protection: -0.1,

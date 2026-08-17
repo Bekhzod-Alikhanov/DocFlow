@@ -49,7 +49,7 @@ export const gpaiSystemicRisk: TabletopScenario = {
   startLevers: {
     workflow_protection: 0.3,
     safe_harbor_non_admission: 0.25,
-    privilege_strength: 0.4,
+    significant_purpose: 0.4,
     original_records_boundary: 0.35,
     effective_challenge: 0.35,
     just_culture: 0.5,
@@ -127,7 +127,7 @@ export const gpaiSystemicRisk: TabletopScenario = {
             'option is unavailable — no intermediary can do a meaningful cross-firm assessment ' +
             'from a one-page legal summary. The signal is effectively kept proprietary by default.',
           leverDeltas: {
-            privilege_strength: 0.2,
+            significant_purpose: 0.2,
             original_records_boundary: -0.2,
             near_miss_tier: -0.2,
             workflow_protection: -0.1,
@@ -235,7 +235,7 @@ export const gpaiSystemicRisk: TabletopScenario = {
             'long-term legitimacy cost of a proprietary approach to cross-firm systemic risk ' +
             'is significant if the capability is later independently discovered.',
           leverDeltas: {
-            privilege_strength: 0.4,
+            significant_purpose: 0.4,
             workflow_protection: -0.25,
             safe_harbor_non_admission: -0.3,
             translation_layer: -0.2,

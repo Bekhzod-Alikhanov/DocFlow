@@ -46,7 +46,7 @@ export const securityPromptInjection: TabletopScenario = {
   startLevers: {
     workflow_protection: 0.3,
     safe_harbor_non_admission: 0.25,
-    privilege_strength: 0.4,
+    significant_purpose: 0.4,
     original_records_boundary: 0.35,
     effective_challenge: 0.3,
     just_culture: 0.45,
@@ -120,7 +120,7 @@ export const securityPromptInjection: TabletopScenario = {
             'not legal advice. The no-written-report model destroys the signal needed to patch the ' +
             'agentic architecture.',
           leverDeltas: {
-            privilege_strength: 0.25,
+            significant_purpose: 0.25,
             original_records_boundary: -0.2,
             near_miss_tier: -0.2,
             workflow_protection: -0.1,
@@ -223,7 +223,7 @@ export const securityPromptInjection: TabletopScenario = {
             'be scrutinized. CIRCIA\'s § 681e civil-liability bar is not yet in effect, ' +
             'so there is no statutory backstop.',
           leverDeltas: {
-            privilege_strength: 0.4,
+            significant_purpose: 0.4,
             workflow_protection: -0.3,
             safe_harbor_non_admission: -0.3,
             translation_layer: -0.25,
@@ -320,7 +320,7 @@ export const securityPromptInjection: TabletopScenario = {
             'third-party data connector — may not survive scrutiny if the agentic architecture\'s ' +
             'known attack surface was previously flagged in threat intelligence.',
           leverDeltas: {
-            privilege_strength: 0.2,
+            significant_purpose: 0.2,
             mandatory_reporting: -0.2,
             safe_harbor_non_admission: -0.2,
             workflow_protection: -0.1,

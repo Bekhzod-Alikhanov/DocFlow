@@ -109,7 +109,7 @@ describe('V4.4 — culture has no absorbing states (AUDIT.md F9)', () => {
     const p = paramsFromPreset(PRESET_BY_ID.aviation)
     const pinned: State = { ...initFromPreset(PRESET_BY_ID.aviation), C: 1 }
     // Degrade the regime hard; culture must be able to come back down.
-    const bad = { ...p, just_culture: 0, recipient_enforcer_separation: 0, privilege_strength: 0, omega: 0 }
+    const bad = { ...p, just_culture: 0, recipient_enforcer_separation: 0, precommit: 0, omega: 0 }
     const traj = integrate(pinned, bad, { horizon: 240, dt: 0.5, solver: 'rk4' })
     expect(traj.states[traj.states.length - 1].C).toBeLessThan(0.99)
   })

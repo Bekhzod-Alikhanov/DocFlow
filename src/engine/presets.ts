@@ -17,9 +17,21 @@ interface RationaleSeed {
 }
 
 const LEVER_RATIONALE_SEED: Record<LeverKey, RationaleSeed> = {
-  privilege_strength: {
-    basis: 'Privilege posture captures how credible the legal shield is for candid analysis.',
-    sourceNote: 'PSQIA, work-product doctrine, and Capital One cyber privilege failure.',
+  precommit: {
+    basis: 'Pre-commitment captures whether entry to the protected channel was fixed in advance rather than arranged after an incident.',
+    sourceNote: 'In re Target (2015) survived; Capital One (2020) and Rutter\u2019s (2021) failed on post-hoc engagement.',
+  },
+  significant_purpose: {
+    basis: 'Significant-purpose posture captures whether obtaining legal advice was genuinely a purpose of the work, not a label applied afterwards.',
+    sourceNote: 'In re Kellogg Brown & Root (D.C. Cir. 2014) significant-purpose test.',
+  },
+  valve_discipline: {
+    basis: 'Valve discipline captures how strictly causal and normative conclusions are kept out of operational records.',
+    sourceNote: 'Playbook one-way valve; Rule 407 independent-admission limit.',
+  },
+  kovel_evaluator: {
+    basis: 'Kovel posture captures whether an outside technical evaluator enters as an agent of counsel.',
+    sourceNote: 'United States v. Kovel, 296 F.2d 918 (2d Cir. 1961).',
   },
   just_culture: {
     basis: 'Just-culture posture captures whether honest error is protected while misconduct remains outside the shield.',
@@ -114,7 +126,10 @@ export const PRESETS: Preset[] = [
         'Lawyer-led incident response with fragile privilege, no neutral recipient, no workflow protection, and no durable factual/analytic split. It is the minimum-compliance, zero-learning anti-pattern.',
       expectedRegime: 'chilling',
       overrides: {
-        privilege_strength: 0.05,
+        precommit: 0.05,
+        significant_purpose: 0.2,
+        valve_discipline: 0.1,
+        kovel_evaluator: 0.15,
         just_culture: 0.45,
         mandatory_reporting: 0.3,
         pld_penalty: 0.2,
@@ -138,9 +153,10 @@ export const PRESETS: Preset[] = [
       ],
     },
     {
-      privilege_strength: {
+      precommit: {
         confidence: 'high',
-        sourceNote: 'Capital One and similar cyber privilege disputes make weak privilege a strong analog signal.',
+        sourceNote:
+          'Capital One, Rutter\u2019s and Guo Wengui all turned on post-hoc engagement, making weak pre-commitment a strong analog signal for this sector.',
       },
       intermediary_capacity: {
         confidence: 'medium',
@@ -156,7 +172,10 @@ export const PRESETS: Preset[] = [
       'Neutral third-party intake, de-identification, ASAP review committees, just-culture carve-outs, and visible feedback loops turn near-misses into system-wide fixes.',
     expectedRegime: 'learning',
     overrides: {
-      privilege_strength: 0.8,
+      precommit: 0.85,
+      significant_purpose: 0.7,
+      valve_discipline: 0.8,
+      kovel_evaluator: 0.35,
       just_culture: 0.85,
       mandatory_reporting: 0.4,
       pld_penalty: 0.05,
@@ -182,7 +201,10 @@ export const PRESETS: Preset[] = [
       'Protection attaches to a defined safety-evaluation workflow, not a single document, while the original factual record remains discoverable.',
     expectedRegime: 'learning',
     overrides: {
-      privilege_strength: 0.85,
+      precommit: 0.9,
+      significant_purpose: 0.8,
+      valve_discipline: 0.85,
+      kovel_evaluator: 0.45,
       just_culture: 0.7,
       mandatory_reporting: 0.45,
       pld_penalty: 0.1,
@@ -208,7 +230,10 @@ export const PRESETS: Preset[] = [
       'Mandatory public adverse-event reporting works because legal pressure points at non-reporting while reports are treated as safety signals, not admissions of fault.',
     expectedRegime: 'learning',
     overrides: {
-      privilege_strength: 0.35,
+      precommit: 0.55,
+      significant_purpose: 0.6,
+      valve_discipline: 0.6,
+      kovel_evaluator: 0.3,
       just_culture: 0.62,
       mandatory_reporting: 0.9,
       pld_penalty: 0.25,
@@ -234,7 +259,10 @@ export const PRESETS: Preset[] = [
       'Model inventory, independent validation, ongoing monitoring, and reviewers with authority make documentation a control rather than a liability habit.',
     expectedRegime: 'learning',
     overrides: {
-      privilege_strength: 0.65,
+      precommit: 0.6,
+      significant_purpose: 0.55,
+      valve_discipline: 0.65,
+      kovel_evaluator: 0.55,
       just_culture: 0.58,
       mandatory_reporting: 0.55,
       pld_penalty: 0.12,
@@ -260,7 +288,10 @@ export const PRESETS: Preset[] = [
       'A mandatory public floor plus confidential peer-learning body: NRC reporting supplies accountability; INPO/SEE-IN supplies candid operating experience.',
     expectedRegime: 'learning',
     overrides: {
-      privilege_strength: 0.7,
+      precommit: 0.75,
+      significant_purpose: 0.65,
+      valve_discipline: 0.8,
+      kovel_evaluator: 0.5,
       just_culture: 0.72,
       mandatory_reporting: 0.82,
       pld_penalty: 0.18,
@@ -292,7 +323,10 @@ export const PRESETS: Preset[] = [
       // the model produced 'chilling', so the UI displayed both at once (AUDIT F16).
       expectedRegime: 'chilling',
       overrides: {
-        privilege_strength: 0.1,
+        precommit: 0.1,
+        significant_purpose: 0.3,
+        valve_discipline: 0.2,
+        kovel_evaluator: 0.2,
         just_culture: 0.35,
         mandatory_reporting: 0.85,
         pld_penalty: 0.8,
@@ -334,7 +368,10 @@ export const PRESETS: Preset[] = [
       // the point of it. See the eu-trap note above for why this is not 'contested'.
       expectedRegime: 'chilling',
       overrides: {
-        privilege_strength: 0.5,
+        precommit: 0.35,
+        significant_purpose: 0.4,
+        valve_discipline: 0.4,
+        kovel_evaluator: 0.25,
         just_culture: 0.1,
         mandatory_reporting: 0.3,
         pld_penalty: 0.2,

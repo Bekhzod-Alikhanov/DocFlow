@@ -14,6 +14,7 @@
  * is the trap, and it is why no path dominates.
  */
 import type { LeverKey } from '../types'
+import { privilegeSurvival } from '../model'
 import { defaultParams, defaultInitState, defaultSettings, clampParam } from '../registry'
 import {
   type TabletopScenario, type Choice, type IncidentMeters,
@@ -40,22 +41,48 @@ function clamp01(x: number): number {
 }
 
 /**
- * The short-term *perceived* legal shield: privilege asserted, the record kept off
- * the books, fewer discoverable factual records. This is what makes the "keep-it-oral"
- * path feel safe in the moment. Computed purely from levers + flags so the UI can show
- * exactly why it moved — and pair it with the litigation_pressure caveat. 0–1.
+ * The short-term PERCEIVED legal shield — what the decision-maker believes in the
+ * moment, which is deliberately NOT what the doctrine delivers.
+ *
+ * v0.3.0 M3b. This function briefly read the real, computed privilege-survival
+ * probability, which was wrong: it is supposed to model the ILLUSION that makes the
+ * keep-it-oral move feel safe. The naive belief is roughly "counsel is involved and
+ * it is not written down, so we are covered" — it does NOT account for whether entry
+ * was pre-committed, whether the work is separable from the ordinary course, or
+ * whether conclusions are leaking. Those are exactly the factors courts decide on.
+ *
+ * Pair it with `actualLegalShield`. The GAP between them is the finding.
  */
 export function perceivedLegalShield(state: RunState): number {
-  // `privileged_single_track` (like `legal_owns_record`) is a choice flag: it is set by
-  // the oral-only / counsel-owns-the-record choices as they accumulate onto state.flags,
-  // NOT a lever. Either flag lifts the perceived shield by the 0.30 weight below.
+  // `privileged_single_track` (like `legal_owns_record`) is a choice flag set by the
+  // oral-only / counsel-owns-the-record choices, NOT a lever.
   const privilegedSingleTrack =
     state.flags.includes('legal_owns_record') || state.flags.includes('privileged_single_track')
   return clamp01(
-    0.55 * state.params.privilege_strength +
+    // "We involved a lawyer."
+    0.55 * state.params.significant_purpose +
+      // "And we kept it off the books."
       0.30 * (privilegedSingleTrack ? 1 : 0) +
       0.15 * (1 - state.params.original_records_boundary),
   )
+}
+
+/**
+ * The ACTUAL modelled privilege-survival probability: what the four doctrinal
+ * factors imply, including pre-commitment and valve integrity. Uncalibrated — see
+ * `privilegeSurvival`. Never display as a bare number.
+ */
+export function actualLegalShield(state: RunState): number {
+  return privilegeSurvival(state.params).pi
+}
+
+/**
+ * How much the perceived shield exceeds the real one. Positive means the firm
+ * believes it is better protected than the doctrine supports — which is the
+ * cybersecurity failure mode the playbook is written against.
+ */
+export function legalShieldIllusion(state: RunState): number {
+  return perceivedLegalShield(state) - actualLegalShield(state)
 }
 
 export function initialRunState(scenario: TabletopScenario): RunState {

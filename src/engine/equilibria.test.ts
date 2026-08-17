@@ -114,7 +114,7 @@ describe('equilibria: BISTABILITY (the signature property, spec §3.2, §9)', ()
 
 describe('equilibria: extreme-conditions tests (Sterman, spec §7.1)', () => {
   it('privilege=1, just_culture=1 ⇒ the learning attractor', () => {
-    const p = { ...defaultParams(), privilege_strength: 1, just_culture: 1 }
+    const p = { ...defaultParams(), precommit: 1, just_culture: 1 }
     const s = stableAttractors(p)
     expect(s.length).toBeGreaterThanOrEqual(1)
     const highest = s[s.length - 1]
@@ -125,7 +125,7 @@ describe('equilibria: extreme-conditions tests (Sterman, spec §7.1)', () => {
   it('zero privilege & separation, weak just culture ⇒ a chilling attractor exists', () => {
     const p = {
       ...defaultParams(),
-      privilege_strength: 0,
+      precommit: 0,
       recipient_enforcer_separation: 0,
       just_culture: 0.1,
       translation_layer: 0,

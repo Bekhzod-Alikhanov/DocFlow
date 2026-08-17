@@ -27,7 +27,7 @@ describe('Monte Carlo (spec §3.5)', () => {
   it('sampleParam stays within the registry range', () => {
     const rng = mulberry32(1)
     for (let i = 0; i < 1000; i++) {
-      const v = sampleParam('privilege_strength', 0.3, 'uniform', rng)
+      const v = sampleParam('precommit', 0.3, 'uniform', rng)
       expect(v).toBeGreaterThanOrEqual(0)
       expect(v).toBeLessThanOrEqual(1)
     }

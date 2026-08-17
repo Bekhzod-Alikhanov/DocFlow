@@ -75,7 +75,7 @@ export function TippingView() {
 
   const [mode, setMode] = useState<'1d' | '2d'>('1d')
   const [leverId, setLeverId] = useState<LeverKey>('just_culture')
-  const [xId, setXId] = useState<LeverKey>('privilege_strength')
+  const [xId, setXId] = useState<LeverKey>('precommit')
   const [yId, setYId] = useState<LeverKey>('just_culture')
   const [metric, setMetric] = useState<Metric>('f_doc')
   const [showHyst, setShowHyst] = useState(true)

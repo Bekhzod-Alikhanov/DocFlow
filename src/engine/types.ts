@@ -62,7 +62,14 @@ export interface StockSpec {
 
 /** Policy / institutional levers, all in [0, 1]. */
 export const LEVER_KEYS = [
-  'privilege_strength',
+  // v0.3.0 M3b: `privilege_strength` is GONE as a lever. In the case law privilege
+  // is not a dial a firm sets — it is an OUTCOME of design choices that a court
+  // later evaluates, and it can be lost. The four levers below are those design
+  // choices; `privilege_survival` is the computed result (ADR: MODEL_v3_SPEC 5).
+  'precommit',
+  'significant_purpose',
+  'valve_discipline',
+  'kovel_evaluator',
   'just_culture',
   'mandatory_reporting',
   'pld_penalty',
@@ -130,6 +137,20 @@ export const STRUCTURAL_KEYS = [
   'lambda_C',
   'a_sep',
   'a_jc_c',
+  // v0.3.0 M3b — endogenous privilege and the one-way valve
+  'b0',
+  'b_pre',
+  'b_sep',
+  'b_purp',
+  'b_valve',
+  'p_court',
+  'lambda_base',
+  'l_kovel',
+  'g_valve',
+  'lambda_crit',
+  'w_max',
+  'adm',
+  'xi_adm',
   // v0.3.0 M3 — three channels, tripwire, decomposed exposure
   'g_trip',
   'tau_review',
@@ -294,6 +315,12 @@ export interface Auxiliaries {
   to_R2: number
   to_R3: number
   privilege_survival: number
+  /** v0.3.0 M3b: privilege after the untested-device discount (p_court). */
+  privilege_survival_eff: number
+  valve_leakage: number
+  waiver_probability: number
+  independent_admissions: number
+  pl_from_admissions: number
   harm_rate: number
   board_visibility: number
   pl_from_records: number
@@ -336,6 +363,11 @@ export const AUX_KEYS = [
   'to_R2',
   'to_R3',
   'privilege_survival',
+  'privilege_survival_eff',
+  'valve_leakage',
+  'waiver_probability',
+  'independent_admissions',
+  'pl_from_admissions',
   'harm_rate',
   'board_visibility',
   'pl_from_records',

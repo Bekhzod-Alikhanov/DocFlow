@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import type { TabletopScenario } from './types'
-import { scoreAllPaths, hasDominantPath, initialRunState, dominates, perceivedLegalShield } from './score'
+import type { Params } from '../types'
+import { defaultParams } from '../registry'
+import { scoreAllPaths, hasDominantPath, initialRunState, dominates, perceivedLegalShield, actualLegalShield, legalShieldIllusion } from './score'
 
 // Two-path scenario: "oral" maxes legal safety but tanks learning/remediation;
 // "translation" inverts the trade-off. Neither dominates the other.
@@ -10,7 +12,7 @@ const scenario: TabletopScenario = {
   nodes: [
     { id: 'root', phase: 1, chapter: 1, title: 'Routing', situation: '', choices: [
       { id: 'oral', label: 'Keep it oral; counsel owns the record', role: 'counsel', chapter: 2, rationale: '',
-        leverDeltas: { privilege_strength: 0.4, workflow_protection: -0.3, safe_harbor_non_admission: -0.3, translation_layer: -0.2, effective_challenge: -0.2 },
+        leverDeltas: { precommit: 0.4, workflow_protection: -0.3, safe_harbor_non_admission: -0.3, translation_layer: -0.2, effective_challenge: -0.2 },
         incidentEffects: { remediation_completeness: -10 }, flags: ['legal_owns_record'], analogRefs: ['cyber'], citations: [], next: 'oralEnd' },
       { id: 'translate', label: 'Two-track: protected workflow + factual core', role: 'safety_eng', chapter: 3, rationale: '',
         leverDeltas: { workflow_protection: 0.4, safe_harbor_non_admission: 0.4, translation_layer: 0.4, effective_challenge: 0.4, original_records_boundary: 0.3, just_culture: 0.3 },
@@ -33,10 +35,10 @@ describe('path scoring & no-dominant-path', () => {
     // a lever outside [0,1] and poisoning every downstream meter.
     const bad: TabletopScenario = {
       ...scenario,
-      startLevers: { privilege_strength: 5, original_records_boundary: -3 },
+      startLevers: { precommit: 5, original_records_boundary: -3 },
     }
     const s = initialRunState(bad)
-    expect(s.params.privilege_strength).toBe(1)
+    expect(s.params.precommit).toBe(1)
     expect(s.params.original_records_boundary).toBe(0)
   })
 
@@ -44,7 +46,7 @@ describe('path scoring & no-dominant-path', () => {
     // Low config: no privilege, full original-records boundary, no single-track flag.
     const low = initialRunState({
       ...scenario,
-      startLevers: { privilege_strength: 0, original_records_boundary: 1 },
+      startLevers: { precommit: 0, original_records_boundary: 1 },
     })
     const shieldLow = perceivedLegalShield(low)
     expect(shieldLow).toBeGreaterThanOrEqual(0)
@@ -53,7 +55,7 @@ describe('path scoring & no-dominant-path', () => {
     // High config: max privilege, no original-records boundary, privileged single track.
     const high = initialRunState({
       ...scenario,
-      startLevers: { privilege_strength: 1, original_records_boundary: 0 },
+      startLevers: { precommit: 1, original_records_boundary: 0 },
     })
     high.flags = ['privileged_single_track']
     const shieldHigh = perceivedLegalShield(high)
@@ -152,5 +154,39 @@ const dominatedScenario: TabletopScenario = {
 describe('hasDominantPath positive control', () => {
   it('returns true when one path is strictly better on every good-vector dimension', () => {
     expect(hasDominantPath(dominatedScenario)).toBe(true)
+  })
+})
+
+describe('perceived vs actual legal shield (v0.3.0 M3b)', () => {
+  const stateWith = (over: Partial<Params>, flags: string[] = []) => ({
+    ...initialRunState(scenario),
+    params: { ...defaultParams(), ...over },
+    flags,
+  })
+
+  it('the perceived shield reflects belief, not the doctrine', () => {
+    // Involving counsel and keeping it off the books raises the PERCEIVED shield
+    // even when pre-commitment and valve discipline — the factors courts actually
+    // weigh — are absent.
+    const naive = stateWith(
+      { significant_purpose: 0.9, precommit: 0, workflow_protection: 0, valve_discipline: 0 },
+      ['legal_owns_record'],
+    )
+    expect(perceivedLegalShield(naive)).toBeGreaterThan(0.7)
+    expect(actualLegalShield(naive)).toBeLessThan(0.2)
+  })
+
+  it('quantifies the illusion as the gap between them', () => {
+    const naive = stateWith(
+      { significant_purpose: 0.9, precommit: 0, workflow_protection: 0, valve_discipline: 0 },
+      ['legal_owns_record'],
+    )
+    const disciplined = stateWith({
+      significant_purpose: 0.9, precommit: 0.9, workflow_protection: 0.9, valve_discipline: 0.9,
+    })
+    // A large positive gap is the cybersecurity failure mode; a disciplined
+    // architecture shrinks it because the belief is finally earned.
+    expect(legalShieldIllusion(naive)).toBeGreaterThan(0.5)
+    expect(legalShieldIllusion(disciplined)).toBeLessThan(legalShieldIllusion(naive))
   })
 })

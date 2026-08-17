@@ -54,7 +54,7 @@ export const discoveryInquiry: TabletopScenario = {
   startLevers: {
     workflow_protection: 0.25,
     safe_harbor_non_admission: 0.25,
-    privilege_strength: 0.4,
+    significant_purpose: 0.4,
     original_records_boundary: 0.35,
     effective_challenge: 0.3,
     just_culture: 0.5,
@@ -155,7 +155,7 @@ export const discoveryInquiry: TabletopScenario = {
             'completeness, signal fidelity, and evidentiary posture when written facts surface ' +
             'from other sources (regulatory records, whistleblowers, plaintiff\'s own evidence).',
           leverDeltas: {
-            privilege_strength: 0.45,
+            significant_purpose: 0.45,
             workflow_protection: -0.3,
             safe_harbor_non_admission: -0.35,
             original_records_boundary: -0.3,
@@ -269,7 +269,7 @@ export const discoveryInquiry: TabletopScenario = {
             'root cause was understood or remediation was completed — the recurrence risk ' +
             'narrative is entirely in the regulator\'s control.',
           leverDeltas: {
-            privilege_strength: 0.3,
+            significant_purpose: 0.3,
             mandatory_reporting: -0.2,
             safe_harbor_non_admission: -0.2,
             workflow_protection: -0.1,

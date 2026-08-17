@@ -26,7 +26,7 @@ const EXPECTED: Record<ProvenanceTier, number> = {
   T1: 0,
   T2: 0,
   T3: 13,
-  T4: 70,
+  T4: 86,
 }
 
 function census(): Record<ProvenanceTier, number> {

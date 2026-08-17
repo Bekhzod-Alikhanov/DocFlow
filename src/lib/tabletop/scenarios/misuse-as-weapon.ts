@@ -41,7 +41,7 @@ export const misuseAsWeapon: TabletopScenario = {
   startLevers: {
     workflow_protection: 0.3,
     safe_harbor_non_admission: 0.3,
-    privilege_strength: 0.35,
+    significant_purpose: 0.35,
     original_records_boundary: 0.4,
     effective_challenge: 0.35,
     just_culture: 0.5,
@@ -110,7 +110,7 @@ export const misuseAsWeapon: TabletopScenario = {
             'The primary guardrail did fire — the block is real. But discarding the partial-failure trace ' +
             'destroys the signal that the intermediate step escaped the first guardrail layer.',
           leverDeltas: {
-            privilege_strength: 0.2,
+            significant_purpose: 0.2,
             original_records_boundary: -0.2,
             near_miss_tier: -0.2,
             workflow_protection: -0.1,
@@ -204,7 +204,7 @@ export const misuseAsWeapon: TabletopScenario = {
             'But the guardrail gap — the partial intermediate output — remains technically present ' +
             'regardless of user intent. Deferring it means the next attacker finds the same gap.',
           leverDeltas: {
-            privilege_strength: 0.4,
+            significant_purpose: 0.4,
             workflow_protection: -0.25,
             safe_harbor_non_admission: -0.3,
             translation_layer: -0.2,
@@ -290,7 +290,7 @@ export const misuseAsWeapon: TabletopScenario = {
             'discovered — through a Freedom of Information request, a subsequent incident, or a whistleblower — ' +
             'the scoped response becomes evidence of knowing concealment of a known guardrail gap.',
           leverDeltas: {
-            privilege_strength: 0.3,
+            significant_purpose: 0.3,
             mandatory_reporting: -0.15,
             safe_harbor_non_admission: -0.2,
             workflow_protection: -0.1,

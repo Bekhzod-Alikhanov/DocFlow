@@ -39,7 +39,7 @@ describe('model: perceived discoverability (spec §2.2)', () => {
     const baseline = perceivedDiscoverability(p)
     expect(perceivedDiscoverability({ ...p, mandatory_reporting: 1 })).toBeGreaterThan(baseline)
     expect(perceivedDiscoverability({ ...p, pld_penalty: 1 })).toBeGreaterThan(baseline)
-    expect(perceivedDiscoverability({ ...p, privilege_strength: 1 })).toBeLessThan(baseline)
+    expect(perceivedDiscoverability({ ...p, precommit: 1 })).toBeLessThan(baseline)
     expect(perceivedDiscoverability({ ...p, recipient_enforcer_separation: 1 })).toBeLessThan(baseline)
     expect(perceivedDiscoverability({ ...p, translation_layer: 1 })).toBeLessThan(baseline)
     expect(perceivedDiscoverability({ ...p, workflow_protection: 1 })).toBeLessThan(baseline)
@@ -127,18 +127,18 @@ describe('model: flow accounting & signs (spec §2.3)', () => {
   // gradients that are the paper's core claim (ADR/0003) rather than a single
   // lumped quantity.
   it('products-liability exposure falls with privilege; regulatory exposure does not', () => {
-    const p = { ...defaultParams(), privilege_strength: 0 }
+    const p = { ...defaultParams(), precommit: 0 }
     const withR2: State = { ...baseState, R2: 8 }
-    const weak = derivatives(withR2, { ...p, privilege_strength: 0 }).E_pl
-    const strong = derivatives(withR2, { ...p, privilege_strength: 1 }).E_pl
+    const weak = derivatives(withR2, { ...p, precommit: 0 }).E_pl
+    const strong = derivatives(withR2, { ...p, precommit: 1 }).E_pl
     // Privilege shields the ANALYSIS channel, so PL exposure drops.
     expect(weak).toBeGreaterThan(strong)
     // Privilege also touches regulatory exposure, but only INDIRECTLY: it lowers
     // perceived discoverability, which raises f_doc, which leaves fewer
     // undocumented incidents for a reporting duty to bite on. That indirect path is
     // an order of magnitude weaker than the direct shielding of Channel Two.
-    const regWeak = derivatives(withR2, { ...p, privilege_strength: 0 }).E_reg
-    const regStrong = derivatives(withR2, { ...p, privilege_strength: 1 }).E_reg
+    const regWeak = derivatives(withR2, { ...p, precommit: 0 }).E_reg
+    const regStrong = derivatives(withR2, { ...p, precommit: 1 }).E_reg
     const plEffect = Math.abs(weak - strong)
     const regEffect = Math.abs(regWeak - regStrong)
     expect(regEffect).toBeLessThan(plEffect * 0.1)
@@ -190,7 +190,7 @@ describe('model: flow accounting & signs (spec §2.3)', () => {
       just_culture: 0.2,
       mandatory_reporting: 1,
       pld_penalty: 1,
-      privilege_strength: 0,
+      precommit: 0,
       recipient_enforcer_separation: 0,
       translation_layer: 0,
       workflow_protection: 0,

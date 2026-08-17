@@ -50,7 +50,7 @@ export const legalBottleneckVsTranslator: TabletopScenario = {
   startLevers: {
     workflow_protection: 0.25,
     safe_harbor_non_admission: 0.25,
-    privilege_strength: 0.4,
+    significant_purpose: 0.4,
     original_records_boundary: 0.35,
     effective_challenge: 0.3,
     just_culture: 0.5,
@@ -149,7 +149,7 @@ export const legalBottleneckVsTranslator: TabletopScenario = {
             'attorney-client privilege) is the structural backstop that makes documentation-intensive ' +
             'governance work in financial services — a backstop AI firms cannot replicate.',
           leverDeltas: {
-            privilege_strength: 0.45,
+            significant_purpose: 0.45,
             workflow_protection: -0.3,
             safe_harbor_non_admission: -0.35,
             translation_layer: -0.3,
@@ -251,7 +251,7 @@ export const legalBottleneckVsTranslator: TabletopScenario = {
             'challenged as lacking a primary-purpose basis; (3) the missing remediation verification ' +
             'signals to the regulator that the recurrence risk is unaddressed.',
           leverDeltas: {
-            privilege_strength: 0.25,
+            significant_purpose: 0.25,
             mandatory_reporting: -0.15,
             safe_harbor_non_admission: -0.2,
             workflow_protection: -0.1,
