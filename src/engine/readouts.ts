@@ -15,6 +15,11 @@
  * in the way a unit conversion fixes what a debt index means. They are therefore
  * modelled as declared constants rather than as tunable `Params`.
  *
+ * SCOPE. This file covers the ~29 weights that were inside `computeAux`. A further
+ * 20 remain as bare literals in the tabletop engine (boundary.ts 15, score.ts 3,
+ * outcome.ts 2) and are NOT yet registered; the source-scan guard in
+ * readouts.test.ts covers computeAux only.
+ *
  * WHAT THAT COSTS, STATED PLAINLY. Because they are not `Params`, they are still
  * outside the swept space — Sobol/PRCC/tornado do not vary them. Moving them into
  * the swept space is roadmap item M1/M5 (`docs/plan/ROADMAP.md`). What this file
