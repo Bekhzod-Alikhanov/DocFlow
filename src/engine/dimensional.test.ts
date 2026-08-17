@@ -21,6 +21,9 @@ import {
   perMonth,
   unitsEqual,
   formatUnit,
+  unit,
+  DIMENSIONLESS,
+  CHANNEL_DIMENSION_NOTE,
   type StockName,
 } from './units'
 
@@ -185,5 +188,78 @@ describe('the waivers are stated, not implied', () => {
   it('the culture equation is waived explicitly, since the checker skips it', () => {
     const ids = DIMENSIONAL_WAIVERS.map((w) => w.id)
     expect(ids).toContain('culture-equation')
+  })
+})
+
+/**
+ * The unit algebra itself. A dimensional checker whose arithmetic is untested can
+ * report "all consistent" for a model that is not, which would be worse than having
+ * no checker at all — it would be a false assurance with a passing badge on it.
+ */
+describe('the unit algebra', () => {
+  it('builds units from dimension/exponent pairs and drops zero exponents', () => {
+    expect(unit(['record', 1])).toEqual({ record: 1 })
+    expect(unit(['record', 1], ['month', -1])).toEqual({ record: 1, month: -1 })
+    expect(unit(['record', 0])).toEqual({})
+    // Repeated dimensions accumulate rather than overwrite.
+    expect(unit(['record', 1], ['record', 2])).toEqual({ record: 3 })
+  })
+
+  it('perMonth decrements the time exponent rather than assuming it was zero', () => {
+    expect(perMonth(unit(['record', 1]))).toEqual({ record: 1, month: -1 })
+    expect(perMonth(perMonth(unit(['record', 1])))).toEqual({ record: 1, month: -2 })
+    expect(perMonth(DIMENSIONLESS)).toEqual({ month: -1 })
+  })
+
+  it('treats an absent dimension and a zero exponent as the same thing', () => {
+    expect(unitsEqual({ record: 1 }, { record: 1, month: 0 })).toBe(true)
+    expect(unitsEqual({}, DIMENSIONLESS)).toBe(true)
+    expect(unitsEqual({ record: 1 }, { record: 2 })).toBe(false)
+    expect(unitsEqual({ record: 1 }, { debt: 1 })).toBe(false)
+    // The asymmetric case: a key present in b but not a.
+    expect(unitsEqual({}, { record: 1 })).toBe(false)
+  })
+
+  it('formats units readably in every shape', () => {
+    expect(formatUnit(DIMENSIONLESS)).toBe('dimensionless')
+    expect(formatUnit({ record: 1 })).toBe('record')
+    expect(formatUnit({ record: 2 })).toBe('record^2')
+    expect(formatUnit({ record: 1, month: -1 })).toBe('record/month')
+    expect(formatUnit({ record: 1, month: -2 })).toBe('record/month^2')
+    expect(formatUnit({ month: -1 })).toBe('1/month')
+    expect(formatUnit({ record: 1, debt: 1, month: -1 })).toBe('record·debt/month')
+    // A zero exponent must not print.
+    expect(formatUnit({ record: 1, debt: 0 })).toBe('record')
+  })
+
+  it('records that the three channels deliberately share one dimension', () => {
+    expect(CHANNEL_DIMENSION_NOTE).toBe('record')
+  })
+})
+
+describe('the source parser', () => {
+  it('splits on top-level signs only, respecting parentheses', () => {
+    expect(splitTerms('a.x - a.y')).toEqual(['a.x', 'a.y'])
+    expect(splitTerms('a.x + p.k * s.S')).toEqual(['a.x', 'p.k * s.S'])
+    // A sign inside parentheses is part of the term, not a separator.
+    expect(splitTerms('p.k * (1 - s.S) + a.y')).toEqual(['p.k * (1 - s.S)', 'a.y'])
+    expect(splitTerms('')).toEqual([])
+  })
+
+  it('normalises whitespace and strips the transform’s statement punctuation', () => {
+    expect(splitTerms('a.x   -    a.y;')).toEqual(['a.x', 'a.y'])
+    expect(splitTerms('a.x\n  + a.y;')).toEqual(['a.x', 'a.y'])
+  })
+
+  it('returns null for a stock with no assignment, rather than pretending', () => {
+    expect(equationSource('function f() { const dU = a.x; }', 'NOPE')).toBeNull()
+  })
+
+  it('ignores commented-out arithmetic', () => {
+    // A term that exists only in a comment must not be read as part of the model.
+    const src = ['function f() {', '// const dU = a.ghost;', 'const dU = a.real;', 'return 1;', '}'].join('\n')
+    // equationSource keeps the raw right-hand side; splitTerms is what normalises it,
+    // and the term list is the contract the gates actually consume.
+    expect(splitTerms(equationSource(src, 'U') ?? '')).toEqual(['a.real'])
   })
 })
