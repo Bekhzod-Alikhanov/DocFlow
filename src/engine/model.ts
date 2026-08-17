@@ -265,7 +265,14 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   const d_closeout = p.delta_R3 * R3
 
   const belated_doc = p.mu * U * f_doc
-  const u_to_debt = p.sigma * U
+  // V3.3: `u_to_debt` used to be ONE number subtracted from a stock of incidents and
+  // added to a stock of technical debt — the same quantity carrying two different
+  // physical meanings with no stated conversion. Split into the outflow (incidents
+  // leaving U) and the inflow it causes (debt entering TD), with the conversion named.
+  // `c_inc_debt` defaults to 1, so this is a dimensional repair and not a re-tuning:
+  // every trajectory is bit-identical to before the split.
+  const u_outflow = p.sigma * U
+  const u_to_debt = p.c_inc_debt * u_outflow
 
   // Debt surfaces as harm, mitigated by capability (floored at 0).
   const harm_events = p.gamma * TD * Math.max(0, 1 - L / 100)
@@ -388,6 +395,7 @@ export function computeAux(s: State, p: Params): Auxiliaries {
     remediation,
     d_closeout,
     belated_doc,
+    u_outflow,
     u_to_debt,
     harm_events,
     safety_wins,
@@ -429,7 +437,7 @@ export function computeAux(s: State, p: Params): Auxiliaries {
  * Pure; takes a pre-computed aux bundle to avoid recomputation in the integrator.
  */
 export function derivativesFromAux(s: State, p: Params, a: Auxiliaries): State {
-  const dU = a.to_U - a.belated_doc - a.u_to_debt
+  const dU = a.to_U - a.belated_doc - a.u_outflow
 
   // Three channels with distinct evidentiary status (ADR/0002).
   const dR1 = a.to_R1 - p.delta_R1 * s.R1

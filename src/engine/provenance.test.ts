@@ -25,7 +25,10 @@ import { PROVENANCE_TIER_LABEL, type ProvenanceTier } from './types'
 const EXPECTED: Record<ProvenanceTier, number> = {
   T1: 0,
   T2: 0,
-  T3: 13,
+  // T3 rose 13 → 14 in the V3 dimensional pass: `c_inc_debt` makes the incident→debt
+  // conversion explicit. It was always there, implicit at 1; naming it adds a
+  // structural parameter without adding a claim.
+  T3: 14,
   T4: 86,
 }
 

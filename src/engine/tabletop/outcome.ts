@@ -5,6 +5,7 @@
  * to 0–100. This is DocFlow judging the institution the player operated.
  */
 import { simulate } from '../simulate'
+import { RECURRENCE } from './coefficients'
 import type { Regime } from '../simulate'
 import type { RunState } from './applyChoice'
 
@@ -23,7 +24,8 @@ export function engineForwardOutcome(state: RunState): AftermathOutcome {
   // Recurrence rises with latent debt and falls with learned safety capability.
   const debtPressure = finalDebt / (finalDebt + 20) // saturating 0–1
   const learningShortfall = 1 - finalLearning / 100
-  const raw = 100 * (0.6 * debtPressure + 0.4 * learningShortfall)
+  const raw =
+    100 * (RECURRENCE.debt_pressure * debtPressure + RECURRENCE.learning_shortfall * learningShortfall)
   return {
     regime: summary.regime,
     recurrenceRisk: Math.max(0, Math.min(100, raw)),

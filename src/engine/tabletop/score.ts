@@ -14,6 +14,7 @@
  * is the trap, and it is why no path dominates.
  */
 import type { LeverKey } from '../types'
+import { PERCEIVED_SHIELD } from './coefficients'
 import { privilegeSurvival } from '../model'
 import { defaultParams, defaultInitState, defaultSettings, clampParam } from '../registry'
 import {
@@ -60,10 +61,10 @@ export function perceivedLegalShield(state: RunState): number {
     state.flags.includes('legal_owns_record') || state.flags.includes('privileged_single_track')
   return clamp01(
     // "We involved a lawyer."
-    0.55 * state.params.significant_purpose +
+    PERCEIVED_SHIELD.significant_purpose * state.params.significant_purpose +
       // "And we kept it off the books."
-      0.30 * (privilegedSingleTrack ? 1 : 0) +
-      0.15 * (1 - state.params.original_records_boundary),
+      PERCEIVED_SHIELD.single_track_flag * (privilegedSingleTrack ? 1 : 0) +
+      PERCEIVED_SHIELD.no_records_boundary * (1 - state.params.original_records_boundary),
   )
 }
 

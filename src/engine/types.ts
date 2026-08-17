@@ -161,6 +161,7 @@ export const STRUCTURAL_KEYS = [
   'delta_R3',
   'rate_23',
   'rate_13',
+  'c_inc_debt',
   'c_rec_exp',
   'disc_prob',
   'xi_2',
@@ -301,6 +302,9 @@ export interface Auxiliaries {
   remediation: number
   d_closeout: number
   belated_doc: number
+  /** Incidents leaving U (incident/month). */
+  u_outflow: number
+  /** Debt those incidents create (debt/month), via c_inc_debt. */
   u_to_debt: number
   harm_events: number
   safety_wins: number
@@ -351,6 +355,7 @@ export const AUX_KEYS = [
   'remediation',
   'd_closeout',
   'belated_doc',
+  'u_outflow',
   'u_to_debt',
   'harm_events',
   'safety_wins',

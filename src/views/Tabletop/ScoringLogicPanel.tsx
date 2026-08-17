@@ -1,9 +1,17 @@
 // src/views/Tabletop/ScoringLogicPanel.tsx
 import { useState } from 'react'
+import type { LeverKey } from '../../engine'
 
 export interface ScoringLogicEntry {
   formula: string
-  levers: string[]
+  /**
+   * Typed as `LeverKey[]`, not `string[]`. It was `string[]` until v0.3.0, and that
+   * is exactly why this panel went on advertising `privilege_strength` as a driver of
+   * five meters after M3b retired the lever: the ids are only ever joined into display
+   * text, so nothing could fail at runtime and nothing could fail at compile time
+   * either. The type is now the guard — a retired lever breaks the build.
+   */
+  levers: LeverKey[]
   flags: string[]
 }
 
