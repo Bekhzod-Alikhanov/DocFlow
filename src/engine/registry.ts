@@ -104,6 +104,10 @@ const LEVER_SPECS: ParamSpec[] = [
     note: 'Credible privilege architecture. Lowers perceived discoverability and the documenting→exposure (backfire) coupling.',
     advanced: false,
     leverFamily: 'legal',
+    tier: 'T4',
+    whatWouldConstrainIt:
+      'Coded outcomes of privilege rulings on incident forensics — the protocol in CALIBRATION.md section 3, not yet executed.',
+    citationStatus: 'unverified',
   },
   {
     id: 'just_culture',
@@ -118,6 +122,10 @@ const LEVER_SPECS: ParamSpec[] = [
     note: 'Codified non-punitive learning line. Raises the drive to document and the culture growth target.',
     advanced: false,
     leverFamily: 'governance',
+    tier: 'T4',
+    whatWouldConstrainIt:
+      'Adoption and effect data for codified just-culture standards (ASAP "Big Five", EU Reg. 376/2014 Art. 16(10)).',
+    citationStatus: 'unverified',
   },
   {
     id: 'mandatory_reporting',
@@ -132,6 +140,10 @@ const LEVER_SPECS: ParamSpec[] = [
     note: 'Compulsion to report. A stick that raises documentation BUT also raises felt discoverability of records.',
     advanced: false,
     leverFamily: 'legal',
+    tier: 'T4',
+    whatWouldConstrainIt:
+      'Compliance and reporting-volume data once EU AI Act Art. 73 is operative.',
+    citationStatus: 'pin-cite-pending',
   },
   {
     id: 'pld_penalty',
@@ -146,6 +158,10 @@ const LEVER_SPECS: ParamSpec[] = [
     note: 'Adverse-inference regime penalizing suppression. Raises exposure for undocumented incidents and felt discoverability.',
     advanced: false,
     leverFamily: 'legal',
+    tier: 'T4',
+    whatWouldConstrainIt:
+      'Frequency with which courts apply the PLD Art. 9(1) rebuttable presumption after non-compliance.',
+    citationStatus: 'pin-cite-pending',
   },
   {
     id: 'recipient_enforcer_separation',
@@ -160,6 +176,10 @@ const LEVER_SPECS: ParamSpec[] = [
     note: 'The entity that learns is not the entity that punishes. Lowers perceived discoverability and lifts culture.',
     advanced: false,
     leverFamily: 'governance',
+    tier: 'T4',
+    whatWouldConstrainIt:
+      'ASRS vs FAA-direct reporting volumes as a natural experiment in separation.',
+    citationStatus: 'unverified',
   },
   {
     id: 'translation_layer',
@@ -174,6 +194,10 @@ const LEVER_SPECS: ParamSpec[] = [
     note: 'Decouples the factual record from the fault narrative. Raises learning efficiency and lowers felt discoverability.',
     advanced: false,
     leverFamily: 'learning',
+    tier: 'T4',
+    whatWouldConstrainIt:
+      'Fraction of safety findings that reach engineering as an actioned requirement.',
+    citationStatus: 'unverified',
   },
   {
     id: 'workflow_protection',
@@ -188,6 +212,10 @@ const LEVER_SPECS: ParamSpec[] = [
     note: 'PSQIA-style protection of a defined safety-evaluation process rather than a single document. Lowers dual-purpose backfire.',
     advanced: false,
     leverFamily: 'legal',
+    tier: 'T4',
+    whatWouldConstrainIt:
+      'PSQIA listing and adoption data, plus outcomes of PSES protection challenges.',
+    citationStatus: 'unverified',
   },
   {
     id: 'original_records_boundary',
@@ -202,6 +230,10 @@ const LEVER_SPECS: ParamSpec[] = [
     note: 'A discoverable factual core is kept outside protected analysis, making documentation more legitimate and less weaponizable.',
     advanced: false,
     leverFamily: 'legal',
+    tier: 'T4',
+    whatWouldConstrainIt:
+      'Discovery outcomes where a firm maintained a clean factual/analytic split.',
+    citationStatus: 'unverified',
   },
   {
     id: 'safe_harbor_non_admission',
@@ -216,6 +248,10 @@ const LEVER_SPECS: ParamSpec[] = [
     note: 'Reporting is treated as a signal rather than an admission of fault. Lowers litigation pressure from candid reports.',
     advanced: false,
     leverFamily: 'legal',
+    tier: 'T4',
+    whatWouldConstrainIt:
+      'Reporting volumes before and after CIRCIA section 681e-style non-admission rules.',
+    citationStatus: 'unverified',
   },
   {
     id: 'effective_challenge',
@@ -230,6 +266,10 @@ const LEVER_SPECS: ParamSpec[] = [
     note: 'Independent review with competence, incentives, and influence. Converts incident findings into forced model changes.',
     advanced: false,
     leverFamily: 'governance',
+    tier: 'T4',
+    whatWouldConstrainIt:
+      'SR 11-7 examination findings on validation independence and its effect on remediation.',
+    citationStatus: 'unverified',
   },
   {
     id: 'near_miss_tier',
@@ -244,6 +284,10 @@ const LEVER_SPECS: ParamSpec[] = [
     note: 'A low-stakes weak-signal channel alongside mandatory serious-incident reporting. Adds learning without much exposure.',
     advanced: false,
     leverFamily: 'learning',
+    tier: 'T4',
+    whatWouldConstrainIt:
+      'Near-miss vs serious-incident report ratios in ASRS and EU Reg. 376/2014 regimes.',
+    citationStatus: 'unverified',
   },
   {
     id: 'intermediary_capacity',
@@ -258,77 +302,81 @@ const LEVER_SPECS: ParamSpec[] = [
     note: 'A funded analytic body that turns raw reports into shared safety outputs and visible feedback.',
     advanced: false,
     leverFamily: 'learning',
+    tier: 'T4',
+    whatWouldConstrainIt:
+      'Funding and throughput data for ASIAS, AHRQ NPSD and INPO operating-experience programmes.',
+    citationStatus: 'unverified',
   },
 ]
 
 /** Structural coefficients (spec §2.2–2.3) — the Advanced panel. */
 const STRUCTURAL_SPECS: ParamSpec[] = [
   // --- documentation fraction f_doc + perceived discoverability ---
-  { id: 'gain', label: 'Logistic gain (f_doc steepness)', unit: 'dimensionless', default: 15, min: 1, max: 20, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Steepness of the documentation-fraction sigmoid. Higher → sharper tipping threshold; also deepens the culture fold. Calibrated for bistability (see MODEL.md).', advanced: true },
-  { id: 'threshold', label: 'Documentation drive threshold', unit: 'drive units', default: 0.6, min: 0, max: 1.5, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Net drive at which f_doc = 0.5. Calibrated so the cyber chilling attractor lands near f_doc ≈ 0.05 (the Schwarcz 2023 estimate).', advanced: true },
-  { id: 'a_c', label: 'Culture → drive weight', unit: 'drive/culture', default: 1.0, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'How strongly culture C raises the drive to document. The main dynamic input to f_doc.', advanced: true },
-  { id: 'a_jc', label: 'Just-culture → drive weight', unit: 'drive/lever', default: 0.6, min: 0, max: 1.5, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Direct lift to documentation drive from a codified just-culture line.', advanced: true },
-  { id: 'a_m', label: 'Mandatory-reporting → drive weight', unit: 'drive/lever', default: 0.35, min: 0, max: 1.5, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Compulsion stick: raises documentation drive.', advanced: true },
-  { id: 'a_disc', label: 'Discoverability → drive penalty', unit: 'drive/PD', default: 0.8, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'How strongly perceived discoverability (when positive) suppresses the drive to document.', advanced: true },
-  { id: 'w_m', label: 'Mandatory-reporting → discoverability', unit: 'PD/lever', default: 0.5, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Compulsion also raises felt exposure of the records it creates.', advanced: true },
-  { id: 'w_p', label: 'PLD penalty → discoverability', unit: 'PD/lever', default: 0.7, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Adverse-inference regime raises the felt discoverability of the record environment.', advanced: true },
-  { id: 'w_priv', label: 'Privilege → discoverability (−)', unit: 'PD/lever', default: 1.0, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Credible privilege lowers perceived discoverability.', advanced: true },
-  { id: 'w_sep', label: 'Separation → discoverability (−)', unit: 'PD/lever', default: 0.8, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Recipient–enforcer separation lowers perceived discoverability.', advanced: true },
-  { id: 'w_tl', label: 'Translation layer → discoverability (−)', unit: 'PD/lever', default: 0.6, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'A factual record decoupled from fault narrative lowers perceived discoverability.', advanced: true },
-  { id: 'w_workflow', label: 'Workflow protection → discoverability (−)', unit: 'PD/lever', default: 0.7, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; PSQIA workflow-protection analogy', note: 'Defined workflow protection lowers the dual-purpose discoverability penalty.', advanced: true },
-  { id: 'w_records', label: 'Original-record boundary → discoverability (−)', unit: 'PD/lever', default: 0.35, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; PSQIA original-records exception', note: 'A clean factual/analytic boundary lowers discoverability pressure by keeping facts accessible and analysis bounded.', advanced: true },
-  { id: 'pd_sharpness', label: 'Discoverability kink sharpness', unit: '1/PD', default: 20, min: 5, max: 100, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: 'Smoothness fix v0.3.0 (AUDIT.md F15); not in BUILD_SPEC', note: 'Sharpness of the softplus that replaced the hard ReLU on perceived discoverability. Higher = closer to a kink; lower = smoother but a larger positive bias (ln2/beta) at the zero crossing. Purely a numerical-form parameter: it has no institutional meaning and its influence should be reported by the steepness sweep, not interpreted.', advanced: true },
-  { id: 'w_safe', label: 'Safe harbor → discoverability (−)', unit: 'PD/lever', default: 0.65, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; CIRCIA §681e and FDA non-admission rules', note: 'Safe-harbor and non-admission rules lower the perceived litigation penalty of reporting.', advanced: true },
+  { id: 'gain', label: 'Logistic gain (f_doc steepness)', unit: 'dimensionless', default: 15, min: 1, max: 20, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Steepness of the documentation-fraction sigmoid. Higher → sharper tipping threshold; also deepens the culture fold. Calibrated for bistability (see MODEL.md).', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Observed sharpness of the transition between documenting and not documenting, e.g. from a firm that crossed it.' },
+  { id: 'threshold', label: 'Documentation drive threshold', unit: 'drive units', default: 0.6, min: 0, max: 1.5, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Net drive at which f_doc = 0.5. Calibrated so the cyber chilling attractor lands near f_doc ≈ 0.05 (the Schwarcz 2023 estimate).', advanced: true, tier: 'T4', whatWouldConstrainIt: 'A measured documentation rate at a known lever configuration.' },
+  { id: 'a_c', label: 'Culture → drive weight', unit: 'drive/culture', default: 1.0, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'How strongly culture C raises the drive to document. The main dynamic input to f_doc.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Effect size of psychological safety on the decision to record.' },
+  { id: 'a_jc', label: 'Just-culture → drive weight', unit: 'drive/lever', default: 0.6, min: 0, max: 1.5, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Direct lift to documentation drive from a codified just-culture line.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Direct effect of a written just-culture standard on the decision to record.' },
+  { id: 'a_m', label: 'Mandatory-reporting → drive weight', unit: 'drive/lever', default: 0.35, min: 0, max: 1.5, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Compulsion stick: raises documentation drive.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Compliance uplift attributable to a mandatory-reporting duty.' },
+  { id: 'a_disc', label: 'Discoverability → drive penalty', unit: 'drive/PD', default: 0.8, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'How strongly perceived discoverability (when positive) suppresses the drive to document.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Measured suppression attributable to perceived discoverability.' },
+  { id: 'w_m', label: 'Mandatory-reporting → discoverability', unit: 'PD/lever', default: 0.5, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Compulsion also raises felt exposure of the records it creates.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Elicited or measured contribution of this mechanism to perceived discoverability; currently these eight are jointly unidentifiable (AUDIT.md 5.2).' },
+  { id: 'w_p', label: 'PLD penalty → discoverability', unit: 'PD/lever', default: 0.7, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Adverse-inference regime raises the felt discoverability of the record environment.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Elicited or measured contribution of this mechanism to perceived discoverability; currently these eight are jointly unidentifiable (AUDIT.md 5.2).' },
+  { id: 'w_priv', label: 'Privilege → discoverability (−)', unit: 'PD/lever', default: 1.0, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Credible privilege lowers perceived discoverability.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Elicited or measured contribution of this mechanism to perceived discoverability; currently these eight are jointly unidentifiable (AUDIT.md 5.2).' },
+  { id: 'w_sep', label: 'Separation → discoverability (−)', unit: 'PD/lever', default: 0.8, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Recipient–enforcer separation lowers perceived discoverability.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Elicited or measured contribution of this mechanism to perceived discoverability; currently these eight are jointly unidentifiable (AUDIT.md 5.2).' },
+  { id: 'w_tl', label: 'Translation layer → discoverability (−)', unit: 'PD/lever', default: 0.6, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'A factual record decoupled from fault narrative lowers perceived discoverability.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Elicited or measured contribution of this mechanism to perceived discoverability; currently these eight are jointly unidentifiable (AUDIT.md 5.2).' },
+  { id: 'w_workflow', label: 'Workflow protection → discoverability (−)', unit: 'PD/lever', default: 0.7, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; PSQIA workflow-protection analogy', note: 'Defined workflow protection lowers the dual-purpose discoverability penalty.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Elicited or measured contribution of this mechanism to perceived discoverability; currently these eight are jointly unidentifiable (AUDIT.md 5.2).' },
+  { id: 'w_records', label: 'Original-record boundary → discoverability (−)', unit: 'PD/lever', default: 0.35, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; PSQIA original-records exception', note: 'A clean factual/analytic boundary lowers discoverability pressure by keeping facts accessible and analysis bounded.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Elicited or measured contribution of this mechanism to perceived discoverability; currently these eight are jointly unidentifiable (AUDIT.md 5.2).' },
+  { id: 'pd_sharpness', label: 'Discoverability kink sharpness', unit: '1/PD', default: 20, min: 5, max: 100, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: 'Smoothness fix v0.3.0 (AUDIT.md F15); not in BUILD_SPEC', note: 'Sharpness of the softplus that replaced the hard ReLU on perceived discoverability. Higher = closer to a kink; lower = smoother but a larger positive bias (ln2/beta) at the zero crossing. Purely a numerical-form parameter: it has no institutional meaning and its influence should be reported by the steepness sweep, not interpreted.', advanced: true, tier: 'T3', whatWouldConstrainIt: 'Softplus sharpness replacing a hard kink. Numerical form with no institutional meaning.' },
+  { id: 'w_safe', label: 'Safe harbor → discoverability (−)', unit: 'PD/lever', default: 0.65, min: 0, max: 2, group: 'documentation', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; CIRCIA §681e and FDA non-admission rules', note: 'Safe-harbor and non-admission rules lower the perceived litigation penalty of reporting.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Elicited or measured contribution of this mechanism to perceived discoverability; currently these eight are jointly unidentifiable (AUDIT.md 5.2).' },
 
   // --- incident generation ---
-  { id: 'base_incident_rate', label: 'Base incident rate', unit: 'incidents/month', default: 3, min: 0.5, max: 8, group: 'incidents', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Incident inflow at zero debt and zero learning.', advanced: true },
-  { id: 'alpha_td', label: 'Debt → incident amplification', unit: 'per TD_ref', default: 0.6, min: 0, max: 2, group: 'incidents', evidence_basis: ILLUSTRATIVE, source: 'Direction per Sculley et al. 2015 (debt compounds); magnitude illustrative', note: 'Latent technical debt breeds new incidents. Sign is theory-grounded; magnitude is assumed.', advanced: true },
-  { id: 'TD_ref', label: 'Reference technical debt', unit: 'debt index', default: 10, min: 1, max: 50, group: 'incidents', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Normalizer for the debt→incident term.', advanced: true },
-  { id: 'td_sat', label: 'Debt→incident saturation', unit: 'TD_ref units', default: 4, min: 0.5, max: 20, group: 'incidents', evidence_basis: ILLUSTRATIVE, source: 'Well-posedness refinement (MODEL.md); not in BUILD_SPEC', note: 'Saturation point of the debt→incident feedback. The max amplification is 1 + alpha_td·td_sat. Replaces the spec’s unbounded linear term so the chilling regime stays finite.', advanced: true },
-  { id: 'beta_L', label: 'Learning → incident suppression', unit: 'per 100 L', default: 0.4, min: 0, max: 0.9, group: 'incidents', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Capability reduces incident generation (kept <1 so inflow stays positive).', advanced: true },
+  { id: 'base_incident_rate', label: 'Base incident rate', unit: 'incidents/month', default: 3, min: 0.5, max: 8, group: 'incidents', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Incident inflow at zero debt and zero learning.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Incident counts per unit deployment from AIID or internal telemetry.' },
+  { id: 'alpha_td', label: 'Debt → incident amplification', unit: 'per TD_ref', default: 0.6, min: 0, max: 2, group: 'incidents', evidence_basis: ILLUSTRATIVE, source: 'Direction per Sculley et al. 2015 (debt compounds); magnitude illustrative', note: 'Latent technical debt breeds new incidents. Sign is theory-grounded; magnitude is assumed.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Measured relationship between accumulated technical debt and incident rate.' },
+  { id: 'TD_ref', label: 'Reference technical debt', unit: 'debt index', default: 10, min: 1, max: 50, group: 'incidents', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Normalizer for the debt→incident term.', advanced: true, tier: 'T3', whatWouldConstrainIt: 'A normaliser that defines the debt index scale; it fixes units rather than asserting a magnitude.' },
+  { id: 'td_sat', label: 'Debt→incident saturation', unit: 'TD_ref units', default: 4, min: 0.5, max: 20, group: 'incidents', evidence_basis: ILLUSTRATIVE, source: 'Well-posedness refinement (MODEL.md); not in BUILD_SPEC', note: 'Saturation point of the debt→incident feedback. The max amplification is 1 + alpha_td·td_sat. Replaces the spec’s unbounded linear term so the chilling regime stays finite.', advanced: true, tier: 'T3', whatWouldConstrainIt: 'Saturation ceiling introduced for well-posedness (the linear form diverged). A form choice, not a measurement.' },
+  { id: 'beta_L', label: 'Learning → incident suppression', unit: 'per 100 L', default: 0.4, min: 0, max: 0.9, group: 'incidents', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Capability reduces incident generation (kept <1 so inflow stays positive).', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Measured reduction in incident rate attributable to safety capability.' },
 
   // --- learning ---
-  { id: 'eta_learn', label: 'Learning gain per documented incident', unit: 'L per incident', default: 0.8, min: 0, max: 2, group: 'learning', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'How much durable capability a documented, analyzed incident produces.', advanced: true },
-  { id: 'base_eff', label: 'Base translation efficiency', unit: 'dimensionless', default: 0.5, min: 0.1, max: 1, group: 'learning', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Baseline conversion of documented incidents into learning, with no translation layer.', advanced: true },
-  { id: 'tl_boost', label: 'Translation-layer efficiency boost', unit: 'per lever', default: 0.8, min: 0, max: 2, group: 'learning', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Added learning efficiency from a strong safety translation layer.', advanced: true },
-  { id: 'intermediary_efficiency_boost', label: 'Intermediary efficiency boost', unit: 'per lever', default: 0.55, min: 0, max: 2, group: 'learning', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; ASIAS/MITRE, AHRQ NPSD, INPO operating experience', note: 'Added learning efficiency from a funded analytic intermediary that converts reports into reusable safety outputs.', advanced: true },
-  { id: 'challenge_learning_boost', label: 'Effective-challenge learning boost', unit: 'per lever', default: 0.45, min: 0, max: 2, group: 'learning', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; SR 11-7 effective challenge', note: 'Independent reviewers with influence make each documented incident more likely to become durable learning.', advanced: true },
-  { id: 'near_miss_learning_boost', label: 'Near-miss weak-signal learning', unit: 'L per signal', default: 0.28, min: 0, max: 1, group: 'learning', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; ASRS and EU Reg. 376/2014 voluntary occurrence tier', note: 'Learning contribution from low-exposure near-miss reports that may not become formal incident records.', advanced: true },
-  { id: 'delta_L', label: 'Learning erosion (turnover)', unit: '1/month', default: 0.1, min: 0.01, max: 0.5, group: 'learning', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Rate at which capability decays without reinforcement.', advanced: true },
+  { id: 'eta_learn', label: 'Learning gain per documented incident', unit: 'L per incident', default: 0.8, min: 0, max: 2, group: 'learning', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'How much durable capability a documented, analyzed incident produces.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Measured capability gain per documented and analysed incident.' },
+  { id: 'base_eff', label: 'Base translation efficiency', unit: 'dimensionless', default: 0.5, min: 0.1, max: 1, group: 'learning', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Baseline conversion of documented incidents into learning, with no translation layer.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Fraction of documented incidents that yield an actioned engineering change.' },
+  { id: 'tl_boost', label: 'Translation-layer efficiency boost', unit: 'per lever', default: 0.8, min: 0, max: 2, group: 'learning', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Added learning efficiency from a strong safety translation layer.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Difference in that fraction with and without a translation function.' },
+  { id: 'intermediary_efficiency_boost', label: 'Intermediary efficiency boost', unit: 'per lever', default: 0.55, min: 0, max: 2, group: 'learning', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; ASIAS/MITRE, AHRQ NPSD, INPO operating experience', note: 'Added learning efficiency from a funded analytic intermediary that converts reports into reusable safety outputs.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'ASIAS/AHRQ NPSD data on analytic yield with a funded intermediary.' },
+  { id: 'challenge_learning_boost', label: 'Effective-challenge learning boost', unit: 'per lever', default: 0.45, min: 0, max: 2, group: 'learning', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; SR 11-7 effective challenge', note: 'Independent reviewers with influence make each documented incident more likely to become durable learning.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'SR 11-7 validation outcomes: change rate with vs without independent challenge.' },
+  { id: 'near_miss_learning_boost', label: 'Near-miss weak-signal learning', unit: 'L per signal', default: 0.28, min: 0, max: 1, group: 'learning', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; ASRS and EU Reg. 376/2014 voluntary occurrence tier', note: 'Learning contribution from low-exposure near-miss reports that may not become formal incident records.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Learning yield of near-miss reports relative to serious-incident reports (ASRS).' },
+  { id: 'delta_L', label: 'Learning erosion (turnover)', unit: '1/month', default: 0.1, min: 0.01, max: 0.5, group: 'learning', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Rate at which capability decays without reinforcement.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Capability decay measured against engineering turnover rates.' },
 
   // --- documented-incident & debt dynamics ---
-  { id: 'rho', label: 'Remediation rate', unit: '1/month', default: 0.15, min: 0, max: 0.5, group: 'debt', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Debt fixed per documented incident, scaled by capability (rho·D·L/100).', advanced: true },
-  { id: 'challenge_remediation_boost', label: 'Effective-challenge remediation boost', unit: 'per lever', default: 0.65, min: 0, max: 2, group: 'debt', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; SR 11-7 validation → forced change loop', note: 'Independent validation with standing accelerates conversion of documented findings into remediation.', advanced: true },
-  { id: 'kappa_D', label: 'Documented-incident closeout', unit: '1/month', default: 0.3, min: 0.05, max: 0.8, group: 'debt', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Rate at which documented incidents are closed out of the active stock.', advanced: true },
-  { id: 'mu', label: 'Belated documentation rate', unit: '1/month', default: 0.1, min: 0, max: 0.5, group: 'debt', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Fraction of undocumented incidents belatedly documented (hard, no contemporaneous record).', advanced: true },
-  { id: 'sigma', label: 'Undocumented → debt rate', unit: '1/month', default: 0.25, min: 0.02, max: 0.6, group: 'debt', evidence_basis: 'illustrative-assumption', source: 'Direction per Sculley et al. 2015; magnitude illustrative', note: 'Undocumented incidents decay into latent technical debt.', advanced: true },
-  { id: 'td_baseline', label: 'Baseline debt accrual', unit: 'debt/month', default: 0.5, min: 0, max: 3, group: 'debt', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Debt that accrues independent of incidents (entropy, drift).', advanced: true },
-  { id: 'delta_TD', label: 'Natural debt retirement', unit: '1/month', default: 0.05, min: 0, max: 0.3, group: 'debt', evidence_basis: ILLUSTRATIVE, source: 'Well-posedness refinement (MODEL.md); not in BUILD_SPEC', note: 'Debt retired independent of incident learning (refactoring, deprecation, system replacement). Added so a finite chilling equilibrium exists.', advanced: true },
-  { id: 'gamma', label: 'Debt → harm conversion', unit: 'harm per TD', default: 0.5, min: 0, max: 2, group: 'debt', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'How much latent debt surfaces as harm events, mitigated by capability (1−L/100).', advanced: true },
-  { id: 'td_k', label: 'Debt availability half-saturation', unit: 'debt index', default: 2, min: 0.1, max: 20, group: 'debt', evidence_basis: ILLUSTRATIVE, source: 'Well-posedness fix v0.3.0 (AUDIT.md F2); not in BUILD_SPEC', note: 'Gates remediation by how much debt is actually available to fix: TD/(TD+td_k). Makes TD=0 an invariant of the equations, so the lower bound no longer has to be enforced by a clamp.', advanced: true },
+  { id: 'rho', label: 'Remediation rate', unit: '1/month', default: 0.15, min: 0, max: 0.5, group: 'debt', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Debt fixed per documented incident, scaled by capability (rho·D·L/100).', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Observed debt-retirement rate per documented incident.' },
+  { id: 'challenge_remediation_boost', label: 'Effective-challenge remediation boost', unit: 'per lever', default: 0.65, min: 0, max: 2, group: 'debt', evidence_basis: ILLUSTRATIVE, source: 'DocFlow v0.2; SR 11-7 validation → forced change loop', note: 'Independent validation with standing accelerates conversion of documented findings into remediation.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Remediation throughput with vs without independent validation.' },
+  { id: 'kappa_D', label: 'Documented-incident closeout', unit: '1/month', default: 0.3, min: 0.05, max: 0.8, group: 'debt', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Rate at which documented incidents are closed out of the active stock.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Mean time an incident stays open in a real tracker.' },
+  { id: 'mu', label: 'Belated documentation rate', unit: '1/month', default: 0.1, min: 0, max: 0.5, group: 'debt', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Fraction of undocumented incidents belatedly documented (hard, no contemporaneous record).', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Rate at which previously undocumented incidents are belatedly written up.' },
+  { id: 'sigma', label: 'Undocumented → debt rate', unit: '1/month', default: 0.25, min: 0.02, max: 0.6, group: 'debt', evidence_basis: 'illustrative-assumption', source: 'Direction per Sculley et al. 2015; magnitude illustrative', note: 'Undocumented incidents decay into latent technical debt.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Rate at which unanalysed incidents become latent debt.' },
+  { id: 'td_baseline', label: 'Baseline debt accrual', unit: 'debt/month', default: 0.5, min: 0, max: 3, group: 'debt', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Debt that accrues independent of incidents (entropy, drift).', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Background debt accrual independent of incidents (entropy, drift).' },
+  { id: 'delta_TD', label: 'Natural debt retirement', unit: '1/month', default: 0.05, min: 0, max: 0.3, group: 'debt', evidence_basis: ILLUSTRATIVE, source: 'Well-posedness refinement (MODEL.md); not in BUILD_SPEC', note: 'Debt retired independent of incident learning (refactoring, deprecation, system replacement). Added so a finite chilling equilibrium exists.', advanced: true, tier: 'T3', whatWouldConstrainIt: 'Natural debt retirement, added so a finite chilling equilibrium exists. Well-posedness.' },
+  { id: 'gamma', label: 'Debt → harm conversion', unit: 'harm per TD', default: 0.5, min: 0, max: 2, group: 'debt', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'How much latent debt surfaces as harm events, mitigated by capability (1−L/100).', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Measured conversion of latent debt into user-visible harm.' },
+  { id: 'td_k', label: 'Debt availability half-saturation', unit: 'debt index', default: 2, min: 0.1, max: 20, group: 'debt', evidence_basis: ILLUSTRATIVE, source: 'Well-posedness fix v0.3.0 (AUDIT.md F2); not in BUILD_SPEC', note: 'Gates remediation by how much debt is actually available to fix: TD/(TD+td_k). Makes TD=0 an invariant of the equations, so the lower bound no longer has to be enforced by a clamp.', advanced: true, tier: 'T3', whatWouldConstrainIt: 'Half-saturation that makes TD = 0 an invariant of the equations. Purely structural.' },
 
   // --- exposure ---
-  { id: 'phi_doc', label: 'Documenting → exposure', unit: 'exposure/incident', default: 0.4, min: 0, max: 1, group: 'exposure', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Discovery exposure from creating records, UNLESS privilege protects them.', advanced: true },
-  { id: 'phi_harm', label: 'Harm → exposure', unit: 'exposure/harm', default: 0.3, min: 0, max: 1, group: 'exposure', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Realized harm raises litigation/regulatory exposure.', advanced: true },
-  { id: 'phi_pld', label: 'PLD adverse inference → exposure', unit: 'exposure/incident', default: 0.5, min: 0, max: 1.5, group: 'exposure', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Non-documentation penalty applied to undocumented incidents (punishes suppression).', advanced: true },
-  { id: 'theta_E', label: 'Exposure decay/settlement', unit: '1/month', default: 0.2, min: 0.02, max: 0.6, group: 'exposure', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Exposure settles/decays over time.', advanced: true },
+  { id: 'phi_doc', label: 'Documenting → exposure', unit: 'exposure/incident', default: 0.4, min: 0, max: 1, group: 'exposure', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Discovery exposure from creating records, UNLESS privilege protects them.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Discovery exposure realised per document produced, from litigation records.' },
+  { id: 'phi_harm', label: 'Harm → exposure', unit: 'exposure/harm', default: 0.3, min: 0, max: 1, group: 'exposure', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Realized harm raises litigation/regulatory exposure.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Exposure realised per harm event, from settlement and enforcement data.' },
+  { id: 'phi_pld', label: 'PLD adverse inference → exposure', unit: 'exposure/incident', default: 0.5, min: 0, max: 1.5, group: 'exposure', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Non-documentation penalty applied to undocumented incidents (punishes suppression).', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Adverse-inference exposure per undocumented incident under PLD Art. 9(1).' },
+  { id: 'theta_E', label: 'Exposure decay/settlement', unit: '1/month', default: 0.2, min: 0.02, max: 0.6, group: 'exposure', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Exposure settles/decays over time.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Observed settlement and decay timescale of litigation exposure.' },
 
   // --- culture ---
-  { id: 'omega', label: 'Safety wins → culture', unit: 'culture/f_doc', default: 2.1, min: 0, max: 4, group: 'culture', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Visible safety wins (documentation working, scaled by translation efficiency) raise culture (R2 reinforcement). Strength of the virtuous loop. Calibrated for bistability.', advanced: true },
-  { id: 'psi', label: 'Backfire → culture (−)', unit: 'culture/f_doc', default: 1.04, min: 0, max: 5, group: 'culture', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Seeing records weaponized (documenting without privilege) lowers culture; gated by (1−protection). v0.3.0: phi_doc was removed from this term (it is an exposure/incident conversion and had no business in the culture equation — AUDIT.md F7). The default 1.04 preserves the v0.2 effective product psi·phi_doc = 2.6 × 0.4, so this is a dimensional repair, not a re-tuning.', advanced: true },
-  { id: 'lambda_C', label: 'Culture adjustment speed', unit: '1/month', default: 0.3, min: 0.02, max: 1, group: 'culture', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'How fast culture moves toward its target. Slow → strong hysteresis.', advanced: true },
-  { id: 'a_sep', label: 'Separation → culture', unit: 'culture/lever', default: 0.13, min: 0, max: 1.5, group: 'culture', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Recipient–enforcer separation directly raises the culture target.', advanced: true },
-  { id: 'a_jc_c', label: 'Just culture → culture target', unit: 'culture/lever', default: 0.38, min: 0, max: 1.5, group: 'culture', evidence_basis: 'illustrative-assumption', source: 'Refinement (MODEL.md): the spec used coefficient 1 implicitly', note: 'Weight of the just-culture baseline in the culture target (symmetric with a_sep).', advanced: true },
+  { id: 'omega', label: 'Safety wins → culture', unit: 'culture/f_doc', default: 2.1, min: 0, max: 4, group: 'culture', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Visible safety wins (documentation working, scaled by translation efficiency) raise culture (R2 reinforcement). Strength of the virtuous loop. Calibrated for bistability.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Longitudinal data on whether visible safety wins raise reporting rates.' },
+  { id: 'psi', label: 'Backfire → culture (−)', unit: 'culture/f_doc', default: 1.04, min: 0, max: 5, group: 'culture', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Seeing records weaponized (documenting without privilege) lowers culture; gated by (1−protection). v0.3.0: phi_doc was removed from this term (it is an exposure/incident conversion and had no business in the culture equation — AUDIT.md F7). The default 1.04 preserves the v0.2 effective product psi·phi_doc = 2.6 × 0.4, so this is a dimensional repair, not a re-tuning.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Longitudinal data on reporting rates after a candid record was used adversely.' },
+  { id: 'lambda_C', label: 'Culture adjustment speed', unit: '1/month', default: 0.3, min: 0.02, max: 1, group: 'culture', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'How fast culture moves toward its target. Slow → strong hysteresis.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Time constant of measured culture-survey change after a policy intervention.' },
+  { id: 'a_sep', label: 'Separation → culture', unit: 'culture/lever', default: 0.13, min: 0, max: 1.5, group: 'culture', evidence_basis: ILLUSTRATIVE, source: SPEC_SRC, note: 'Recipient–enforcer separation directly raises the culture target.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Effect size of recipient-enforcer separation on reporting, e.g. ASRS vs FAA-direct reporting.' },
+  { id: 'a_jc_c', label: 'Just culture → culture target', unit: 'culture/lever', default: 0.38, min: 0, max: 1.5, group: 'culture', evidence_basis: 'illustrative-assumption', source: 'Refinement (MODEL.md): the spec used coefficient 1 implicitly', note: 'Weight of the just-culture baseline in the culture target (symmetric with a_sep).', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Effect size of a codified just-culture policy on reporting, e.g. from ASAP adoption studies.' },
 
   // --- culture: the R1 loop closure (v0.3.0) ---
   // Before v0.3.0 the culture equation depended only on C and parameters, so the
   // documented debt → harm → exposure → culture loop did NOT exist in the code
   // (AUDIT.md F1). These four coefficients are what close it.
-  { id: 'psi_E', label: 'Realised exposure → culture (−)', unit: 'culture', default: 0.35, min: 0, max: 2, group: 'culture', evidence_basis: ILLUSTRATIVE, source: 'v0.3.0 loop closure (AUDIT.md F1); direction per Schwarcz et al. 2023, magnitude free', note: 'Accumulated litigation/regulatory exposure chills the willingness to document — the return arrow of the R1 suppression spiral. Saturating in E so unbounded exposure cannot drive culture arbitrarily negative.', advanced: true },
-  { id: 'E_k', label: 'Exposure → culture half-saturation', unit: 'exposure index', default: 60, min: 1, max: 500, group: 'culture', evidence_basis: ILLUSTRATIVE, source: 'v0.3.0 loop closure; free parameter', note: 'Exposure level at which the chilling effect on culture reaches half its maximum.', advanced: true },
-  { id: 'psi_H', label: 'Realised harm → culture (−)', unit: 'culture', default: 0.25, min: 0, max: 2, group: 'culture', evidence_basis: ILLUSTRATIVE, source: 'v0.3.0 loop closure (AUDIT.md F1); direction per Vaughan 1996, magnitude free', note: 'Visible harm events raise blame pressure and lower psychological safety — the second return arrow of the R1 loop. Saturating in harm.', advanced: true },
-  { id: 'h_k', label: 'Harm → culture half-saturation', unit: 'harm', default: 20, min: 0.5, max: 200, group: 'culture', evidence_basis: ILLUSTRATIVE, source: 'v0.3.0 loop closure; free parameter', note: 'Harm rate at which the blame-pressure effect on culture reaches half its maximum.', advanced: true },
-  { id: 'eps_C', label: 'Culture kernel floor (anti-absorbing)', unit: 'dimensionless', default: 0.08, min: 0.001, max: 0.5, group: 'culture', evidence_basis: ILLUSTRATIVE, source: 'Well-posedness fix v0.3.0 (AUDIT.md F9); not in BUILD_SPEC', note: 'The pure logistic kernel C(1−C) makes C=0 and C=1 absorbing, so culture became permanently irreversible once it saturated. Blending in a floor keeps the bistable shape while allowing recovery from either boundary.', advanced: true },
+  { id: 'psi_E', label: 'Realised exposure → culture (−)', unit: 'culture', default: 0.35, min: 0, max: 2, group: 'culture', evidence_basis: ILLUSTRATIVE, source: 'v0.3.0 loop closure (AUDIT.md F1); direction per Schwarcz et al. 2023, magnitude free', note: 'Accumulated litigation/regulatory exposure chills the willingness to document — the return arrow of the R1 suppression spiral. Saturating in E so unbounded exposure cannot drive culture arbitrarily negative.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Reporting rates before vs after a firm entered litigation with a known exposure level.' },
+  { id: 'E_k', label: 'Exposure → culture half-saturation', unit: 'exposure index', default: 60, min: 1, max: 500, group: 'culture', evidence_basis: ILLUSTRATIVE, source: 'v0.3.0 loop closure; free parameter', note: 'Exposure level at which the chilling effect on culture reaches half its maximum.', advanced: true, tier: 'T3', whatWouldConstrainIt: 'Half-saturation setting the scale of the exposure chill; defines the curve shape, not its strength.' },
+  { id: 'psi_H', label: 'Realised harm → culture (−)', unit: 'culture', default: 0.25, min: 0, max: 2, group: 'culture', evidence_basis: ILLUSTRATIVE, source: 'v0.3.0 loop closure (AUDIT.md F1); direction per Vaughan 1996, magnitude free', note: 'Visible harm events raise blame pressure and lower psychological safety — the second return arrow of the R1 loop. Saturating in harm.', advanced: true, tier: 'T4', whatWouldConstrainIt: 'Reporting rates before vs after a publicised harm event.' },
+  { id: 'h_k', label: 'Harm → culture half-saturation', unit: 'harm', default: 20, min: 0.5, max: 200, group: 'culture', evidence_basis: ILLUSTRATIVE, source: 'v0.3.0 loop closure; free parameter', note: 'Harm rate at which the blame-pressure effect on culture reaches half its maximum.', advanced: true, tier: 'T3', whatWouldConstrainIt: 'Half-saturation setting the scale of the harm chill; defines the curve shape, not its strength.' },
+  { id: 'eps_C', label: 'Culture kernel floor (anti-absorbing)', unit: 'dimensionless', default: 0.08, min: 0.001, max: 0.5, group: 'culture', evidence_basis: ILLUSTRATIVE, source: 'Well-posedness fix v0.3.0 (AUDIT.md F9); not in BUILD_SPEC', note: 'The pure logistic kernel C(1−C) makes C=0 and C=1 absorbing, so culture became permanently irreversible once it saturated. Blending in a floor keeps the bistable shape while allowing recovery from either boundary.', advanced: true, tier: 'T3', whatWouldConstrainIt: 'Kernel floor that removes the absorbing culture states. Numerical form.' },
 ]
 
 export const PARAM_SPECS: ParamSpec[] = [...LEVER_SPECS, ...STRUCTURAL_SPECS]

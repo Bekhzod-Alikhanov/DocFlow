@@ -129,6 +129,35 @@ export type Params = Record<ParamKey, number>
  */
 export type EvidenceBasis = 'empirical-anchor' | 'expert-estimate' | 'illustrative-assumption'
 
+/**
+ * Provenance tier (MODEL_v3_SPEC §8). The governing standard for v0.3 is that a
+ * reader can tell, for any number, which of exactly four categories it falls in.
+ * `evidence_basis` above answers "how good is the evidence"; `tier` answers the
+ * sharper question "is there any evidence at all, and if not, what would it take".
+ *
+ *  T1 measured          — measured in THIS domain, with a citation and a data location.
+ *  T2 analog-estimated  — measured in an analog domain (aviation, healthcare, cyber);
+ *                         the transfer argument must be written out.
+ *  T3 structural        — fixed by a modelling commitment (a normalisation, a unit
+ *                         conversion, a well-posedness or numerical-form choice).
+ *                         Not free, but not measured either.
+ *  T4 free              — no empirical basis. MUST state what would constrain it.
+ *
+ * Expected census for v0.3.0: T1 = 0. Nothing in this model is measured, and the
+ * registry says so rather than implying otherwise (VALIDATION.md V12).
+ */
+export type ProvenanceTier = 'T1' | 'T2' | 'T3' | 'T4'
+
+export const PROVENANCE_TIER_LABEL: Record<ProvenanceTier, string> = {
+  T1: 'Measured',
+  T2: 'Analog-estimated',
+  T3: 'Structural',
+  T4: 'Free parameter',
+}
+
+/** Verification status of a statutory or case citation (VALIDATION.md V2.5). */
+export type CitationStatus = 'verified' | 'unverified' | 'pin-cite-pending'
+
 /** Grouping for the Advanced panel / Assumptions table. */
 export type ParamGroup =
   | 'lever'
@@ -155,6 +184,17 @@ export interface ParamSpec {
   advanced: boolean
   /** Optional UI grouping for primary lever surfaces. */
   leverFamily?: 'legal' | 'learning' | 'governance'
+  /** v0.3.0: provenance tier. Required — a parameter with no tier cannot merge. */
+  tier: ProvenanceTier
+  /**
+   * Required for T4. What observation would move this from a free parameter to an
+   * estimated one. Enforced by VALIDATION.md V2.3 — a free parameter that cannot
+   * say what would constrain it is an admission that the modeller has not thought
+   * about whether it is knowable.
+   */
+  whatWouldConstrainIt?: string
+  /** Verification status of `source` where it cites a statute or case. */
+  citationStatus?: CitationStatus
 }
 
 // ---------------------------------------------------------------------------

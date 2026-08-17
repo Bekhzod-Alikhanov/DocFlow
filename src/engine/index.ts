@@ -4,6 +4,7 @@
  * the rest of the app — and the surface that a future Python/CLI port would mirror.
  */
 export * from './types'
+export { PROVENANCE_TIER_LABEL } from './types'
 export { MODEL_VERSION } from './version'
 export {
   PARAM_SPECS,

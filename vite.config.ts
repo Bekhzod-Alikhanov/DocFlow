@@ -27,15 +27,32 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary'],
       // The pure engine is the scientific core — hold it to a high bar (spec §7.1: ≥90%).
-      include: ['src/engine/**/*.ts'],
-      exclude: ['src/engine/**/*.{test,spec}.ts', 'src/engine/**/index.ts'],
+      // v0.3.0: coverage used to gate ONLY src/engine, leaving the recommendation
+      // engine (lib/institutional.ts) and the exported playbook (lib/export.ts)
+      // ungated — backwards relative to blast radius (AUDIT.md 8.5). It also used an
+      // AGGREGATE threshold, so sensitivity.ts (75% branches) and monteCarlo.ts (80%)
+      // passed by subsidy from 100%-covered tabletop files. perFile stops that.
+      include: ['src/engine/**/*.ts', 'src/lib/**/*.ts', 'src/workers/**/*.ts'],
+      exclude: [
+        'src/**/*.{test,spec}.{ts,tsx}',
+        'src/engine/**/index.ts',
+        'src/lib/tabletop/scenarios/**',
+        'src/workers/engine.worker.ts',
+      ],
+      // These are a RATCHET set just below currently-measured per-file coverage,
+      // not a quality claim. Raise them as tests are added; never lower them to make
+      // a failing build pass. Because perFile is on, each threshold binds on EVERY
+      // file in its glob, so the weakest file sets the bar — which is the point.
+      //
+      // The lib floor is low because of two genuinely browser-only modules:
+      // export.ts (canvas + jsPDF image paths) and useWorkerTask.ts (its real-Worker
+      // client cannot be constructed in jsdom). They are NOT excluded, because
+      // excluding them would hide the gap rather than record it.
       thresholds: {
-        'src/engine/**/*.ts': {
-          statements: 90,
-          branches: 85,
-          functions: 90,
-          lines: 90,
-        },
+        perFile: true,
+        'src/engine/**/*.ts': { statements: 88, branches: 68, functions: 88, lines: 88 },
+        'src/lib/**/*.ts': { statements: 40, branches: 33, functions: 45, lines: 40 },
+        'src/workers/**/*.ts': { statements: 42, branches: 42, functions: 50, lines: 44 },
       },
     },
   },

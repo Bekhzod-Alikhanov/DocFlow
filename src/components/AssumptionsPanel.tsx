@@ -10,6 +10,7 @@ import {
   PRESET_BY_ID,
   READOUT_GROUP_LABEL,
   READOUT_WEIGHTS_BY_GROUP,
+  PROVENANCE_TIER_LABEL,
   type LeverKey,
   type ParamGroup,
   type ReadoutGroup,
@@ -27,6 +28,14 @@ const GROUP_LABEL: Record<ParamGroup, string> = {
   culture: 'Culture',
 }
 const GROUP_ORDER: ParamGroup[] = ['lever', 'documentation', 'incidents', 'learning', 'debt', 'exposure', 'culture']
+
+/** Tier badge styling. T4 (free) is deliberately the most prominent. */
+const TIER_BADGE: Record<string, string> = {
+  T1: 'bg-learning-soft text-learning ring-learning/30',
+  T2: 'bg-accent-soft text-accent ring-accent/30',
+  T3: 'bg-surface-2 text-ink-soft ring-line',
+  T4: 'bg-estimate-soft text-estimate ring-estimate/40',
+}
 
 const EVIDENCE_BADGE: Record<string, string> = {
   'empirical-anchor': 'bg-learning-soft text-learning ring-learning/30',
@@ -50,6 +59,11 @@ export function AssumptionsPanel() {
         weights that define the institutional readouts. {NO_FORECAST_LINE} No coefficient is an empirical
         anchor; the cyber ~5% documentation figure is an <em>estimate</em>.
       </p>
+      <p className="mb-3 rounded-md border border-estimate/40 bg-estimate-soft px-3 py-2 text-[11px] leading-snug text-estimate">
+        <strong>Provenance census: 0 measured, 0 analog-estimated, 8 structural, 54 free.</strong> Not one
+        coefficient in this model is measured in its own domain. Hover any tier badge to see what evidence
+        would be needed to constrain that parameter.
+      </p>
       <div className="mb-3 flex flex-wrap gap-2 text-[11px]">
         {Object.entries(EVIDENCE_LABEL).map(([k, label]) => (
           <span key={k} className={`rounded-full px-2 py-0.5 ring-1 ${EVIDENCE_BADGE[k]}`}>
@@ -64,6 +78,7 @@ export function AssumptionsPanel() {
               <th className="px-2 py-1.5 font-medium">Parameter</th>
               <th className="px-2 py-1.5 text-right font-medium">Value</th>
               <th className="px-2 py-1.5 text-right font-medium">Range</th>
+              <th className="px-2 py-1.5 font-medium">Tier</th>
               <th className="px-2 py-1.5 font-medium">Basis</th>
               <th className="px-2 py-1.5 font-medium">Source</th>
             </tr>
@@ -74,7 +89,7 @@ export function AssumptionsPanel() {
               return (
                 <Fragment key={group}>
                   <tr className="bg-surface-2/60">
-                    <td colSpan={5} className="px-2 py-1 text-[11px] font-semibold text-ink">
+                    <td colSpan={6} className="px-2 py-1 text-[11px] font-semibold text-ink">
                       {GROUP_LABEL[group]}
                     </td>
                   </tr>
@@ -88,6 +103,17 @@ export function AssumptionsPanel() {
                       <td className="px-2 py-1.5 text-right tabular-nums text-muted">
                         {fmt(p.min, 2)}–{fmt(p.max, 2)}
                         {p.unit ? <div className="text-[10px]">{p.unit}</div> : null}
+                      </td>
+                      <td className="px-2 py-1.5">
+                        <span
+                          title={p.whatWouldConstrainIt ? `Would be constrained by: ${p.whatWouldConstrainIt}` : undefined}
+                          className={`whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] ring-1 ${TIER_BADGE[p.tier]}`}
+                        >
+                          {p.tier} {PROVENANCE_TIER_LABEL[p.tier]}
+                        </span>
+                        {p.citationStatus && p.citationStatus !== 'verified' && (
+                          <div className="mt-1 text-[10px] text-estimate">⚠ {p.citationStatus}</div>
+                        )}
                       </td>
                       <td className="px-2 py-1.5">
                         <span className={`whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] ring-1 ${EVIDENCE_BADGE[p.evidence_basis]}`}>
