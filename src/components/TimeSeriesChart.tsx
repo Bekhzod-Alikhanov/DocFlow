@@ -54,10 +54,15 @@ export function TimeSeriesChart({
 
   const mc: MonteCarloResult | null = useMemo(() => {
     if (!showMonteCarlo) return null
+    // v0.3.0: was `distribution: 'uniform'`, which ignores the base values and
+    // redraws every lever across its full registry range — so the band shown around
+    // aviation was identical to the band around cybersecurity (AUDIT.md F10).
+    // `scenario` samples around THIS scenario's lever values, which is what a reader
+    // takes the band to mean.
     return monteCarlo(params, init, {
       n: 120,
       seed: 4242,
-      distribution: 'uniform',
+      distribution: 'scenario',
       vary: [...LEVER_KEYS],
       percentiles: [10, 50, 90],
       settings,

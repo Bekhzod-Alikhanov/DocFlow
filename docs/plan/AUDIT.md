@@ -14,27 +14,42 @@ fixed.
 
 ## 0. Findings, ranked
 
-| # | Finding | Severity |
-|---|---|---|
-| **F1** | **The advertised R1 chilling loop is not implemented.** `dC/dt` depends only on `C` and parameters — not on `TD`, `E`, `harm_events`, or `L`. The 6-D "system dynamics" model is a **1-D autonomous culture equation driving a 5-D slave cascade**. | **Critical** |
-| **F2** | **The "learning attractor" is a clamp artifact.** `TD` is pinned at its lower bound on >83% of steps in all five learning presets, while `diverged` reports `false`. | **Critical** |
-| **F3** | **Zero of 55 registered parameters is empirically anchored.** All 55 are `illustrative-assumption`. The one named calibration target (`f_doc ≈ 0.05`) is **missed by ~45%** (actual 0.0721). | **Critical** |
-| **F4** | **Five presets are dynamically indistinguishable** — aviation, healthcare, pharma, SR 11-7, nuclear all reach exactly `C = 1.0000`, `f_doc = 1.0000`. Zero discriminative power among institutional designs. | **Critical** |
-| **F5** | **Bistability is a tuned target, not a finding**, and holds in only 2 of 8 presets (not at registry defaults). Six coefficients carry registry notes saying so. | **High** |
-| **F6** | **Five levers enter the documentation pathway through one scalar** → exact structural non-identifiability. Three levers have *identically zero* effect on `f_doc` at baseline. | **High** |
-| **F7** | **At least five dimensional inconsistencies**, worst: `phi_doc` (`exposure/incident`) reused as a gain in the culture equation; `harm_events` (a level) used as a flow. | **High** |
-| **F8** | **~34 unregistered magic coefficients** drive the six headline institutional readouts. True parameter count ≈ **89**, not 55. | **High** |
-| **F9** | **`C = 0` and `C = 1` are absorbing states.** Culture becomes permanently irreversible; five presets terminate exactly there. Advertised hysteresis is one-way. | **High** |
-| **F10** | **Monte Carlo `uniform` (the app default) discards the scenario.** The band drawn around every preset is the `[0,1]¹²` hypercube band. | **High** — user-visible |
-| **F11** | **Clamping degrades RK4 from 4th order to ~1st order**; in clamped presets RK4 is 4–5 orders *worse* than Euler. | **High** |
-| **F12** | **`debtAmplification` has a pole** at `TD = −TD_ref·td_sat`, reachable by unclamped RK4 intermediate stages at registry minima. | **Medium-High** |
-| **F13** | **`findAllEquilibria` can return non-converged, domain-clamped points** that are then classified stable and counted as attractors; `converged` is never read by any caller. | **Medium-High** |
-| **F14** | **`hysteresis` cannot distinguish bistability from incomplete relaxation**; documented as "numerical continuation," is transient ramping. | **Medium-High** |
-| **F15** | **ReLU switches the entire discoverability channel off in 6 of 8 presets** — nine parameters have exactly zero influence there. Also breaks C¹ smoothness. | **Medium-High** |
-| **F16** | **Two presets contradict their own labels**; the UI displays "Contested" and "Chilling" for the same scenario simultaneously. | **Medium** |
-| **F17** | **~45 of 271 tests are circular or tautological**; the headline claims are guarded mostly by such tests. | **Medium** |
-| **F18** | **Version-contract violation**: trajectory-changing commits both stamp `0.2.0`. Saved scenarios are not reproducible from their recorded version. | **Medium** |
-| — | **Not stiff.** Worst ratio 87.6; `dt·max|Re| ≤ 0.385` vs RK4 limit ≈ 2.79. | *No defect — recorded because checked* |
+**Status column added 2026-08-17 after the v0.3.0 correctness release.** ✅ = fixed with an
+executable gate · 🟡 = materially improved, not closed · ⬜ = open. Everything below still describes
+**v0.2 as audited**; the status records what changed since.
+
+| # | Finding | Severity | Status |
+|---|---|---|---|
+| **F1** | **The advertised R1 chilling loop is not implemented.** `dC/dt` depends only on `C` and parameters — not on `TD`, `E`, `harm_events`, or `L`. The 6-D "system dynamics" model is a **1-D autonomous culture equation driving a 5-D slave cascade**. | **Critical** | ✅ v0.3.0 — `psi_E`/`psi_H` chill terms; gate V1.3 |
+| **F2** | **The "learning attractor" is a clamp artifact.** `TD` is pinned at its lower bound on >83% of steps in all five learning presets, while `diverged` reports `false`. | **Critical** | ✅ v0.3.0 — `dTD/dt` gated by `TD/(TD+td_k)`; clamps 680+ → **0**; gates V4.2, V5.3 |
+| **F3** | **Zero of 55 registered parameters is empirically anchored.** All 55 are `illustrative-assumption`. The one named calibration target (`f_doc ≈ 0.05`) is **missed by ~45%** (actual 0.0721). | **Critical** | ⬜ Open — and inherent. See `CALIBRATION.md`; expected T1 census remains 0 |
+| **F4** | **Five presets are dynamically indistinguishable** — aviation, healthcare, pharma, SR 11-7, nuclear all reach exactly `C = 1.0000`, `f_doc = 1.0000`. Zero discriminative power among institutional designs. | **Critical** | 🟡 v0.3.0 — now differ on `TD`/`L`/`E`; `f_doc` still saturates at 1.0. Full fix needs the three-channel split (M3) |
+| **F5** | **Bistability is a tuned target, not a finding**, and holds in only 2 of 8 presets (not at registry defaults). Six coefficients carry registry notes saying so. | **High** | 🟡 v0.3.0 — tuning language removed from the registry; `METHODS.md` now says "Observed," not "Demonstrated." Defaults still carry the history |
+| **F6** | **Five levers enter the documentation pathway through one scalar** → exact structural non-identifiability. Three levers have *identically zero* effect on `f_doc` at baseline. | **High** | 🟡 v0.3.0 — dead levers 3 → **0**; pairs at \|r\|>0.999 went 7/36 → 3/42. The single-scalar collapse itself needs the three-channel split (M3) |
+| **F7** | **At least five dimensional inconsistencies**, worst: `phi_doc` (`exposure/incident`) reused as a gain in the culture equation; `harm_events` (a level) used as a flow. | **High** | 🟡 v0.3.0 — the `phi_doc` alias is removed. `harm_events` level-vs-rate and the `TD`/incident conversion remain |
+| **F8** | **~34 unregistered magic coefficients** drive the six headline institutional readouts. True parameter count ≈ **89**, not 55. | **High** | ✅ v0.3.0 — all extracted to `src/engine/readouts.ts` with metadata, rendered in the Assumptions panel, guarded by a source-scan test. *Still outside the swept space* — stated, not hidden |
+| **F9** | **`C = 0` and `C = 1` are absorbing states.** Culture becomes permanently irreversible; five presets terminate exactly there. Advertised hysteresis is one-way. | **High** | ✅ v0.3.0 — `eps_C` kernel floor; gate V4.4 |
+| **F10** | **Monte Carlo `uniform` (the app default) discards the scenario.** The band drawn around every preset is the `[0,1]¹²` hypercube band. | **High** — user-visible | ✅ v0.3.0 — new `scenario` distribution is the UI default; band labelled in the Workbench |
+| **F11** | **Clamping degrades RK4 from 4th order to ~1st order**; in clamped presets RK4 is 4–5 orders *worse* than Euler. | **High** | ✅ v0.3.0 — follows from F2. Aviation observed order 1.07 → **4.06**, error 1.8e-1 → 1.2e-9 |
+| **F12** | **`debtAmplification` has a pole** at `TD = −TD_ref·td_sat`, reachable by unclamped RK4 intermediate stages at registry minima. | **Medium-High** | ✅ v0.3.0 — bounded exponential, same low-debt slope and ceiling |
+| **F13** | **`findAllEquilibria` can return non-converged, domain-clamped points** that are then classified stable and counted as attractors; `converged` is never read by any caller. | **Medium-High** | 🟡 v0.3.0 — `fastEquilibriumAt` no longer clamps internally and reports convergence; duplicate equilibria deduplicated (neutral was reporting 3 stable, not 2). Callers still do not gate on `converged` |
+| **F14** | **`hysteresis` cannot distinguish bistability from incomplete relaxation**; documented as "numerical continuation," is transient ramping. | **Medium-High** | ⬜ Open — needs true continuation (M5, `ADR/0005`) |
+| **F15** | **ReLU switches the entire discoverability channel off in 6 of 8 presets** — nine parameters have exactly zero influence there. Also breaks C¹ smoothness. | **Medium-High** | ⬜ Open — `relu` → `softplus` deferred; it shifts every baseline and was judged too risky to land alongside the loop closure |
+| **F16** | **Two presets contradict their own labels**; the UI displays "Contested" and "Chilling" for the same scenario simultaneously. | **Medium** | ✅ v0.3.0 — `expectedRegime` corrected; gate V11.3 asserts label = simulated regime |
+| **F17** | **~45 of 271 tests are circular or tautological**; the headline claims are guarded mostly by such tests. | **Medium** | 🟡 v0.3.0 — the worst offenders (preset monostability, culture-boundary) rewritten to assert real properties; the tabletop's structurally-guaranteed "no dominant path" remains |
+| **F18** | **Version-contract violation**: trajectory-changing commits both stamp `0.2.0`. Saved scenarios are not reproducible from their recorded version. | **Medium** | 🟡 v0.3.0 — version bumped and the change log is complete; the CI hash guard (V12.5) is not yet wired |
+| — | **Not stiff.** Worst ratio 87.6; `dt·max|Re| ≤ 0.385` vs RK4 limit ≈ 2.79. | *No defect — recorded because checked* | — |
+
+### Behavioural consequences of the v0.3.0 fixes, recorded rather than tuned around
+
+- **Only the contested baseline remains bistable.** `cybersecurity` and `eu-trap` previously reported
+  two attractors; those were **duplicate roots** from the enumeration bug, not second attractors.
+- **The fold along `just_culture` moved from ≈ 0.25 to ≈ 0.617.** The v0.2 figure was in any case a
+  grid-resolution artifact (§8.3); the new one comes from a slow-manifold scan.
+- **A scaling bug surfaced in the causal-loop view**: loop shares mixed culture pressures (order 1)
+  with `harm_events` (order 100), so the diagram reported "100% balancing" at the chilling attractor —
+  precisely where the suppression spiral is strongest. Each loop is now reduced to a bounded 0–1
+  intensity before shares are taken.
 
 ---
 

@@ -15,6 +15,16 @@
  * hiding divergence (the integrator records clamp events).
  */
 import type { State, Params, Auxiliaries } from './types'
+import {
+  ACCOUNTABILITY_LEGITIMACY,
+  LITIGATION_PRESSURE,
+  NEAR_MISS_SIGNAL,
+  POLICY_SCAFFOLD,
+  PRIVATE_ORDERABLE_LEVERS,
+  PRIVATE_ORDERING,
+  PROTECTION_BUNDLE,
+  SAFE_TO_REPORT,
+} from './readouts'
 
 export function sigmoid(x: number): number {
   // Numerically stable logistic.
@@ -74,8 +84,11 @@ export function documentationFraction(C: number, p: Params): number {
  * These feed both the derivatives and the charts.
  */
 export function computeAux(s: State, p: Params): Auxiliaries {
-  const { U, D, TD, L, E: _E, C } = s
-  void _E // E does not drive any auxiliary; it is a pure observable (see MODEL.md).
+  // v0.3.0: E is no longer a dangling observable — it drives the culture chill that
+  // closes the R1 loop (AUDIT.md F1). The chill terms are computed here rather than
+  // inside the derivative so they are observable: the causal-loop view scores loop
+  // dominance from them, and they can be charted.
+  const { U, D, TD, L, E, C } = s
 
   const perceived_discoverability = perceivedDiscoverability(p)
   const drive_to_document = driveToDocument(C, perceived_discoverability, p)
@@ -108,7 +121,10 @@ export function computeAux(s: State, p: Params): Auxiliaries {
     p.base_eff +
     p.tl_boost * p.translation_layer +
     p.intermediary_efficiency_boost * p.intermediary_capacity
-  const near_miss_signal = p.near_miss_tier * incident_inflow * (0.35 + 0.65 * p.recipient_enforcer_separation)
+  const near_miss_signal =
+    p.near_miss_tier *
+    incident_inflow *
+    (NEAR_MISS_SIGNAL.base_share + NEAR_MISS_SIGNAL.separation_share * p.recipient_enforcer_separation)
   const challengeMultiplier = 1 + p.challenge_learning_boost * p.effective_challenge
   const learning_gain =
     p.eta_learn * to_D * translation_layer_efficiency * challengeMultiplier +
@@ -136,11 +152,11 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   // privilege (backfire). This is what makes the culture loop genuinely bistable.
   const safety_wins = p.omega * f_doc * translation_layer_efficiency
   const protectionBundle = clamp01(
-    0.36 * p.privilege_strength +
-      0.22 * p.workflow_protection +
-      0.18 * p.safe_harbor_non_admission +
-      0.14 * p.original_records_boundary +
-      0.1 * p.recipient_enforcer_separation,
+    PROTECTION_BUNDLE.privilege_strength * p.privilege_strength +
+      PROTECTION_BUNDLE.workflow_protection * p.workflow_protection +
+      PROTECTION_BUNDLE.safe_harbor_non_admission * p.safe_harbor_non_admission +
+      PROTECTION_BUNDLE.original_records_boundary * p.original_records_boundary +
+      PROTECTION_BUNDLE.recipient_enforcer_separation * p.recipient_enforcer_separation,
   )
   // v0.3.0: phi_doc removed. It is declared `exposure/incident` and was being reused
   // as a dimensionless gain here, which is both a unit error and a hard parameter
@@ -148,44 +164,48 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   // (AUDIT.md F7). psi's default absorbs the old product; see the registry note.
   const backfire = p.psi * f_doc * (1 - protectionBundle)
 
+  // The two return arrows of the R1 suppression spiral. Saturating so that
+  // unbounded exposure or harm cannot drive the culture target arbitrarily negative.
+  const exposure_chill = p.psi_E * (E / (E + p.E_k))
+  const harm_chill = p.psi_H * (harm_events / (harm_events + p.h_k))
+
+  // The unweighted mean asserts that all seven private-ordering levers are equally
+  // substitutable — a modelling choice, named in readouts.ts rather than buried.
   const privateOrderableCapacity = clamp01(
-    (p.original_records_boundary +
-      p.effective_challenge +
-      p.near_miss_tier +
-      p.intermediary_capacity +
-      p.translation_layer +
-      p.just_culture +
-      p.recipient_enforcer_separation) /
-      7,
+    PRIVATE_ORDERABLE_LEVERS.reduce((sum, k) => sum + p[k], 0) / PRIVATE_ORDERABLE_LEVERS.length,
   )
   const policy_scaffold_dependency = clamp01(
-    0.42 * p.safe_harbor_non_admission + 0.34 * p.workflow_protection + 0.24 * p.privilege_strength,
+    POLICY_SCAFFOLD.safe_harbor_non_admission * p.safe_harbor_non_admission +
+      POLICY_SCAFFOLD.workflow_protection * p.workflow_protection +
+      POLICY_SCAFFOLD.privilege_strength * p.privilege_strength,
   )
-  const private_ordering_gap = clamp01(policy_scaffold_dependency - 0.65 * privateOrderableCapacity)
+  const private_ordering_gap = clamp01(
+    policy_scaffold_dependency - PRIVATE_ORDERING.capacity_offset * privateOrderableCapacity,
+  )
   const accountability_legitimacy = clamp01(
-    0.34 * p.original_records_boundary +
-      0.26 * p.just_culture +
-      0.18 * p.mandatory_reporting +
-      0.12 * p.effective_challenge +
-      0.1 * p.near_miss_tier,
+    ACCOUNTABILITY_LEGITIMACY.original_records_boundary * p.original_records_boundary +
+      ACCOUNTABILITY_LEGITIMACY.just_culture * p.just_culture +
+      ACCOUNTABILITY_LEGITIMACY.mandatory_reporting * p.mandatory_reporting +
+      ACCOUNTABILITY_LEGITIMACY.effective_challenge * p.effective_challenge +
+      ACCOUNTABILITY_LEGITIMACY.near_miss_tier * p.near_miss_tier,
   )
   const safe_to_report_score = clamp01(
-    0.22 * p.privilege_strength +
-      0.18 * p.recipient_enforcer_separation +
-      0.18 * p.workflow_protection +
-      0.16 * p.safe_harbor_non_admission +
-      0.12 * p.original_records_boundary +
-      0.08 * p.just_culture +
-      0.06 * p.intermediary_capacity -
-      0.16 * relu(perceived_discoverability),
+    SAFE_TO_REPORT.privilege_strength * p.privilege_strength +
+      SAFE_TO_REPORT.recipient_enforcer_separation * p.recipient_enforcer_separation +
+      SAFE_TO_REPORT.workflow_protection * p.workflow_protection +
+      SAFE_TO_REPORT.safe_harbor_non_admission * p.safe_harbor_non_admission +
+      SAFE_TO_REPORT.original_records_boundary * p.original_records_boundary +
+      SAFE_TO_REPORT.just_culture * p.just_culture +
+      SAFE_TO_REPORT.intermediary_capacity * p.intermediary_capacity -
+      SAFE_TO_REPORT.discoverability_penalty * relu(perceived_discoverability),
   )
   const learning_yield = incident_inflow > 1e-9 ? learning_gain / incident_inflow : 0
   const litigation_pressure = clamp01(
-    0.32 * relu(perceived_discoverability) +
-      0.24 * p.pld_penalty +
-      0.16 * p.mandatory_reporting +
-      0.18 * (1 - safe_to_report_score) +
-      0.1 * (1 - p.original_records_boundary),
+    LITIGATION_PRESSURE.discoverability * relu(perceived_discoverability) +
+      LITIGATION_PRESSURE.pld_penalty * p.pld_penalty +
+      LITIGATION_PRESSURE.mandatory_reporting * p.mandatory_reporting +
+      LITIGATION_PRESSURE.unsafe_to_report * (1 - safe_to_report_score) +
+      LITIGATION_PRESSURE.no_records_boundary * (1 - p.original_records_boundary),
   )
 
   return {
@@ -204,6 +224,8 @@ export function computeAux(s: State, p: Params): Auxiliaries {
     harm_events,
     safety_wins,
     backfire,
+    exposure_chill,
+    harm_chill,
     near_miss_signal,
     private_ordering_gap,
     accountability_legitimacy,
@@ -244,15 +266,13 @@ export function derivativesFromAux(s: State, p: Params, a: Auxiliaries): State {
   // Both are saturating so that unbounded E or harm cannot drive the target
   // arbitrarily negative, and the target is clamped to [0,1] — the stock's own
   // range — so "target" means what the name says.
-  const exposureChill = p.psi_E * (s.E / (s.E + p.E_k))
-  const harmChill = p.psi_H * (a.harm_events / (a.harm_events + p.h_k))
   const cultureTarget = clamp01(
     p.a_jc_c * p.just_culture +
       p.a_sep * p.recipient_enforcer_separation +
       a.safety_wins -
       a.backfire -
-      exposureChill -
-      harmChill,
+      a.exposure_chill -
+      a.harm_chill,
   )
 
   // Kernel: a convex blend of a constant floor and the (normalised) logistic bump.

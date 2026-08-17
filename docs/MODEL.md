@@ -146,6 +146,38 @@ export:
 - `private_ordering_gap`: how much the desired package depends on public-law
   scaffolding beyond what a lab can create internally.
 
+### 6.1 The weights behind these readouts (v0.3.0)
+
+Each readout is a weighted linear blend of levers, and until v0.3.0 those ~29
+weights existed only as **bare literals inside `computeAux`** — absent from the
+parameter registry, absent from these equations, and absent from the Assumptions
+panel even though that panel claimed to list "every parameter"
+(`docs/plan/AUDIT.md` F8). They are the numbers a policy audience actually quotes,
+so they were the least visible and most consequential coefficients in the model.
+
+They now live in [`src/engine/readouts.ts`](../src/engine/readouts.ts) with the
+same metadata discipline as the registry (label, value, evidence basis, source,
+note), are rendered in the Assumptions panel under **Institutional readout
+weights**, and are guarded by a test that fails if a bare decimal literal
+reappears in a blend expression.
+
+Three properties of these weights are load-bearing and worth stating plainly:
+
+1. **Each blend's positive weights sum to 1.00** by construction, which is what
+   makes each readout a 0–1 index. That normalisation is a structural choice.
+2. **Linear blending asserts perfect substitutability.** A privilege score of 1.0
+   counts the same as an equivalent-weight workflow-protection score. This is the
+   single strongest untested assumption in the readout layer.
+3. **They are declared constants, not tunable `Params`**, so the sensitivity
+   analyses do **not** vary them. Moving them into the swept space is roadmap item
+   M1/M5. This is a stated limitation, not an oversight.
+
+Two of them also carry a dimensional defect inherited from v0.2 and not yet fixed:
+`safe_to_report.discoverability_penalty` and `litigation_pressure.discoverability`
+multiply `relu(perceived_discoverability)`, which is in synthetic PD units (range
+to +4), and the product is combined with a dimensionless 0–1 index before
+clamping. The clamp hides the incoherence. Flagged in `AUDIT.md` §4.
+
 These readouts are not legal conclusions. They are structured comparisons among
 institutional design packages.
 

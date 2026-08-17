@@ -29,6 +29,14 @@ export {
 } from './model'
 export { stepEuler, stepRK4, step, clampState, RUNAWAY_BOUND } from './integrators'
 export {
+  READOUT_WEIGHT_SPECS,
+  READOUT_WEIGHTS_BY_GROUP,
+  READOUT_GROUP_LABEL,
+  PRIVATE_ORDERABLE_LEVERS,
+  type ReadoutWeightSpec,
+  type ReadoutGroup,
+} from './readouts'
+export {
   integrate,
   simulate,
   summarize,

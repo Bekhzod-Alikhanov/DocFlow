@@ -27,27 +27,34 @@ interface Edge {
   curve: number
 }
 
+// v0.3.0: EXPOSURE is now a node rather than an implied step. Through v0.2 the
+// debt → harm → exposure → culture return path did not exist in the equations at
+// all — dC/dt depended only on C and parameters — so this diagram was drawing a
+// loop the model did not have (AUDIT.md F1). The psi_E and psi_H terms close it,
+// and the two edges into CULTURE below are those terms.
 const NODES: Node[] = [
-  { id: 'FEAR', x: 120, y: 160, label: 'Legal / PR', sub: 'fear' },
-  { id: 'DOC', x: 380, y: 86, label: 'Documentation', sub: 'f_doc' },
-  { id: 'CULTURE', x: 645, y: 150, label: 'Safety', sub: 'culture' },
-  { id: 'LEARN', x: 648, y: 300, label: 'Learning' },
-  { id: 'DEBT', x: 120, y: 322, label: 'Undocumented', sub: 'debt' },
-  { id: 'HARM', x: 380, y: 392, label: 'Harm events' },
+  { id: 'CULTURE', x: 132, y: 150, label: 'Safety', sub: 'culture' },
+  { id: 'DOC', x: 384, y: 78, label: 'Documentation', sub: 'f_doc' },
+  { id: 'LEARN', x: 640, y: 150, label: 'Learning' },
+  { id: 'DEBT', x: 640, y: 316, label: 'Undocumented', sub: 'debt' },
+  { id: 'HARM', x: 384, y: 396, label: 'Harm events' },
+  { id: 'EXPOSURE', x: 132, y: 316, label: 'Exposure', sub: 'litigation / reg.' },
 ]
 
 const EDGES: Edge[] = [
-  // R1 — suppression spiral (reinforcing): (−)(−)(+) = +
-  { from: 'FEAR', to: 'DOC', loop: 'r1', sign: '−', curve: 26 },
-  { from: 'DOC', to: 'DEBT', loop: 'r1', sign: '−', curve: 70 },
-  { from: 'DEBT', to: 'FEAR', loop: 'r1', sign: '+', curve: 24 },
-  // R2 — learning flywheel (reinforcing): (+)(+)(+) = +
-  { from: 'DOC', to: 'CULTURE', loop: 'r2', sign: '+', curve: 26 },
-  { from: 'CULTURE', to: 'LEARN', loop: 'r2', sign: '+', curve: 24 },
-  { from: 'LEARN', to: 'DOC', loop: 'r2', sign: '+', curve: 78 },
-  // B — harm-driven remediation (balancing): (+)(−) = −
-  { from: 'HARM', to: 'DOC', loop: 'balancing', sign: '+', curve: 60 },
-  { from: 'DOC', to: 'HARM', loop: 'balancing', sign: '−', curve: 60 },
+  // R2 — learning flywheel (reinforcing): documenting builds learning builds culture.
+  { from: 'CULTURE', to: 'DOC', loop: 'r2', sign: '+', curve: 24 },
+  { from: 'DOC', to: 'LEARN', loop: 'r2', sign: '+', curve: 24 },
+  { from: 'LEARN', to: 'CULTURE', loop: 'r2', sign: '+', curve: 96 },
+  // R1 — suppression spiral (reinforcing). The last two edges are the v0.3.0
+  // closure: realised harm and realised exposure chill the culture that would
+  // otherwise sustain documentation.
+  { from: 'DOC', to: 'DEBT', loop: 'r1', sign: '−', curve: -30 },
+  { from: 'DEBT', to: 'HARM', loop: 'r1', sign: '+', curve: -26 },
+  { from: 'HARM', to: 'EXPOSURE', loop: 'r1', sign: '+', curve: -26 },
+  { from: 'EXPOSURE', to: 'CULTURE', loop: 'r1', sign: '−', curve: -26 },
+  // B — harm also drives remediation pressure back onto documenting (balancing).
+  { from: 'HARM', to: 'DOC', loop: 'balancing', sign: '+', curve: 0 },
 ]
 
 const LOOP_COLOR: Record<LoopId, string> = {
@@ -146,9 +153,9 @@ export function CausalLoopDiagram({ activity, regime }: CausalLoopDiagramProps) 
       {/* loop labels at rough centroids */}
       {(
         [
-          { id: 'r1' as LoopId, x: 210, y: 250 },
-          { id: 'r2' as LoopId, x: 556, y: 244 },
-          { id: 'balancing' as LoopId, x: 470, y: 250 },
+          { id: 'r2' as LoopId, x: 386, y: 168 },
+          { id: 'r1' as LoopId, x: 386, y: 306 },
+          { id: 'balancing' as LoopId, x: 330, y: 246 },
         ]
       ).map((l) => (
         <text

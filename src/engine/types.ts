@@ -191,6 +191,9 @@ export interface Auxiliaries {
   harm_events: number
   safety_wins: number
   backfire: number
+  /** v0.3.0: R1 return arrows — realised exposure and harm chilling culture. */
+  exposure_chill: number
+  harm_chill: number
   near_miss_signal: number
   private_ordering_gap: number
   accountability_legitimacy: number
@@ -216,6 +219,8 @@ export const AUX_KEYS = [
   'harm_events',
   'safety_wins',
   'backfire',
+  'exposure_chill',
+  'harm_chill',
   'near_miss_signal',
   'private_ordering_gap',
   'accountability_legitimacy',

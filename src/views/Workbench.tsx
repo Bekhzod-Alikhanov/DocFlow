@@ -14,7 +14,8 @@ export function Workbench() {
         <TimeSeriesChart seriesKeys={['f_doc', 'C', 'U', 'D', 'TD', 'L', 'E']} height={380} />
         <p className="mt-1 text-[11px] text-muted">
           0–1 indices (documentation fraction, culture) on the left axis; counts/indices on the right. Toggle Monte
-          Carlo in the header for 10–90% bands.
+          Carlo in the header for 10–90% bands — sampled <strong>around this scenario&rsquo;s lever
+          values</strong> (±15% of each lever&rsquo;s range), not across the whole parameter space.
         </p>
       </div>
       <div>

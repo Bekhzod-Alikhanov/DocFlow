@@ -10,7 +10,7 @@ import { PARAM_SPEC_BY_ID } from './registry'
 import { integrate, summarize, type Regime } from './simulate'
 import { mulberry32, uniform, triangular, normal, type Rng } from './rng'
 
-export type SamplingDistribution = 'uniform' | 'triangular' | 'normal'
+export type SamplingDistribution = 'uniform' | 'scenario' | 'triangular' | 'normal'
 
 /** Series we band: the six stocks plus the key auxiliaries (spec §5.2). */
 export const MC_SERIES = [...STOCK_KEYS, 'f_doc', 'harm_events'] as const
@@ -25,6 +25,11 @@ export interface MonteCarloConfig {
   /** Percentiles to report, e.g. [10, 50, 90]. */
   percentiles: number[]
   settings: SimSettings
+  /**
+   * Half-width of the `scenario` distribution as a fraction of each parameter's
+   * registry range. Ignored by the other distributions.
+   */
+  spread?: number
 }
 
 export interface MonteCarloResult {
@@ -39,12 +44,40 @@ export interface MonteCarloResult {
   config: MonteCarloConfig
 }
 
-/** Draw one parameter value from the chosen distribution over its registry range. */
-export function sampleParam(id: ParamKey, base: number, dist: SamplingDistribution, rng: Rng): number {
+/** Default half-width of the `scenario` band, as a fraction of each param's range. */
+export const DEFAULT_SCENARIO_SPREAD = 0.15
+
+/**
+ * Draw one parameter value from the chosen distribution.
+ *
+ * IMPORTANT (AUDIT.md F10). `uniform` ignores `base` entirely and redraws across the
+ * whole registry range. That answers "what if we knew nothing about this firm?" —
+ * a legitimate question, but NOT uncertainty around the displayed scenario. Because
+ * the app ran `uniform` by default, the 10–90% band drawn around *every* preset was
+ * the band of the entire lever hypercube, identical for aviation and cybersecurity.
+ *
+ * `scenario` is the scenario-anchored alternative and is now the UI default: it
+ * samples within ±`spread` of the base value (as a fraction of the parameter's
+ * range), clipped to the registry bounds. The band then means what a reader
+ * assumes it means — uncertainty about *this* scenario.
+ */
+export function sampleParam(
+  id: ParamKey,
+  base: number,
+  dist: SamplingDistribution,
+  rng: Rng,
+  spread: number = DEFAULT_SCENARIO_SPREAD,
+): number {
   const spec = PARAM_SPEC_BY_ID[id]
   switch (dist) {
     case 'uniform':
       return uniform(rng, spec.min, spec.max)
+    case 'scenario': {
+      const half = spread * (spec.max - spec.min)
+      const lo = Math.max(spec.min, base - half)
+      const hi = Math.min(spec.max, base + half)
+      return hi <= lo ? base : uniform(rng, lo, hi)
+    }
     case 'triangular':
       return triangular(rng, spec.min, base, spec.max)
     case 'normal':
@@ -52,9 +85,15 @@ export function sampleParam(id: ParamKey, base: number, dist: SamplingDistributi
   }
 }
 
-export function sampleParams(base: Params, vary: ParamKey[], dist: SamplingDistribution, rng: Rng): Params {
+export function sampleParams(
+  base: Params,
+  vary: ParamKey[],
+  dist: SamplingDistribution,
+  rng: Rng,
+  spread: number = DEFAULT_SCENARIO_SPREAD,
+): Params {
   const out = { ...base }
-  for (const id of vary) out[id] = sampleParam(id, base[id], dist, rng)
+  for (const id of vary) out[id] = sampleParam(id, base[id], dist, rng, spread)
   return out
 }
 
@@ -93,7 +132,7 @@ export function monteCarlo(base: Params, init: State, config: MonteCarloConfig):
   const finalFdoc = new Array<number>(n)
 
   for (let run = 0; run < n; run++) {
-    const params = sampleParams(base, config.vary, config.distribution, rng)
+    const params = sampleParams(base, config.vary, config.distribution, rng, config.spread)
     const traj = integrate(init, params, config.settings)
     if (traj.diverged) diverged++
     for (let ti = 0; ti < T; ti++) {

@@ -4,7 +4,16 @@
  * `illustrative-assumption` rows are visually distinct from `empirical-anchor`.
  */
 import { Fragment } from 'react'
-import { LEVER_KEYS, PARAM_SPECS, PRESET_BY_ID, type LeverKey, type ParamGroup } from '../engine'
+import {
+  LEVER_KEYS,
+  PARAM_SPECS,
+  PRESET_BY_ID,
+  READOUT_GROUP_LABEL,
+  READOUT_WEIGHTS_BY_GROUP,
+  type LeverKey,
+  type ParamGroup,
+  type ReadoutGroup,
+} from '../engine'
 import { useStore } from '../state/store'
 import { fmt, EVIDENCE_LABEL, NO_FORECAST_LINE } from '../lib/format'
 
@@ -37,8 +46,9 @@ export function AssumptionsPanel() {
         Assumptions &amp; methods
       </h2>
       <p className="mb-3 mt-1 text-[12px] text-ink-soft">
-        Every parameter, its value/range, and its evidence basis. {NO_FORECAST_LINE} No coefficient is an
-        empirical anchor; the cyber ~5% documentation figure is an <em>estimate</em>.
+        Every tunable parameter, its value/range, and its evidence basis — followed by the composite-index
+        weights that define the institutional readouts. {NO_FORECAST_LINE} No coefficient is an empirical
+        anchor; the cyber ~5% documentation figure is an <em>estimate</em>.
       </p>
       <div className="mb-3 flex flex-wrap gap-2 text-[11px]">
         {Object.entries(EVIDENCE_LABEL).map(([k, label]) => (
@@ -100,6 +110,70 @@ export function AssumptionsPanel() {
           </tbody>
         </table>
       </div>
+
+      <ReadoutWeightsTable />
     </section>
+  )
+}
+
+/**
+ * The composite-index weights (AUDIT.md F8). Through v0.2 these ~29 numbers were
+ * bare literals inside computeAux — invisible here, despite this panel claiming to
+ * list "every parameter", and excluded from every sensitivity analysis. They drive
+ * the six institutional readouts a policy audience actually quotes, so they are now
+ * rendered with the same provenance discipline as the tunable parameters.
+ */
+function ReadoutWeightsTable() {
+  return (
+    <div className="mt-5">
+      <h3 className="m-0 text-[13px] font-semibold text-ink">Institutional readout weights</h3>
+      <p className="mb-2 mt-1 text-[11px] leading-snug text-ink-soft">
+        These define what each composite index <em>means</em> — the blend of levers behind
+        <code className="mx-1 rounded bg-surface-2 px-1">safe_to_report_score</code>,
+        <code className="mx-1 rounded bg-surface-2 px-1">litigation_pressure</code> and the rest. Each
+        blend&rsquo;s positive weights sum to 1.00 by construction, which encodes an untested assumption that
+        the mechanisms in a blend are <strong>perfectly substitutable</strong>. They are declared constants
+        rather than tunable parameters, so they are <strong>not varied by the sensitivity analyses</strong> —
+        a stated limitation, not an oversight.
+      </p>
+      <div className="max-h-[40vh] overflow-auto rounded border border-line">
+        <table className="w-full border-collapse text-[12px]">
+          <thead className="sticky top-0 bg-surface-2 text-left text-[11px] uppercase tracking-wide text-muted">
+            <tr>
+              <th className="px-2 py-1.5 font-medium">Weight</th>
+              <th className="px-2 py-1.5 text-right font-medium">Value</th>
+              <th className="px-2 py-1.5 font-medium">Basis</th>
+              <th className="px-2 py-1.5 font-medium">Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(Object.keys(READOUT_WEIGHTS_BY_GROUP) as ReadoutGroup[]).map((g) => (
+              <Fragment key={g}>
+                <tr className="bg-paper">
+                  <td colSpan={4} className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted">
+                    {READOUT_GROUP_LABEL[g]}
+                  </td>
+                </tr>
+                {READOUT_WEIGHTS_BY_GROUP[g].map((w) => (
+                  <tr key={w.id} className="border-t border-line/60 align-top">
+                    <td className="px-2 py-1.5 text-ink">{w.label}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-ink">{fmt(w.value, 2)}</td>
+                    <td className="px-2 py-1.5">
+                      <span className={`whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] ring-1 ${EVIDENCE_BADGE[w.evidence_basis]}`}>
+                        {EVIDENCE_LABEL[w.evidence_basis]}
+                      </span>
+                    </td>
+                    <td className="px-2 py-1.5 text-[11px] leading-snug text-ink-soft">
+                      {w.note}
+                      <div className="mt-1 text-[10px] text-muted">{w.source}</div>
+                    </td>
+                  </tr>
+                ))}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   )
 }

@@ -140,10 +140,19 @@ export function findEquilibrium(
  * (eps_C > 0), so the sign of dC/dt is the sign of (target − C) and root-bracketing
  * on it is equivalent.
  */
-function cultureG(C: number, p: Params, guess?: State): { g: number; state: State } {
-  const state = fastEquilibriumAt(C, p, guess)
+function cultureG(
+  C: number,
+  p: Params,
+  guess?: State,
+  opts?: FastEquilibriumOpts,
+): { g: number; state: State } {
+  const state = fastEquilibriumDetail(C, p, guess, opts).state
   return { g: derivatives(state, p).C, state }
 }
+
+/** Loose during the sign scan, tight during bisection — see fastEquilibriumDetail. */
+const SCAN_OPTS: FastEquilibriumOpts = { tol: 1e-5, maxIter: 600 }
+const REFINE_OPTS: FastEquilibriumOpts = { tol: 1e-8, maxIter: 2000 }
 
 /**
  * All roots of dC/dt on [0,1], bracketed on a grid and bisected.
@@ -154,10 +163,10 @@ function cultureG(C: number, p: Params, guess?: State): { g: number; state: Stat
  */
 export function cultureEquilibria(p: Params): number[] {
   const roots: number[] = []
-  const M = 400
+  const M = 200
   let warm: State | undefined
   const at = (C: number) => {
-    const r = cultureG(C, p, warm)
+    const r = cultureG(C, p, warm, SCAN_OPTS)
     warm = r.state
     return r.g
   }
@@ -178,7 +187,7 @@ export function cultureEquilibria(p: Params): number[] {
       let seed: State | undefined = warm
       for (let b = 0; b < 40; b++) {
         const mid = 0.5 * (lo + hi)
-        const r = cultureG(mid, p, seed)
+        const r = cultureG(mid, p, seed, REFINE_OPTS)
         seed = r.state
         if (prevG <= 0 ? r.g > 0 : r.g < 0) hi = mid
         else lo = mid
@@ -214,12 +223,31 @@ export interface FastEquilibriumResult {
   residual: number
 }
 
-export function fastEquilibriumDetail(C: number, p: Params, guess?: State): FastEquilibriumResult {
+export interface FastEquilibriumOpts {
+  /** Residual at which the relaxation stops. */
+  tol?: number
+  maxIter?: number
+}
+
+/**
+ * `tol`/`maxIter` exist for performance: the root SCAN only needs the sign of
+ * dC/dt, which is robust at a loose tolerance, while the bisection that follows
+ * needs precision. Solving the whole 400-point scan to 1e-9 made `sweep1D` take
+ * ~6 s, which is too slow for the Tipping view.
+ */
+export function fastEquilibriumDetail(
+  C: number,
+  p: Params,
+  guess?: State,
+  opts: FastEquilibriumOpts = {},
+): FastEquilibriumResult {
+  const tol = opts.tol ?? 1e-9
+  const maxIter = opts.maxIter ?? 4000
   let s: State = guess ? { ...guess, C } : { U: 20, D: 5, TD: 10, L: 30, E: 10, C }
   const dt = 0.5
   let residual = Infinity
   let converged = false
-  for (let i = 0; i < 4000; i++) {
+  for (let i = 0; i < maxIter; i++) {
     const d = derivatives(s, p)
     // Unclamped: the equations now keep the non-negative stocks non-negative on
     // their own (TD = 0 is invariant via debtAvailability), so a clamp here would
@@ -237,7 +265,7 @@ export function fastEquilibriumDetail(C: number, p: Params, guess?: State): Fast
     for (const k of STOCK_KEYS) delta += Math.abs(next[k] - s[k])
     s = next
     residual = delta / dt
-    if (residual < 1e-9) {
+    if (residual < tol) {
       converged = true
       break
     }
