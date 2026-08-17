@@ -235,6 +235,70 @@ export interface FastEquilibriumOpts {
  * needs precision. Solving the whole 400-point scan to 1e-9 made `sweep1D` take
  * ~6 s, which is too slow for the Tipping view.
  */
+/** The five stocks that relax fast relative to culture. */
+const FAST_KEYS = ['U', 'D', 'TD', 'L', 'E'] as const
+
+/**
+ * Newton solve for the fast subsystem with C pinned. Quadratically convergent, so
+ * it reaches machine precision in a handful of iterations where the Euler
+ * relaxation needs hundreds: `E` has a ~5-month time constant, so at dt = 0.5 it
+ * takes >100 steps just to settle the slowest mode. That cost is what pushed
+ * `sweep1D` past the CI test timeout. Returns null if Newton fails, in which case
+ * the caller falls back to relaxation.
+ */
+function fastEquilibriumNewton(C: number, p: Params, guess: State, tol: number): State | null {
+  const x = FAST_KEYS.map((k) => guess[k])
+  const toState = (v: number[]): State => {
+    const s = { C } as State
+    FAST_KEYS.forEach((k, i) => (s[k] = v[i]))
+    return s
+  }
+  const residual = (v: number[]) => {
+    const d = derivatives(toState(v), p)
+    return FAST_KEYS.map((k) => d[k])
+  }
+
+  let cur = x
+  let f = residual(cur)
+  for (let iter = 0; iter < 25; iter++) {
+    if (norm(f) < tol) return toState(cur)
+
+    // 5×5 numerical Jacobian by central differences.
+    const J: number[][] = Array.from({ length: 5 }, () => new Array<number>(5).fill(0))
+    for (let j = 0; j < 5; j++) {
+      const h = 1e-6 * Math.max(1, Math.abs(cur[j]))
+      const up = cur.slice()
+      const dn = cur.slice()
+      up[j] += h
+      dn[j] -= h
+      const fu = residual(up)
+      const fd = residual(dn)
+      for (let i = 0; i < 5; i++) J[i][j] = (fu[i] - fd[i]) / (2 * h)
+    }
+
+    const step = solveLinear(
+      J,
+      f.map((v) => -v),
+    )
+    if (!step) return null
+
+    // Damped: accept the first step length that reduces the residual.
+    let accepted = false
+    for (let bt = 0, lambda = 1; bt < 12; bt++, lambda *= 0.5) {
+      const next = cur.map((xi, i) => xi + lambda * step[i])
+      const fn = residual(next)
+      if (fn.every(Number.isFinite) && norm(fn) < norm(f)) {
+        cur = next
+        f = fn
+        accepted = true
+        break
+      }
+    }
+    if (!accepted) return null
+  }
+  return norm(f) < tol ? toState(cur) : null
+}
+
 export function fastEquilibriumDetail(
   C: number,
   p: Params,
@@ -243,7 +307,17 @@ export function fastEquilibriumDetail(
 ): FastEquilibriumResult {
   const tol = opts.tol ?? 1e-9
   const maxIter = opts.maxIter ?? 4000
-  let s: State = guess ? { ...guess, C } : { U: 20, D: 5, TD: 10, L: 30, E: 10, C }
+  const seed: State = guess ? { ...guess, C } : { U: 20, D: 5, TD: 10, L: 30, E: 10, C }
+
+  // Fast path. Newton is tried first and succeeds on the overwhelming majority of
+  // points, especially when warm-started along a continuation scan.
+  const viaNewton = fastEquilibriumNewton(C, p, seed, Math.min(tol, 1e-8))
+  if (viaNewton) {
+    const d = derivatives(viaNewton, p)
+    return { state: viaNewton, converged: true, residual: norm(FAST_KEYS.map((k) => d[k])) }
+  }
+
+  let s: State = seed
   const dt = 0.5
   let residual = Infinity
   let converged = false

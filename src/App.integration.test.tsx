@@ -17,6 +17,9 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('App happy path', () => {
+  // Heavy end-to-end: renders the whole shell, resolves several lazy views, and
+  // runs the engine repeatedly. The default 5s limit is too tight on CI runners,
+  // especially under v8 coverage instrumentation.
   it('renders, switches to Scientific, reacts to a lever, and saves a scenario', async () => {
     render(<App />)
     expect(screen.getByText('DocFlow')).toBeInTheDocument()
@@ -65,5 +68,5 @@ describe('App happy path', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Why SR 11-7 makes documentation a control/i }))
     expect(useStore.getState().activePresetId).toBe('sr11-effective-challenge')
-  })
+  }, 30_000)
 })
