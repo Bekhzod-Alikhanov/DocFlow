@@ -446,12 +446,27 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   const board_visibility = R1 / (R1 + p.bv_k)
 
   const pl_from_records = p.c_rec_exp * R1 * p.disc_prob
-  const pl_from_analysis = (1 - priv.piEff) * p.xi_2 * R2
+  // v0.3.0 M3d: driven by pd_anal, not by a bare (1 - piEff).
+  //
+  // M3c disaggregated discoverability into three channels and then wired only pd_fact
+  // into anything. V7.1 caught it immediately: w_priv, w_sep, w_407, q_407 and w_leak
+  // each sat in the null space of the output-sensitivity matrix at sigma = 0 EXACTLY --
+  // five registered parameters with no effect on any reported output. Same defect class
+  // as F1 and F19: structure present, doing nothing. pd_anal carries the privilege term
+  // the old expression had, plus the separation term, which is a real addition: a report
+  // routed to the enforcer is more discoverable than one routed to a neutral recipient.
+  const pl_from_analysis = pd.anal * p.xi_2 * R2
   // Leakage costs TWICE: it risks waiver (above) and it creates independent
   // admissions that may remain admissible even where Rule 407 excludes the
   // remedial measure itself (ADR/0004).
   const independent_admissions = p.adm * priv.lambda * R2
   const pl_from_admissions = p.xi_adm * independent_admissions
+  // Channel Three had NO exposure term at all before M3d, so remediation throughput was
+  // consequence-free -- the learning conduit was pure upside. ADR/0004 argues C3's
+  // shield should be weak, because Rule 407 limits ADMISSIBILITY AT TRIAL and does
+  // nothing about discovery; a channel that produced zero exposure asserted the
+  // opposite, and much more strongly than the doctrine supports.
+  const pl_from_remediation = p.xi_3 * pd.rem * R3
   const pl_from_harm = p.c_harm_exp * harm_rate
 
   // Undocumented incidents are exactly the ones a reporting duty was not met on.
@@ -541,6 +556,7 @@ export function computeAux(s: State, p: Params): Auxiliaries {
     board_visibility,
     pl_from_records,
     pl_from_analysis,
+    pl_from_remediation,
     pl_from_harm,
     reg_from_duty,
     reg_from_pld,
@@ -573,7 +589,12 @@ export function derivativesFromAux(s: State, p: Params, a: Auxiliaries): State {
 
   // Opposing gradients (ADR/0003). Shared decay: exposure of every kind settles.
   const dE_pl =
-    a.pl_from_records + a.pl_from_analysis + a.pl_from_admissions + a.pl_from_harm - p.theta_E * s.E_pl
+    a.pl_from_records +
+    a.pl_from_analysis +
+    a.pl_from_remediation +
+    a.pl_from_admissions +
+    a.pl_from_harm -
+    p.theta_E * s.E_pl
   const dE_reg = a.reg_from_duty + a.reg_from_pld - p.theta_E * s.E_reg
   const dE_fid = a.fid_from_blindness - p.theta_E * s.E_fid
 

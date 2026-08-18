@@ -148,6 +148,7 @@ export const TERM_UNITS: Record<string, Unit> = {
   'a.pl_from_records': EXPOSURE_RATE,
   'a.pl_from_analysis': EXPOSURE_RATE,
   'a.pl_from_admissions': EXPOSURE_RATE,
+  'a.pl_from_remediation': EXPOSURE_RATE,
   'a.pl_from_harm': EXPOSURE_RATE,
   'a.reg_from_duty': EXPOSURE_RATE,
   'a.reg_from_pld': EXPOSURE_RATE,

@@ -29,7 +29,10 @@ const EXPECTED: Record<ProvenanceTier, number> = {
   // conversion explicit. It was always there, implicit at 1; naming it adds a
   // structural parameter without adding a claim.
   T3: 14,
-  T4: 86,
+  // T4 rose 86 -> 87 in M3d: `xi_3` gives Channel Three the exposure term it had been
+  // missing entirely. One more free parameter, and one fewer place where the model
+  // asserted a protection stronger than the doctrine supports.
+  T4: 87,
 }
 
 function census(): Record<ProvenanceTier, number> {

@@ -597,6 +597,106 @@ have been.
 
 ---
 
+## 11c. F20 — V6.2 is NOT met: two institutions remain unresolved
+
+M3's acceptance criterion V6.2 requires every preset pair to differ by **more than 5% of
+range** on at least one headline output. Measured worst pair:
+
+**aviation ~ nuclear-dual-channel: 4.27%**, on `L`. The criterion is not met.
+
+Per-output, on dynamic outcomes:
+
+| output | separation |
+|---|---|
+| `f_doc`, `C`, `E_reg` | **0.00%** |
+| `TD` | 0.01% |
+| `E_pl`, `R1`, `R3` | ~1.2% |
+| `R2` | 1.68% |
+| `L` | 4.27% |
+
+Their input postures are not similar — they differ by **26.3%** on `pd_fact` and 10.8% on
+`pd_rem`. The dynamics wash that difference out.
+
+**F4 is closed; F20 is what remains of it.** Those five learning presets were once
+bit-identical (`C = 1.0000, f_doc = 1.0000`). They are now distinct, and the gate proves
+it. But "distinct" is a much weaker property than "distinguishable at 5% of range", and
+the honest statement is that DocFlow can currently tell the aviation and nuclear
+architectures apart only through a 4.27% difference in accumulated learning.
+
+**One fix was available and was rejected.** Counting `pd_fact`, `pd_anal`, `pd_rem` and π
+as headline outputs lifts the worst pair from 4.27% to **13.85%** and V6.2 passes. Those
+four are functions of the parameters ALONE, so two presets with different levers differ on
+them by construction — it would be passing an interior-resolution test on a definitional
+choice rather than on model behaviour. `identifiability.test.ts` excludes them and says
+why, and the 4.27% figure is ratcheted so it cannot quietly degrade.
+
+**What would fix it properly:** the detection stage and capability stock (M4). Aviation
+and nuclear differ mainly in *what they can detect and how the signal travels*, and the
+model has no detection stage — so the one dimension on which these two regimes most
+differ is currently absent from the state vector.
+
+---
+
+## 11d. F21 — The M3c identifiability claim was overstated
+
+The M3c commit said disaggregating discoverability by channel delivered an
+"identifiability gain". V7.1, run afterwards, measured what it actually delivered.
+
+**Discoverability weights: rank 3 of 8.** Named deficient directions at the contested
+preset:
+
+```
+sigma=2.8e-11   w_p(0.90) + w_m(-0.41)
+sigma=4.2e-14   w_leak(0.92) + w_407(-0.39)
+sigma=1.8e-14   w_priv(0.89) + w_sep(-0.45)
+sigma=7.2e-15   q_407(1.00)
+sigma=0.0e+0    w_records(0.70) + w_m(0.69)
+```
+
+Disaggregation moved this from rank 1 to rank 3. That is a real improvement — under the
+lumped scalar all eight weights fed one sum and were unidentifiable by construction — but
+it is not separability, and "identifiability gain" implied more than rank 3/8 supports.
+
+**Two defects were found and fixed in the process, both of the F1 class.** First, M3c
+wired only `pd_fact` into anything: `w_priv`, `w_sep`, `w_407`, `q_407` and `w_leak` sat
+at **sigma = 0 exactly** — five registered parameters with no effect on any reported
+output. Second, Channel Three generated **no exposure at all**, so remediation throughput
+was consequence-free; `ADR/0004` argues C3's shield should be *weak*, and a channel with
+zero exposure asserted the opposite far more strongly than FRE 407 supports. Both are now
+wired (`pl_from_analysis` via `pd_anal`, new `pl_from_remediation` via `pd_rem` and
+`xi_3`), which is what moved the rank from 1 to 3.
+
+**Lever block: rank 10 of 15** at the contested presets, 8 of 15 at the learning ones.
+Deficient directions are named, per V7.1:
+
+```
+sigma=6.4e-10   precommit(0.75) + significant_purpose(0.51) + workflow_protection(-0.26)
+sigma=2.7e-12   kovel_evaluator(0.98)
+sigma=2.4e-14   significant_purpose(0.83) + precommit(-0.56)
+```
+
+`precommit` and `significant_purpose` trade off almost exactly, and `kovel_evaluator` is
+its own null direction — it moves no reported output measurably. Both are M3b levers, so
+the privilege model buys doctrinal fidelity at a real cost in identifiability.
+
+**A methodological error of mine, worth recording.** The first implementation sampled only
+the FINAL STATE — ten outputs against fifteen levers — so the matrix could not reach full
+column rank no matter how separable the parameters were. V7.1 specifies sensitivity *over
+a reference trajectory*. Sampling eight times through the transient recovers 2-3 ranks
+(8 to 10 at contested, 5 to 8 at learning). A rank measured against too few outputs is
+bounded by the measurement, not by the model.
+
+**The decision gate cannot be evaluated as written.** `ROADMAP.md` says: if V7.1 shows
+v0.3 is *less* identifiable than v0.2 on shared outputs, cut stocks. There is no v0.2 rank
+baseline — the metric did not exist then — so the comparison the gate calls for is
+unavailable. What is comparable is V7.2, the collinearity proxy, which improved from
+**7/36 to 3/42 lever pairs above |r| > 0.999**. On that measure v0.3 is better. Anyone
+wanting the gate honoured as specified would need to run this analysis against the v0.2
+tag, which is a half-day of work and is recorded in `OPEN_QUESTIONS.md` rather than
+claimed as done.
+
+---
+
 ## 12. Verdict, and what it constrains in v0.3
 
 > v0.2 is a **well-engineered implementation of a set of assumptions with no empirical content**, whose

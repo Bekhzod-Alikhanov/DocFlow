@@ -263,3 +263,105 @@ export function solveLinear(aIn: Matrix, bIn: number[]): number[] | null {
   }
   return x
 }
+
+// ---------------------------------------------------------------------------
+// Symmetric eigendecomposition — for identifiability analysis (V7.1)
+// ---------------------------------------------------------------------------
+
+export interface SymmetricEigen {
+  /** Eigenvalues, descending. */
+  values: number[]
+  /** `vectors[i]` is the unit eigenvector for `values[i]`. */
+  vectors: number[][]
+}
+
+/**
+ * Cyclic Jacobi eigendecomposition of a real symmetric matrix.
+ *
+ * Used for identifiability rather than dynamics, which is why it is here rather than
+ * reusing `eigenvalues`: V7.1 needs the SMALL singular values of the output-sensitivity
+ * matrix accurately, and it needs the corresponding EIGENVECTORS, because a rank
+ * deficiency is only a useful finding if you can name which parameter combination is
+ * unidentifiable. The general QR routine returns values only, and is least accurate
+ * exactly where this analysis is most sensitive — near zero.
+ *
+ * Jacobi is O(n³) per sweep and slow for large n, but n here is the number of
+ * parameters under analysis (tens), and it is backward-stable and gives small
+ * eigenvalues to full relative precision.
+ */
+export function symmetricEigen(aIn: Matrix, maxSweeps = 100): SymmetricEigen {
+  const n = aIn.length
+  const a = aIn.map((row) => [...row])
+  // V accumulates the rotations; its columns are the eigenvectors.
+  const v: Matrix = Array.from({ length: n }, (_, i) =>
+    Array.from({ length: n }, (_, j) => (i === j ? 1 : 0)),
+  )
+
+  const offDiagNorm = () => {
+    let sum = 0
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) sum += a[i][j] * a[i][j]
+    return Math.sqrt(2 * sum)
+  }
+
+  for (let sweep = 0; sweep < maxSweeps && offDiagNorm() > 1e-14; sweep++) {
+    for (let p = 0; p < n - 1; p++) {
+      for (let q = p + 1; q < n; q++) {
+        if (Math.abs(a[p][q]) < 1e-300) continue
+        // Rotation angle that zeroes a[p][q], computed via the numerically stable
+        // t = tan(theta) form rather than through an arctangent.
+        const theta = (a[q][q] - a[p][p]) / (2 * a[p][q])
+        const t =
+          Math.sign(theta || 1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1))
+        const c = 1 / Math.sqrt(t * t + 1)
+        const s = t * c
+        for (let k = 0; k < n; k++) {
+          const akp = a[k][p]
+          const akq = a[k][q]
+          a[k][p] = c * akp - s * akq
+          a[k][q] = s * akp + c * akq
+        }
+        for (let k = 0; k < n; k++) {
+          const apk = a[p][k]
+          const aqk = a[q][k]
+          a[p][k] = c * apk - s * aqk
+          a[q][k] = s * apk + c * aqk
+        }
+        for (let k = 0; k < n; k++) {
+          const vkp = v[k][p]
+          const vkq = v[k][q]
+          v[k][p] = c * vkp - s * vkq
+          v[k][q] = s * vkp + c * vkq
+        }
+      }
+    }
+  }
+
+  const order = Array.from({ length: n }, (_, i) => i).sort((x, y) => a[y][y] - a[x][x])
+  return {
+    values: order.map((i) => a[i][i]),
+    vectors: order.map((i) => v.map((row) => row[i])),
+  }
+}
+
+/**
+ * Singular values of an arbitrary matrix, descending, via the eigenvalues of AᵗA.
+ *
+ * Squaring loses half the available precision on the smallest singular values. That is
+ * acceptable here because V7.1 asks whether a direction is numerically identifiable at
+ * all — a question decided at a tolerance far above the squaring error — and it is
+ * stated so the limitation is not discovered later.
+ */
+export function singularValues(a: Matrix): number[] {
+  const rows = a.length
+  const cols = a[0]?.length ?? 0
+  const ata: Matrix = Array.from({ length: cols }, () => new Array<number>(cols).fill(0))
+  for (let i = 0; i < cols; i++) {
+    for (let j = i; j < cols; j++) {
+      let sum = 0
+      for (let k = 0; k < rows; k++) sum += a[k][i] * a[k][j]
+      ata[i][j] = sum
+      ata[j][i] = sum
+    }
+  }
+  return symmetricEigen(ata).values.map((x) => Math.sqrt(Math.max(0, x)))
+}

@@ -165,6 +165,7 @@ export const STRUCTURAL_KEYS = [
   'c_rec_exp',
   'disc_prob',
   'xi_2',
+  'xi_3',
   'c_harm_exp',
   'rate_harm',
   'xi_duty',
@@ -329,6 +330,8 @@ export interface Auxiliaries {
   waiver_probability: number
   independent_admissions: number
   pl_from_admissions: number
+  /** v0.3.0 M3d: Channel Three's exposure, weak but not zero (ADR/0004). */
+  pl_from_remediation: number
   harm_rate: number
   board_visibility: number
   pl_from_records: number
@@ -380,6 +383,7 @@ export const AUX_KEYS = [
   'waiver_probability',
   'independent_admissions',
   'pl_from_admissions',
+  'pl_from_remediation',
   'harm_rate',
   'board_visibility',
   'pl_from_records',
