@@ -15,7 +15,9 @@
     "typecheck": "tsc -b",
     "test": "vitest",
     "test:run": "vitest run",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "figures": "tsx tools/render-figures.mts",
+    "worklist": "tsx tools/pin-cite-worklist.mts"
   },
   "dependencies": {
     "jspdf": "^4.2.1",

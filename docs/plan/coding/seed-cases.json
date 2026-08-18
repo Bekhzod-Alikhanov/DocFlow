@@ -1,0 +1,89 @@
+{
+  "$comment": [
+    "SEED SET for the CALIBRATION.md §3 case-law coding protocol. NOT YET CODED.",
+    "",
+    "These are the five decisions the paper already relies on. Every `factors` value is",
+    "null and every `quotes` entry is empty: that is the point. Filling them in requires",
+    "reading each decision and is the one task that cannot be done from inside this",
+    "repository. Nulls are deliberate rather than defaulted to zero, so that an uncoded",
+    "case can never be silently fitted as if it scored zero on everything.",
+    "",
+    "Protocol reminders that the harness enforces (see calibration/coding.ts):",
+    "  - Expand this set by citator to N ≈ 15–30 (§3.1).",
+    "  - TWO independent coders, blind to each other and to the hypothesis (§3.3).",
+    "  - Per-factor Cohen's κ. κ < 0.6 on any factor means rewrite the rubric and recode",
+    "    that factor — it does not mean proceed with a caveat.",
+    "  - A supporting quotation per coded factor. A code without a quote is not auditable.",
+    "",
+    "Coding scheme:",
+    "  precommit            0 = post-hoc engagement · 1 = protocol/retainer predating the incident",
+    "  separation           0 none · 1 partial · 2 demonstrably separate workstream",
+    "  significant_purpose  0 purely business · 1 mixed · 2 legal advice a significant purpose",
+    "  valve                0 conclusions circulated widely · 1 limited · 2 tightly held",
+    "  outcome              0 protection denied · 1 partial · 2 upheld"
+  ],
+  "reliability": null,
+  "notes": "Uncoded seed. supportedTier will remain T4 until this is completed and κ reported.",
+  "codings": [
+    {
+      "id": "target-2015",
+      "citation": "In re Target Corp. Customer Data Sec. Breach Litig., 2015 WL 6777384 (D. Minn. Oct. 23, 2015)",
+      "year": 2015,
+      "jurisdiction": "D. Minn.",
+      "doctrine": "both",
+      "factors": { "precommit": null, "separation": null, "significant_purpose": null, "valve": null },
+      "outcome": null,
+      "quotes": {},
+      "coder": null,
+      "expectedDirection": "Protection SURVIVED. The paper reads this as turning on a two-track structure set up in advance. Confirm against the opinion rather than assuming."
+    },
+    {
+      "id": "capital-one-2020",
+      "citation": "In re Capital One Consumer Data Sec. Breach Litig., 2020 WL 2731238 (E.D. Va. May 26, 2020)",
+      "year": 2020,
+      "jurisdiction": "E.D. Va.",
+      "doctrine": "work-product",
+      "factors": { "precommit": null, "separation": null, "significant_purpose": null, "valve": null },
+      "outcome": null,
+      "quotes": {},
+      "coder": null,
+      "expectedDirection": "Protection FAILED. Widely read as the would-have-been-done-anyway case: the same vendor under a pre-existing SOW."
+    },
+    {
+      "id": "rutters-2021",
+      "citation": "In re Rutter's Inc. Data Sec. Breach Litig., 2021 WL 3733137 (M.D. Pa. July 22, 2021)",
+      "year": 2021,
+      "jurisdiction": "M.D. Pa.",
+      "doctrine": "both",
+      "factors": { "precommit": null, "separation": null, "significant_purpose": null, "valve": null },
+      "outcome": null,
+      "quotes": {},
+      "coder": null,
+      "expectedDirection": "Protection FAILED."
+    },
+    {
+      "id": "guo-wengui-2021",
+      "citation": "Guo Wengui v. Clark Hill, PLC, 338 F.R.D. 7 (D.D.C. 2021)",
+      "year": 2021,
+      "jurisdiction": "D.D.C.",
+      "doctrine": "both",
+      "factors": { "precommit": null, "separation": null, "significant_purpose": null, "valve": null },
+      "outcome": null,
+      "quotes": {},
+      "coder": null,
+      "expectedDirection": "Protection FAILED. Two-track approach rejected on these facts — worth coding carefully, since the paper's architecture is a two-track design and this is the case against it."
+    },
+    {
+      "id": "kbr-2014",
+      "citation": "In re Kellogg Brown & Root, Inc., 756 F.3d 754 (D.C. Cir. 2014)",
+      "year": 2014,
+      "jurisdiction": "D.C. Cir.",
+      "doctrine": "attorney-client",
+      "factors": { "precommit": null, "separation": null, "significant_purpose": null, "valve": null },
+      "outcome": null,
+      "quotes": {},
+      "coder": null,
+      "expectedDirection": "Protection UPHELD. Source of the significant-purpose test. Not a breach-forensics case — record that in notes, since it stretches the sample frame in §3.1."
+    }
+  ]
+}

@@ -38,6 +38,22 @@ The privilege coefficients specifically are uncalibrated by decision, not by ove
 Cohen's κ, adjudication — and it **has not been executed**. Nothing here is legal advice
 and nothing here predicts a ruling.
 
+
+### A note on the word "measured"
+
+This document uses it in two senses and a reader is entitled to be annoyed by that, so
+they are separated here once.
+
+- **Measured against the world** — an empirical observation of a real AI firm. The
+  provenance table's T1 tier means this, and the count is **zero**.
+- **Measured from the model** — a number obtained by running the code, as in "measured
+  π = 0.989" or "the threshold moves from 0.084 to 0.085". These are computations, and
+  they are reported as measurements only in the sense that they were obtained by running
+  something rather than asserted.
+
+Every figure in this document is the second kind. None is the first. Where the
+distinction could be missed the text says "computed" instead.
+
 ---
 
 ## 2. The result: where suppression pays, and what it costs
@@ -80,6 +96,13 @@ privilege and exposure, it just does not move *which architecture wins*.
 saves **6.1%** of total exposure and destroys **99.2%** of organisational learning
 (`L = 0.4` against 46.8). An exposure-minimising firm in a no-enforcement world would
 choose silence, and would end the period knowing almost nothing about its own failures.
+
+![Where suppression yields lower total exposure](figures/boundary.svg)
+
+*Figure 1 — the (v_reg, v_fid) plane at p_court = 0.5. Red-outlined cells are where
+suppression yields lower total exposure. Axes are truncated at 0.2: over the full swept
+range [0,3]² exactly one cell in 576 favours suppression, which is true and unreadable.
+`docs/figures/boundary-full-range.svg` shows it. Regenerate with `npm run figures`.*
 
 ### What would overturn this
 
@@ -164,6 +187,32 @@ number is not actionable. Two examples worth flagging: `precommit` and
 direction — it moves no reported output measurably. Both are privilege levers, so the
 doctrinal fidelity added in v0.3 was bought at a real cost in identifiability.
 
+
+### The structure added in v0.3 did not cost identifiability
+
+The roadmap carried a gate written to be used: *if v0.3 turns out less identifiable than
+v0.2 on shared outputs, cut stocks.* It went unevaluated for weeks because the comparison
+needs the old engine. It has now been run — v0.2 extracted from its last commit, the same
+analysis applied to both, over the **eleven levers present in both versions**:
+
+| preset | v0.2 rank | v0.3 rank | deficient directions |
+|---|---|---|---|
+| contested | 7 / 11 | **10 / 11** | 4 → 1 |
+| cybersecurity | 7 / 11 | **10 / 11** | 4 → 1 |
+| aviation | 5 / 11 | **8 / 11** | 6 → 3 |
+
+**The gate does not fire.** No stocks are cut.
+
+The less flattering half, which belongs in the same breath: the condition number rose
+everywhere, by two orders of magnitude at the contested baseline. Some of that is
+mechanical — resolving more directions means retaining smaller singular values — but the
+practical reading stands. v0.3 distinguishes more parameter directions, and the newly
+distinguished ones are weakly informative.
+
+One pair defeats both versions at every preset: `intermediary_capacity` and
+`translation_layer` are not separable by these outputs. That is a durable property of the
+model rather than something v0.3 introduced.
+
 ### F3 — the one that stays open, and cannot be closed here
 
 Zero parameters are empirically anchored, and adding structure did not change that. v0.3
@@ -222,6 +271,11 @@ Every figure in this document is produced by a test, not typed in by hand.
 | Dimensional consistency, with written waivers | `src/engine/dimensional.test.ts` |
 | Version contract — maths and version cannot drift | `src/engine/versionContract.test.ts` |
 | The audit table agrees with the code | `src/engine/auditCurrency.test.ts` |
+| M3 decision gate — v0.2 vs v0.3 identifiability | `src/engine/identifiabilityBaseline.test.ts` |
+| The boundary figure matches the model | `src/engine/boundaryFigure.test.ts` |
+| Firth estimator, incl. behaviour under separation | `src/engine/calibration/firth.test.ts` |
+| The calibration gate refuses ungated promotion | `src/engine/calibration/coding.test.ts` |
+| Every externally-cited parameter reaches the worklist | `src/engine/pinCite.test.ts` |
 
 Run `npm run coverage` for all of them. The numbers printed to the console are the numbers
 in this document.
@@ -234,7 +288,43 @@ what was **rejected** and why.
 
 ---
 
-## 6. Known gaps, stated rather than discovered
+
+## 6. What is ready for the evidence that does not exist yet
+
+The binding constraint on this instrument is that nothing is measured against the world,
+and no amount of further modelling changes that. Two things were built to make the next
+step cheap rather than to postpone it.
+
+**The case-law coding harness** (`src/engine/calibration/`). `CALIBRATION.md` §3 specifies
+a protocol for coding privilege decisions on four factors — the only route this project has
+off T1 = T2 = 0. The protocol needs a legal researcher; everything else is now built:
+
+- a typed schema, and a seed file of the five decisions the paper relies on, **deliberately
+  uncoded** — every factor is `null` rather than `0`, so an unread case can never be fitted
+  as though it scored zero on everything;
+- **Firth penalised logistic regression**, because §3.4 predicts separation at N ≈ 20 and
+  ordinary maximum likelihood diverges there. Tested against known coefficients and against
+  a perfectly separated design, where it returns a finite estimate and flags that the
+  magnitude is the penalty talking rather than the data;
+- Cohen's κ per factor, unweighted — the strict version, since a weighted κ would report a
+  comfortable number for the same disagreement;
+- a **promotion gate that refuses**. Fewer than ten cases, one coder, any factor below
+  κ = 0.6, or detected separation, and the coefficients stay T4. `applyCalibration` throws
+  rather than writing ungated numbers into a parameter set;
+- and a path that **recomputes the boundary result** under calibrated coefficients, so the
+  question "does the headline survive contact with evidence" is answered automatically
+  rather than becoming a further project.
+
+The ceiling is **T2**, not T1, however clean the coding gets. Decided breach-forensics case
+law is an analog for AI incident forensics, not a measurement of it.
+
+**The pin-cite worklist** (`docs/plan/PIN_CITE_WORKLIST.md`, generated). Every parameter
+resting on external legal authority, what it asserts, and what to check. Building it found
+that twelve parameters citing live authority — *Caremark*, AI Act Art. 73, PLD Art. 9(1),
+*Kovel*, FRCP 26(b)(1), FRE 407 — carried no verification flag at all and would never have
+reached anyone's list. The count went from 15 to 27.
+
+## 7. Known gaps, stated rather than discovered
 
 - **No detection stage.** The model assumes every incident is known. That deletes the
   argument about semantically silent failures entirely, and it is why F20 stands.

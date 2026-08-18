@@ -163,3 +163,52 @@ describe('FINDINGS.md — states its limits, not only its results', () => {
     expect(DOC).toMatch(/not a (forecast|prediction)/i)
   })
 })
+
+/**
+ * The adversarial pass, kept as gates.
+ *
+ * `ROADMAP.md`'s verification section specified reading these documents hostilely and
+ * checking that every numeric claim's tier is identifiable quickly. Running it found one
+ * real defect — "measured" carrying two incompatible senses in the same document, where
+ * the provenance table means "observed in the world" (count zero) and the results text
+ * means "obtained by running the model". A reviewer would read that as self-contradiction
+ * at best. These pin the fix.
+ */
+describe('FINDINGS.md survives a hostile read', () => {
+  it('separates the two senses of "measured" explicitly', () => {
+    expect(DOC).toMatch(/A note on the word "measured"/)
+    expect(DOC).toMatch(/Measured against the world/)
+    expect(DOC).toMatch(/Measured from the model/)
+  })
+
+  it('does not use a strong verb to describe an unmeasured result', () => {
+    // "proves", "demonstrates" and "establishes" are defensible only about things the
+    // code actually settles. In this document nothing does.
+    const overclaim = DOC.match(/\b(proves|establishes|confirms that)\b[^.]{0,80}/gi) ?? []
+    expect(overclaim).toEqual([])
+  })
+
+  it('states the decision-gate result, including the unflattering half', () => {
+    expect(DOC).toMatch(/gate does not fire/i)
+    // Rank improved AND conditioning worsened. Reporting only the first would be
+    // choosing the favourable statistic.
+    expect(DOC).toMatch(/condition number rose/i)
+  })
+
+  it('declares the figure’s axis truncation where the figure is shown', () => {
+    // Zooming to [0,0.2] is what makes the region visible; undeclared, it flatters.
+    const caption = DOC.slice(DOC.indexOf('Figure 1'))
+    expect(caption).toMatch(/truncated at 0\.2/)
+    expect(caption).toMatch(/one cell in 576/)
+  })
+
+  it('says the calibration ceiling is T2, not T1', () => {
+    expect(DOC).toMatch(/ceiling is \*\*T2\*\*, not T1/)
+  })
+
+  it('reports that building the worklist found missing flags', () => {
+    // An honest process note: the tooling found a gap in my own bookkeeping.
+    expect(DOC).toMatch(/would never have\s+reached anyone/)
+    expect(DOC).toMatch(/15 to 27/)
+  })
+})

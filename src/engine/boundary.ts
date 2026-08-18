@@ -84,8 +84,21 @@ function posture(presetId: string, env: Environment): Params {
   return { ...paramsFromPreset(PRESET_BY_ID[presetId]), ...env }
 }
 
-export function runArchitecture(presetId: string, env: Environment): ArchitectureOutcome {
-  const p = posture(presetId, env)
+/**
+ * Run one architecture under an environment, optionally transforming the parameters
+ * first.
+ *
+ * The `transform` hook exists so the calibration layer can re-run this comparison with
+ * calibrated coefficients WITHOUT duplicating the simulation settings. Duplicating them
+ * is how a calibrated and an uncalibrated result silently stop being comparable.
+ */
+export function runArchitectureWith(
+  presetId: string,
+  env: Environment,
+  transform?: (p: Params) => Params,
+): ArchitectureOutcome {
+  const base = posture(presetId, env)
+  const p = transform ? transform(base) : base
   const r = simulate(initFromPreset(PRESET_BY_ID[presetId]), p, SETTINGS)
   const s = r.summary.finalState
   const a = computeAux(s, p)
@@ -97,6 +110,10 @@ export function runArchitecture(presetId: string, env: Environment): Architectur
     fDoc: r.summary.finalFdoc,
     learning: s.L,
   }
+}
+
+export function runArchitecture(presetId: string, env: Environment): ArchitectureOutcome {
+  return runArchitectureWith(presetId, env)
 }
 
 export function evaluateEnvironment(
