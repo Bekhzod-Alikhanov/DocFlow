@@ -42,18 +42,25 @@ architecture *before* proposing law, internal controls, or lab governance.
 
 | | |
 |---|---|
-| **Source** | ~13,100 lines of TypeScript across **85** modules (strict mode) |
-| **Tests** | **271** Vitest specs across 51 files (~3,500 LOC); deterministic, mock-free |
-| **Pure simulation core** | ~3,380 LOC (`engine/` + `engine/tabletop/`) with **zero** React/DOM/IO imports |
-| **Engine coverage** | `engine` 97.6% stmts · `engine/tabletop` **100%** stmts / 98.2% branch |
-| **Domain model** | 6 stocks · 12 levers · 6 institutional meters · 7 incident meters |
+| **Source** | ~16,000 lines of TypeScript across **92** modules (strict mode) |
+| **Tests** | **501** Vitest specs across 70 files (~6,700 LOC); deterministic, mock-free |
+| **Pure simulation core** | ~6,070 LOC (`engine/` + `engine/tabletop/`) with **zero** React/DOM/IO imports |
+| **Engine coverage** | `engine` 96.6% stmts · `engine/tabletop` **100%** stmts / 98.2% branch |
+| **Domain model** | **10** stocks · **15** levers · **101** registered parameters · 6 institutional meters · 7 incident meters |
+| **Provenance** | T1 measured **0** · T2 analog **0** · T3 structural 14 · T4 free 87 |
 | **Content** | **10** cited incident scenarios · 8 cited presets · 7 analog regimes · 15 design principles |
 | **Surfaces** | 3 top-level modes · 6 scientific analysis tabs · 4 playbook lenses |
-| **Initial load** | **~98 KB gzip** (app shell + CSS); Plotly, the scenario bundle, and PDF libs are code-split and lazy |
-| **Docs** | ~4,000 lines (`MODEL.md`, `METHODS.md`, `ARCHITECTURE.md`, `TABLETOP.md`) |
+| **Initial load** | **~111 KB gzip** (app shell + CSS); Plotly, the scenario bundle, and PDF libs are code-split and lazy |
+| **Docs** | ~1,400 lines of model docs plus ~3,100 lines of `docs/plan/` (audit, spec, calibration, validation, 12 ADRs) |
 
-Every one of those numbers is produced by the checked-in code and the green CI
-gate (`lint + tsc -b + vitest + build + validate:scenarios`) — no hand-waving.
+The structural counts — stocks, levers, parameters and the provenance census — are
+asserted by `src/engine/readmeCurrency.test.ts` and fail CI if this table drifts from the
+code. The line-count and bundle figures are as of v0.3.0 and are not machine-checked.
+
+**This table was wrong for the whole of v0.3 until 2026-08-18**, claiming 6 stocks and 12
+levers when the model had 10 and 15, and it said "every one of those numbers is produced
+by the checked-in code" while saying so. That is the same defect the audit's F1 records,
+in the first thing a reader sees — hence the test.
 
 ---
 
@@ -133,19 +140,32 @@ function of the levers:
 
 ```ts
 // src/engine/model.ts — pure, no framework imports
-export function perceivedDiscoverability(p: Params): number {
-  return (
-    p.w_m * p.mandatory_reporting +          // compulsion raises it
-    p.w_p * p.pld_penalty -                   // adverse-inference raises it
-    p.w_priv * p.privilege_strength -         // ...everything below lowers it
-    p.w_sep * p.recipient_enforcer_separation -
-    p.w_tl * p.translation_layer -
-    p.w_workflow * p.workflow_protection -
-    p.w_records * p.original_records_boundary -
-    p.w_safe * p.safe_harbor_non_admission
-  )
+export function discoverability(p: Params): DiscoverabilitySignals {
+  const priv = privilegeSurvival(p)          // privilege is an OUTCOME, not a lever
+
+  // Channel One is discoverable BY DESIGN — duties raise it, and the
+  // original-records boundary shapes the record without hiding it.
+  const fact = p.w_m * p.mandatory_reporting + p.w_p * p.pld_penalty
+             - p.w_records * p.original_records_boundary
+
+  // Channel Two is discoverable to the extent privilege FAILS.
+  const anal = p.w_priv * (1 - priv.pi)
+             + p.w_sep * (1 - p.recipient_enforcer_separation)
+
+  // Channel Three turns on admissibility (Rule 407), not discovery — and leakage
+  // of causal language defeats the work-order framing.
+  const rem = p.w_407 * (1 - p.q_407 * p.safe_harbor_non_admission)
+            + p.w_leak * priv.lambda
+
+  return { fact, anal, rem, total: (fact + anal + rem) / 3 }
 }
 ```
+
+v0.2 lumped all of this into one scalar built from eight lever weights. That made the
+weights jointly unidentifiable by construction — only their sum was ever observable — and
+it sat at ≈ −3 in six of eight presets, where the one-sided penalty's gradient underflows,
+so every weight was numerically inert exactly where the model was most used. The split by
+channel is what fixed both (`AUDIT.md` F6, F15).
 
 Full equations, coefficients, and their evidence basis live in
 [`docs/MODEL.md`](docs/MODEL.md); numerics, validation, and epistemic limits in
@@ -157,7 +177,10 @@ All primary levers are normalized to `[0, 1]` and grouped in the UI.
 
 | Lever | What it represents |
 |---|---|
-| `privilege_strength` | Strength of legal protection for internal analysis. |
+| `precommit` | Was entry to the protected channel fixed **before** any incident, or arranged after the fact? *In re Target* survived on this; *Capital One* and *Rutter's* failed on it. |
+| `significant_purpose` | Was legal advice *a* significant purpose of the work (*In re Kellogg Brown & Root*)? |
+| `valve_discipline` | How strictly causal conclusions are kept out of operational records. |
+| `kovel_evaluator` | An outside technical expert retained to assist counsel (*United States v. Kovel*). |
 | `just_culture` | Protection for honest error with misconduct carve-outs. |
 | `mandatory_reporting` | Duty or pressure to report serious incidents. |
 | `pld_penalty` | Disclosure / adverse-inference pressure. |
@@ -239,18 +262,29 @@ choice actually *worsens*, because gutting the protective workflow raises real
 discoverability more than asserting privilege lowers it):
 
 ```ts
-// src/engine/tabletop/score.ts — short-term shield ≠ durable exposure
+// src/engine/tabletop/score.ts — the BELIEF, deliberately not the doctrine
 function perceivedLegalShield(state: RunState): number {
   const privileged =
     state.flags.includes('legal_owns_record') ||
     state.flags.includes('privileged_single_track')
   return clamp01(
-    0.55 * state.params.privilege_strength +
-    0.30 * (privileged ? 1 : 0) +
-    0.15 * (1 - state.params.original_records_boundary),
+    // "We involved a lawyer."
+    PERCEIVED_SHIELD.significant_purpose * state.params.significant_purpose +
+    // "...and we kept it off the books."
+    PERCEIVED_SHIELD.single_track_flag * (privileged ? 1 : 0) +
+    PERCEIVED_SHIELD.no_records_boundary * (1 - state.params.original_records_boundary),
   )
 }
+
+// ...and what the doctrine actually delivers, which can be far lower.
+const actual = privilegeSurvival(state.params).pi
+const illusion = perceivedLegalShield(state) - actual
 ```
+
+The gap is the point. This function is **not** the privilege model — it ignores
+pre-commitment and valve integrity, which is exactly why it can exceed real privilege
+survival. Measured >0.5 for the naive "counsel involved, nothing written down" posture,
+and that gap is the cybersecurity failure mode the playbook is written against.
 
 That split is exactly why **no path dominates**: the oral path wins the perceived
 shield and self-sufficiency; the two-track path wins learning, remediation, and
@@ -291,7 +325,9 @@ move that makes each mechanism visible.
 | 10 | Cross-border incident (EU Art. 73 vs. US posture) | malfunction | 1·3 |
 
 Every non-terminal choice carries ≥1 real citation; the schema validator and a
-registry test enforce this across the whole library (`npm run validate:scenarios`).
+registry test enforce this across the whole library (part of `npm test`; the separate
+`validate:scenarios` script was removed in v0.3.0 because it only re-ran tests the main
+suite already covers).
 
 ---
 
@@ -368,7 +404,7 @@ Tabletop loop and every lever drag recompute synchronously and feel instant.
 - **Isolation:** stores and `localStorage` reset between tests; the suite is
   verified deterministic across repeated full runs.
 - **CI gate** (`.github/workflows/ci.yml`) runs on every push: `eslint` →
-  `tsc -b` → `vitest --coverage` (engine ≥ 90% enforced) → `validate:scenarios` →
+  `tsc -b` → `vitest --coverage` (per-file thresholds enforced across engine, lib and workers) →
   `vite build`. All green.
 
 What the suite verifies, in brief: parameter-registry completeness and range
@@ -407,13 +443,12 @@ npm run dev            # http://localhost:5173
 | `npm run coverage` | Run tests with V8 coverage. |
 | `npm run typecheck` | `tsc -b`. |
 | `npm run lint` | ESLint. |
-| `npm run validate:scenarios` | Validate every registered Tabletop scenario against the schema. |
 
 ### Authoring a scenario
 
 Create a `.ts` file in `src/lib/tabletop/scenarios/`, export a `TabletopScenario`
 (types in `src/engine/tabletop/types.ts`), register it in `scenarios/index.ts`,
-then run `npm run validate:scenarios`. The validator checks lever/meter keys, node
+then run `npm test`. The schema validator checks lever/meter keys, node
 reachability, dangling `next` targets, duplicate ids, and the ≥1-citation rule.
 Full authoring guide in [`docs/TABLETOP.md`](docs/TABLETOP.md).
 

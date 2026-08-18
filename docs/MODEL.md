@@ -28,7 +28,10 @@ DocFlow v0.2 keeps the six-stock core and adds institutional design levers:
 
 | Lever | Institutional meaning |
 |---|---|
-| `privilege_strength` | Strength of legal protection for analysis |
+| `precommit` | Was channel entry fixed before the incident, or arranged afterwards? |
+| `significant_purpose` | Was legal advice *a* significant purpose (*Kellogg*)? |
+| `valve_discipline` | How strictly conclusions stay out of operational records |
+| `kovel_evaluator` | Outside technical expert retained through counsel (*Kovel*) |
 | `just_culture` | Clear protection for honest error, with misconduct carve-outs |
 | `mandatory_reporting` | Duty or pressure to report serious incidents |
 | `pld_penalty` | Disclosure / adverse-inference pressure |
@@ -44,14 +47,28 @@ DocFlow v0.2 keeps the six-stock core and adds institutional design levers:
 ## 3. Documentation Fraction
 
 ```
-perceived_discoverability =
-      w_m * mandatory_reporting + w_p * pld_penalty
-    - w_priv * privilege_strength
-    - w_sep * recipient_enforcer_separation
-    - w_tl * translation_layer
-    - w_workflow * workflow_protection
-    - w_records * original_records_boundary
-    - w_safe * safe_harbor_non_admission
+# v0.3.0 M3c: three channel signals, not one lumped scalar.
+# pi and lambda come from privilegeSurvival(p) -- privilege is an OUTCOME.
+
+pd_fact = w_m * mandatory_reporting + w_p * pld_penalty
+        - w_records * original_records_boundary
+
+pd_anal = w_priv * (1 - pi)
+        + w_sep * (1 - recipient_enforcer_separation)
+
+pd_rem  = w_407 * (1 - q_407 * safe_harbor_non_admission)
+        + w_leak * lambda
+
+perceived_discoverability = (pd_fact + pd_anal + pd_rem) / 3   # channel MEAN
+
+# f_doc responds to pd_fact ALONE: privilege does not protect facts, so the
+# willingness to write down what happened cannot depend on how well the
+# analysis is shielded (MODEL_v3_SPEC 3.3).
+#
+# w_tl, w_workflow and w_safe were RETIRED. Those levers still act, through the
+# mechanisms that carry them: workflow_protection is the separation factor in
+# privilegeSurvival, and safe_harbor_non_admission discounts Channel Three via
+# q_407, which is Rule 407's own domain.
 
 drive_to_document =
       a_c * C + a_jc * just_culture + a_m * mandatory_reporting
@@ -89,14 +106,28 @@ learning_gain =
     eta_learn * to_D * translation_layer_efficiency * challenge_multiplier
   + near_miss_learning_boost * near_miss_signal * translation_layer_efficiency
 
+# v0.3.0 M3: the three channels. R1 is written regardless of legal posture; R2 is
+# entered through the pre-committed tripwire; R3 flows from both and is the
+# learning conduit (ADR/0002, ADR/0004).
+to_R1 = to_D + belated_doc
+to_R2 = trip * to_D * kappa_2
+to_R3 = R2 * rate_23 * pi_eff + R1 * rate_13
+
+# Remediation is driven by Channel Three, not by the retired lumped D stock, and is
+# gated by debt_availability so that TD = 0 is an invariant of the equations (F2).
 remediation =
-    rho * D * (L/100) * (1 + challenge_remediation_boost * effective_challenge)
+    rho * R3 * (L/100) * (1 + challenge_remediation_boost * effective_challenge)
         * debt_availability
 
-d_closeout = kappa_D * D
 belated_doc = mu * U * f_doc
-u_to_debt = sigma * U
+
+# Two DIFFERENT quantities, related by an explicit conversion (V3.3).
+u_outflow = sigma * U                  # incident/month, leaves U
+u_to_debt = c_inc_debt * u_outflow     # debt/month, enters TD
+
+# harm_events is a LEVEL. Only the derived RATE may enter a d/dt (V3.4).
 harm_events = gamma * TD * max(0, 1 - L/100)
+harm_rate   = harm_events * rate_harm
 ```
 
 ## 5. Culture and Exposure
@@ -105,7 +136,7 @@ harm_events = gamma * TD * max(0, 1 - L/100)
 safety_wins = omega * f_doc * translation_layer_efficiency
 
 protection_bundle = clamp01(
-    0.36 * privilege_strength
+    0.36 * privilege_survival        # = privilegeSurvival(p).pi, computed
   + 0.22 * workflow_protection
   + 0.18 * safe_harbor_non_admission
   + 0.14 * original_records_boundary
@@ -126,18 +157,38 @@ loop). `psi`'s default absorbs the old product.
 Stock equations:
 
 ```
-dU/dt  = to_U - belated_doc - u_to_debt
-dD/dt  = to_D + belated_doc - d_closeout
-dTD/dt = u_to_debt + td_baseline - remediation - delta_TD * TD
-dL/dt  = learning_gain - delta_L * L
-dE/dt  = phi_doc * to_D * (1 - privilege_strength)
-       + phi_harm * harm_events
-       + phi_pld * pld_penalty * to_U
-       - theta_E * E
-culture_target = clamp01(a_jc_c * just_culture
+# v0.3.0: ten stocks. The single record stock D became three channels with
+# distinct evidentiary status (ADR/0002), and the single exposure stock E became
+# three gradients that OPPOSE each other (ADR/0003).
+
+dU/dt    = to_U - belated_doc - u_outflow
+dR1/dt   = to_R1 - delta_R1 * R1          # factual record
+dR2/dt   = to_R2 - delta_R2 * R2          # privileged analysis
+dR3/dt   = to_R3 - delta_R3 * R3          # remediation
+dTD/dt   = u_to_debt + td_baseline - remediation - delta_TD * TD
+dL/dt    = learning_gain - delta_L * L
+
+# RISES WITH CANDOUR
+dE_pl/dt = pl_from_records + pl_from_analysis + pl_from_remediation
+         + pl_from_admissions + pl_from_harm - theta_E * E_pl
+# RISE WITH SUPPRESSION
+dE_reg/dt = reg_from_duty + reg_from_pld - theta_E * E_reg
+dE_fid/dt = fid_from_blindness - theta_E * E_fid
+
+E_tot = v_pl * E_pl + v_reg * E_reg + v_fid * E_fid
+
+# u_outflow (incident/month) and u_to_debt (debt/month) are DIFFERENT quantities
+# related by c_inc_debt. Before v0.3.0 one number was subtracted from a stock of
+# incidents and added to a stock of debt (VALIDATION.md V3.3).
+
+culture_target = smoothClamp01(a_jc_c * just_culture
        + a_sep * recipient_enforcer_separation
        + safety_wins - backfire
        - exposure_chill - harm_chill)
+
+# smoothClamp01, not clamp01: this sits inside the RHS of an ODE and the chilling
+# presets cross the [0,1] boundary during integration. A hard corner there cost RK4
+# two orders of accuracy (V5.1).
 
 kernel = eps_C + (1 - eps_C) * 4 * C * (1 - C)
 
@@ -251,4 +302,4 @@ The test suite verifies these qualitative targets:
 |---|---|---|
 | 2026-06-21 | 0.1.0 | Initial model. Added saturating debt-to-incident amplification, natural debt retirement, and fraction-driven culture reinforcement to make the system well-posed and bistable. |
 | 2026-06-22 | 0.2.0 | Added institutional design levers and derived readouts while keeping the six-stock core. Added workflow protection, original-records boundary, safe harbor / non-admission, effective challenge, near-miss tier, and intermediary capacity. Updated presets for aviation, PSQIA, pharma, SR 11-7, nuclear, cyber, and EU AI Act + PLD. |
-| 2026-08-17 | 0.3.0 | **Correctness release following the Phase 0 audit (`docs/plan/AUDIT.md`).** (F1) **Closed the R1 loop** — `cultureTarget` now subtracts saturating terms in realised exposure and harm (`psi_E`, `E_k`, `psi_H`, `h_k`), so `dC/dt` depends on the physical stocks; through v0.2 it was an autonomous scalar equation and the documented loop did not exist. (F2) **`dTD/dt` reformulated** — remediation is gated by `TD/(TD+td_k)`, making `TD = 0` an invariant of the equations; clamp events across all presets went from 680+ to **zero**, and RK4 recovered 4th-order convergence on the affected presets. (F9) **Culture is no longer absorbing** — the logistic kernel is blended with a floor `eps_C`, so culture can recover from either boundary; `cultureTarget` is also clamped to [0,1]. (F12) **Pole removed** — Michaelis–Menten debt amplification replaced by a bounded exponential with the same low-debt slope and ceiling. (F7) **`phi_doc` removed from `backfire`** — it is an exposure/incident conversion and was acting as a dimensionless culture gain, which was both a unit error and a hard parameter alias; `psi`'s default absorbs the old product. (F13) `fastEquilibriumAt` no longer clamps inside its iteration and reports convergence; `findAllEquilibria` now deduplicates equilibria that polish to the same fixed point. (F16) `expectedRegime` corrected on `eu-trap` and `neutral`, which declared `contested` while simulating `chilling`. Added `src/engine/diagnostics.test.ts` as a permanent gate suite. **Behavioural consequence, accepted rather than tuned around: only the contested baseline remains bistable.** Follow-ups in the same release: (F15) `relu` → `softplus` on perceived discoverability, which removes a C⁰ corner from lever sweeps and sensitivity — note the audit overstated this, since PD is state-independent and the kink never affected integration order; (F14) `hysteresis` now measures a per-step equilibrium residual and refuses to report path dependence when the ramp has not relaxed, with the UI withholding the overlay and saying why; a 5×5 Newton solve for the fast subsystem (`findAllEquilibria` 139 ms → 11 ms) after the slow-manifold rewrite pushed CI past its test timeout; and wall-clock perf guards so a future slowdown fails loudly instead of as an opaque timeout. **M1/M2 completion:** a provenance tier system (T1 measured / T2 analog-estimated / T3 structural / T4 free) across all 62 parameters with a CI-pinned census of T1=0, T2=0, T3=8, T4=54, each free parameter naming the observation that would constrain it; per-file coverage across engine, lib and workers replacing an aggregate threshold that let weak files pass by subsidy; an **adaptive Dormand-Prince RK45** solver with error control and substep diagnostics (fixed-step RK4 gave no error estimate at all, which is why the order collapse went unnoticed); a distinct **`saturated`** flag so a clamp-held trajectory cannot report as healthy; and **`converged` gating** on equilibria, so a point Newton never reached is no longer eigen-classified and counted as an attractor. |
+| 2026-08-17 | 0.3.0 | **Correctness release following the Phase 0 audit (`docs/plan/AUDIT.md`).** (F1) **Closed the R1 loop** — `cultureTarget` now subtracts saturating terms in realised exposure and harm (`psi_E`, `E_k`, `psi_H`, `h_k`), so `dC/dt` depends on the physical stocks; through v0.2 it was an autonomous scalar equation and the documented loop did not exist. (F2) **`dTD/dt` reformulated** — remediation is gated by `TD/(TD+td_k)`, making `TD = 0` an invariant of the equations; clamp events across all presets went from 680+ to **zero**, and RK4 recovered 4th-order convergence on the affected presets. (F9) **Culture is no longer absorbing** — the logistic kernel is blended with a floor `eps_C`, so culture can recover from either boundary; `cultureTarget` is also clamped to [0,1]. (F12) **Pole removed** — Michaelis–Menten debt amplification replaced by a bounded exponential with the same low-debt slope and ceiling. (F7) **`phi_doc` removed from `backfire`** — it is an exposure/incident conversion and was acting as a dimensionless culture gain, which was both a unit error and a hard parameter alias; `psi`'s default absorbs the old product. (F13) `fastEquilibriumAt` no longer clamps inside its iteration and reports convergence; `findAllEquilibria` now deduplicates equilibria that polish to the same fixed point. (F16) `expectedRegime` corrected on `eu-trap` and `neutral`, which declared `contested` while simulating `chilling`. Added `src/engine/diagnostics.test.ts` as a permanent gate suite. **Behavioural consequence, accepted rather than tuned around: only the contested baseline remains bistable.** Follow-ups in the same release: (F15) `relu` → `softplus` on perceived discoverability, which removes a C⁰ corner from lever sweeps and sensitivity — note the audit overstated this, since PD is state-independent and the kink never affected integration order; (F14) `hysteresis` now measures a per-step equilibrium residual and refuses to report path dependence when the ramp has not relaxed, with the UI withholding the overlay and saying why; a 5×5 Newton solve for the fast subsystem (`findAllEquilibria` 139 ms → 11 ms) after the slow-manifold rewrite pushed CI past its test timeout; and wall-clock perf guards so a future slowdown fails loudly instead of as an opaque timeout. **M1/M2 completion:** a provenance tier system (T1 measured / T2 analog-estimated / T3 structural / T4 free) across all parameters with a CI-pinned census (101 parameters as of the M3 completion: T1=0, T2=0, T3=14, T4=87), each free parameter naming the observation that would constrain it; per-file coverage across engine, lib and workers replacing an aggregate threshold that let weak files pass by subsidy; an **adaptive Dormand-Prince RK45** solver with error control and substep diagnostics (fixed-step RK4 gave no error estimate at all, which is why the order collapse went unnoticed); a distinct **`saturated`** flag so a clamp-held trajectory cannot report as healthy; and **`converged` gating** on equilibria, so a point Newton never reached is no longer eigen-classified and counted as an attractor. |

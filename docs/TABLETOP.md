@@ -316,12 +316,19 @@ export function perceivedLegalShield(state: RunState): number {
     state.flags.includes('legal_owns_record') ||
     state.flags.includes('privileged_single_track')
   return clamp01(
-    0.55 * state.params.privilege_strength +
-    0.30 * (privilegedSingleTrack ? 1 : 0) +
-    0.15 * (1 - state.params.original_records_boundary),
+    PERCEIVED_SHIELD.significant_purpose * state.params.significant_purpose +
+    PERCEIVED_SHIELD.single_track_flag * (privilegedSingleTrack ? 1 : 0) +
+    PERCEIVED_SHIELD.no_records_boundary * (1 - state.params.original_records_boundary),
   )
 }
 ```
+
+v0.3.0 M3b split this three ways. `perceivedLegalShield` above is the naive BELIEF
+("counsel was involved and nothing was written down"); `actualLegalShield` is
+`privilegeSurvival(params).pi`, what the four doctrinal factors imply; and
+`legalShieldIllusion` is the gap. The gap is the more interesting quantity — it ignores
+pre-commitment and valve integrity, which is precisely why courts have repeatedly pierced
+this posture. Weights are registered in `engine/tabletop/coefficients.ts`, all T4.
 
 The UI **must** label `legalSafety` as "short-term / perceived" and pair it with
 the `litigation_pressure` (durable) caveat. These are two different things.

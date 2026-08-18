@@ -1,6 +1,6 @@
 # DocFlow v0.3 — what the model found, and what it cannot support
 
-**Version 0.3.0 · 2026-08-18 · 470 automated checks**
+**Version 0.3.0 · 2026-08-18 · 501 automated checks**
 
 DocFlow is a system-dynamics model of how an AI firm's incident-documentation behaviour
 settles into one of two self-reinforcing regimes: a **chilling** equilibrium where the
