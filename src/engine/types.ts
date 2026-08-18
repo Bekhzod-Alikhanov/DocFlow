@@ -97,10 +97,10 @@ export const STRUCTURAL_KEYS = [
   'w_p',
   'w_priv',
   'w_sep',
-  'w_tl',
-  'w_workflow',
   'w_records',
-  'w_safe',
+  'w_407',
+  'q_407',
+  'w_leak',
   'pd_sharpness',
   // incident generation (§2.3)
   'base_incident_rate',
@@ -318,6 +318,10 @@ export interface Auxiliaries {
   to_R1: number
   to_R2: number
   to_R3: number
+  /** v0.3.0 M3c: channel-specific discoverability (MODEL_v3_SPEC 3.2). */
+  pd_fact: number
+  pd_anal: number
+  pd_rem: number
   privilege_survival: number
   /** v0.3.0 M3b: privilege after the untested-device discount (p_court). */
   privilege_survival_eff: number
@@ -367,6 +371,9 @@ export const AUX_KEYS = [
   'to_R1',
   'to_R2',
   'to_R3',
+  'pd_fact',
+  'pd_anal',
+  'pd_rem',
   'privilege_survival',
   'privilege_survival_eff',
   'valve_leakage',

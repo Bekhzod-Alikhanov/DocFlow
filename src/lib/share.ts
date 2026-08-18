@@ -35,10 +35,16 @@ interface ShareCodecV1 {
 }
 
 /**
- * Positional key order for v1 share hashes. Kept as plain strings, not ParamKey[]:
- * `privilege_strength` was RETIRED in v0.3.0 M3b (privilege became a computed
- * outcome), so an old link carries a value with nowhere to go. Decoding skips any
- * key that is no longer in the registry rather than failing the whole link.
+ * Positional key order for v1 share hashes. Kept as plain strings, not ParamKey[],
+ * because retired parameters must keep their historical SLOTS: `privilege_strength`
+ * went in v0.3.0 M3b and `w_tl` in M3c, and an old link still carries a value at each
+ * position. The decoder consumes every slot by index and discards values whose key is
+ * no longer in the registry, so a retired name costs nothing but removing it would
+ * shift every later parameter by one and silently corrupt existing links.
+ *
+ * THIS LIST IS A HISTORICAL RECORD, NOT A REGISTRY VIEW. Append only. `w_workflow` and
+ * `w_safe` are absent because they postdate v0.1 — adding them "for completeness" is
+ * exactly the mistake that breaks old links.
  */
 const LEGACY_PARAM_KEYS_V1: string[] = [
   'privilege_strength',

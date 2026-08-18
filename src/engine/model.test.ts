@@ -3,12 +3,15 @@ import {
   sigmoid,
   relu,
   perceivedDiscoverability,
+  discoverability,
   driveToDocument,
   documentationFraction,
   computeAux,
   derivatives,
 } from './model'
 import { defaultParams } from './registry'
+import { paramsFromPreset } from './scenario'
+import { PRESETS } from './presets'
 import type { State } from './types'
 
 // v0.3.0 M3: R3 > 0 because remediation is now driven by the remediation
@@ -33,18 +36,60 @@ describe('model: primitives', () => {
   })
 })
 
-describe('model: perceived discoverability (spec §2.2)', () => {
-  it('rises with mandatory reporting & PLD; falls with privilege/separation/translation', () => {
+describe('model: perceived discoverability, disaggregated by channel (M3c)', () => {
+  it('each channel responds only to the levers that reach it', () => {
     const p = defaultParams()
-    const baseline = perceivedDiscoverability(p)
-    expect(perceivedDiscoverability({ ...p, mandatory_reporting: 1 })).toBeGreaterThan(baseline)
-    expect(perceivedDiscoverability({ ...p, pld_penalty: 1 })).toBeGreaterThan(baseline)
-    expect(perceivedDiscoverability({ ...p, precommit: 1 })).toBeLessThan(baseline)
-    expect(perceivedDiscoverability({ ...p, recipient_enforcer_separation: 1 })).toBeLessThan(baseline)
-    expect(perceivedDiscoverability({ ...p, translation_layer: 1 })).toBeLessThan(baseline)
-    expect(perceivedDiscoverability({ ...p, workflow_protection: 1 })).toBeLessThan(baseline)
-    expect(perceivedDiscoverability({ ...p, original_records_boundary: 1 })).toBeLessThan(baseline)
-    expect(perceivedDiscoverability({ ...p, safe_harbor_non_admission: 1 })).toBeLessThan(baseline)
+    const base = discoverability(p)
+
+    // Channel One -- the factual record. Reporting duties and the PLD presumption raise
+    // it; the records boundary shapes what is in it. NOTHING ELSE TOUCHES IT, and that
+    // is the substantive claim: privilege does not protect facts, so a firm's exposure
+    // on the factual record cannot be reduced by protecting its analysis.
+    expect(discoverability({ ...p, mandatory_reporting: 1 }).fact).toBeGreaterThan(base.fact)
+    expect(discoverability({ ...p, pld_penalty: 1 }).fact).toBeGreaterThan(base.fact)
+    expect(discoverability({ ...p, original_records_boundary: 1 }).fact).toBeLessThan(base.fact)
+    for (const lever of ['precommit', 'significant_purpose', 'recipient_enforcer_separation', 'translation_layer'] as const) {
+      expect(discoverability({ ...p, [lever]: 1 }).fact, `${lever} must not touch the factual channel`)
+        .toBeCloseTo(base.fact, 12)
+    }
+
+    // Channel Two -- the analysis, governed by privilege survival and by whether the
+    // recipient of a report is also the enforcer.
+    expect(discoverability({ ...p, precommit: 1 }).anal).toBeLessThan(base.anal)
+    expect(discoverability({ ...p, significant_purpose: 1 }).anal).toBeLessThan(base.anal)
+    expect(discoverability({ ...p, recipient_enforcer_separation: 1 }).anal).toBeLessThan(base.anal)
+
+    // Channel Three -- admissibility, not discovery. Safe harbour discounts it; leakage
+    // raises it, because a ticket carrying causal reasoning is no longer a work order.
+    expect(discoverability({ ...p, safe_harbor_non_admission: 1 }).rem).toBeLessThan(base.rem)
+    expect(discoverability({ ...p, valve_discipline: 1 }).rem).toBeLessThan(base.rem)
+  })
+
+  it('the aggregate is the channel mean, and stays on a readout-friendly scale', () => {
+    const p = defaultParams()
+    const d = discoverability(p)
+    expect(perceivedDiscoverability(p)).toBeCloseTo((d.fact + d.anal + d.rem) / 3, 12)
+    // Summing instead of averaging pinned litigation_pressure at exactly 1.0 for every
+    // chilling preset. Keep the aggregate on the scale the bounded readouts expect.
+    expect(perceivedDiscoverability(p)).toBeLessThan(2)
+  })
+
+  it('is positive at every shipped preset, so the weights are not inert', () => {
+    // The F15 defect: the lumped signal was ~-3 at six of eight presets and softplus
+    // there returns ~1e-24, so all eight weights had no effect exactly where the model
+    // was most used. Disaggregation is what fixed it.
+    for (const preset of PRESETS) {
+      const pd = perceivedDiscoverability(paramsFromPreset(preset))
+      expect(pd, `${preset.id}: pd = ${pd.toFixed(3)} is back in the softplus dead zone`)
+        .toBeGreaterThan(0.05)
+    }
+  })
+
+  it('reads parameters only, so it is constant along a trajectory', () => {
+    // Depended on elsewhere: it is why the softplus kink cannot degrade RK4's order.
+    const p = defaultParams()
+    expect(discoverability.length).toBe(1)
+    expect(perceivedDiscoverability(p)).toBe(perceivedDiscoverability(p))
   })
 })
 

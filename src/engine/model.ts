@@ -205,36 +205,111 @@ export function privilegeSurvival(p: Params): PrivilegeResult {
  * NOTE: this reads parameters only, never state, so PD is constant along a
  * trajectory. Several properties elsewhere depend on that fact — see `softplus`.
  */
+export interface DiscoverabilitySignals {
+  /** Channel One: the factual record, discoverable by design. */
+  fact: number
+  /** Channel Two: the analysis, governed by privilege survival. */
+  anal: number
+  /** Channel Three: the remediation record, governed by Rule 407 and leakage. */
+  rem: number
+  /**
+   * Aggregate pressure: the MEAN across the three channels, not the sum.
+   *
+   * The distinction is not cosmetic. Summing gives 0.56-3.23 across the presets, and
+   * the readouts that consume this (`litigation_pressure`, `safe_to_report_score`) are
+   * bounded on [0,1] -- so the sum pinned litigation pressure at exactly 1.0 for every
+   * chilling preset and destroyed its resolution, which is how this was caught: safe
+   * harbour could no longer lower a readout it plainly should lower. A mean keeps the
+   * index on the same scale as the single signal it replaced while still being positive
+   * everywhere, so the weights stay live.
+   */
+  total: number
+}
+
+/**
+ * Perceived discoverability, DISAGGREGATED BY CHANNEL (MODEL_v3_SPEC section 3.2).
+ *
+ * v0.2 had one scalar built from eight lever weights, and `AUDIT.md` section 5.2
+ * identified it as the root of the identifiability failure: eight weights entering one
+ * sum are jointly unidentifiable by construction, because only their total is ever
+ * observable. Splitting by channel is what makes them separable in principle, since
+ * the channels have distinct downstream exposure consequences.
+ *
+ * It also fixes a defect the F15 docblock recorded and left open. The lumped signal was
+ * strongly NEGATIVE at six of eight presets (aviation −2.84, healthcare −3.11), and
+ * `softplus` at those values returns ~1e-24, so every one of the eight weights was
+ * numerically inert exactly where the model was most used. Measured `pd_fact` spans
+ * −0.02 to 0.90 across the same presets — small, but no longer inert.
+ *
+ * THREE WEIGHTS WERE RETIRED, not relocated. `w_tl`, `w_workflow` and `w_safe`
+ * subtracted translation_layer, workflow_protection and safe_harbor_non_admission from
+ * the lumped signal. Those levers still act, but through the mechanisms that actually
+ * carry them: `workflow_protection` is the separation factor in `privilegeSurvival`
+ * (M3b), and `safe_harbor_non_admission` now discounts the remediation channel via
+ * `q_407`, which is FRE 407's own domain. Retiring three free parameters while adding
+ * three is neutral on count and better on structure — each remaining weight acts on one
+ * channel rather than all of them.
+ */
+export function discoverability(p: Params): DiscoverabilitySignals {
+  const priv = privilegeSurvival(p)
+
+  // Channel One is discoverable BY DESIGN. Reporting duties and the PLD presumption
+  // raise it; the original-records boundary shapes what is in the record rather than
+  // whether it is reachable, so it reduces but cannot eliminate this term.
+  const fact =
+    p.w_m * p.mandatory_reporting + p.w_p * p.pld_penalty - p.w_records * p.original_records_boundary
+
+  // Channel Two is discoverable to the extent privilege fails, and more so when the
+  // recipient of a report is also the enforcer.
+  const anal = p.w_priv * (1 - priv.pi) + p.w_sep * (1 - p.recipient_enforcer_separation)
+
+  // Channel Three is governed by admissibility rather than discovery. Rule 407 excludes
+  // the remedial measure itself; `q_407` is how much of that protection actually
+  // attaches, scaled by whatever non-admission scaffolding exists. Leakage adds to it,
+  // because a ticket carrying causal language is no longer merely a work order.
+  //
+  // NOTE ON A DELIBERATE DEVIATION from the literal spec line, which reads
+  // `w_407·(1 − q_407)`: making the discount proportional to
+  // `safe_harbor_non_admission` keeps that lever attached to the channel whose
+  // admissibility it actually governs, instead of retiring it outright.
+  const rem = p.w_407 * (1 - p.q_407 * p.safe_harbor_non_admission) + p.w_leak * priv.lambda
+
+  return { fact, anal, rem, total: (fact + anal + rem) / 3 }
+}
+
+/**
+ * Aggregate perceived discoverability — the channel mean.
+ *
+ * Kept as a single derived quantity rather than a second formula, so there is one
+ * definition of discoverability in the model and it cannot drift from its parts.
+ *
+ * NOTE: this reads parameters only, never state, so PD is constant along a
+ * trajectory. Several properties elsewhere depend on that fact — see `softplus`.
+ */
 export function perceivedDiscoverability(p: Params): number {
-  return (
-    p.w_m * p.mandatory_reporting +
-    p.w_p * p.pld_penalty -
-    p.w_priv * privilegeSurvival(p).pi -
-    p.w_sep * p.recipient_enforcer_separation -
-    p.w_tl * p.translation_layer -
-    p.w_workflow * p.workflow_protection -
-    p.w_records * p.original_records_boundary -
-    p.w_safe * p.safe_harbor_non_admission
-  )
+  return discoverability(p).total
 }
 
 /**
  * Net drive to document (spec §2.2). Culture C is the dynamic input; just culture
  * and mandatory reporting add directly; positive perceived discoverability subtracts.
  */
-export function driveToDocument(C: number, pd: number, p: Params): number {
+export function driveToDocument(C: number, pdFact: number, p: Params): number {
   return (
     p.a_c * C +
     p.a_jc * p.just_culture +
     p.a_m * p.mandatory_reporting -
-    p.a_disc * softplus(pd, p.pd_sharpness)
+    p.a_disc * softplus(pdFact, p.pd_sharpness)
   )
 }
 
 /** Documentation fraction f_doc ∈ (0,1): the central nonlinearity (spec §2.2). */
 export function documentationFraction(C: number, p: Params): number {
-  const pd = perceivedDiscoverability(p)
-  const drive = driveToDocument(C, pd, p)
+  // MODEL_v3_SPEC section 3.3: the decision to RECORD responds to the discoverability
+  // of the FACTUAL channel, not to the aggregate. Privilege does not protect facts, so
+  // a firm's willingness to write down what happened cannot rationally depend on how
+  // well its analysis is shielded.
+  const drive = driveToDocument(C, discoverability(p).fact, p)
   return sigmoid(p.gain * (drive - p.threshold))
 }
 
@@ -252,8 +327,9 @@ export function computeAux(s: State, p: Params): Auxiliaries {
   // v0.3.0 M3b: privilege is computed from design choices, not read off a slider.
   const priv = privilegeSurvival(p)
 
-  const perceived_discoverability = perceivedDiscoverability(p)
-  const drive_to_document = driveToDocument(C, perceived_discoverability, p)
+  const pd = discoverability(p)
+  const perceived_discoverability = pd.total
+  const drive_to_document = driveToDocument(C, pd.fact, p)
   const f_doc = sigmoid(p.gain * (drive_to_document - p.threshold))
 
   // Incident generation rises with debt, falls with capability. The capability
@@ -452,6 +528,9 @@ export function computeAux(s: State, p: Params): Auxiliaries {
     to_R1,
     to_R2,
     to_R3,
+    pd_fact: pd.fact,
+    pd_anal: pd.anal,
+    pd_rem: pd.rem,
     privilege_survival: priv.pi,
     privilege_survival_eff: priv.piEff,
     valve_leakage: priv.lambda,

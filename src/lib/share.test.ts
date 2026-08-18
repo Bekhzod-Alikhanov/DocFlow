@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 import LZString from 'lz-string'
 import { encodeScenarioToHash, decodeScenarioFromHash } from './share'
 import { defaultScenario, PRESET_BY_ID, paramsFromPreset, PARAM_SPEC_BY_ID } from '../engine'
-import type { Scenario, ParamKey } from '../engine'
+import type { Scenario } from '../engine'
 
 function scenario(): Scenario {
   const base = defaultScenario('test')
@@ -42,7 +42,12 @@ describe('share codec', () => {
   })
 
   it('decodes v0.1 positional hashes without shifting newly added levers', () => {
-    const legacyOrder: ParamKey[] = [
+    // `string[]`, not `ParamKey[]`: this is the historical key order baked into share
+    // links that already exist, so it must keep naming parameters the model has since
+    // retired (`w_tl` and friends went in v0.3.0 M3c). Typing it as ParamKey[] would
+    // force the list to be edited whenever a parameter is retired, which would silently
+    // change how old links decode -- the exact bug this test exists to prevent.
+    const legacyOrder: string[] = [
       'precommit',
       'just_culture',
       'mandatory_reporting',
@@ -93,7 +98,10 @@ describe('share codec', () => {
       v: 1,
       mv: '0.1.0',
       n: sc.name,
-      p: legacyOrder.map((k) => sc.params[k]),
+      // Retired keys still occupy their historical SLOT. A real v0.1 link carried a
+      // value there, and dropping the slot would shift every later parameter by one --
+      // so emit 0 as a stand-in rather than omitting it.
+      p: legacyOrder.map((k) => (sc.params as Record<string, number | undefined>)[k] ?? 0),
       i: sc.init,
       s: sc.settings,
       pid: sc.presetId,
