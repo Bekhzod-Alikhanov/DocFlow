@@ -258,11 +258,19 @@ describe('census (logged for CI visibility)', () => {
       const p0 = paramsFromPreset(PRESET_BY_ID[baseId])
       const i0 = initFromPreset(PRESET_BY_ID[baseId])
       for (const lev of LEVER_KEYS) {
+        // One simulation per grid point, not one per (grid point, metric). Both metrics
+        // are read off the same `summary`, so running the sweep twice was doing 810
+        // simulations where 405 suffice -- which is what pushed this census past the
+        // 5s CI budget. Fixed by not doing the work twice, rather than by raising the
+        // budget: the guard exists to make a slowdown fail loudly.
+        const summaries = Array.from({ length: 9 }, (_, k) =>
+          simulate(i0, { ...p0, [lev]: k / 8 }, S).summary,
+        )
         for (const [name, get] of [
           ['fdoc', (x: ReturnType<typeof simulate>['summary']) => x.finalFdoc],
           ['TD', (x: ReturnType<typeof simulate>['summary']) => x.finalState.TD],
         ] as const) {
-          const ys = Array.from({ length: 9 }, (_, k) => get(simulate(i0, { ...p0, [lev]: k / 8 }, S).summary))
+          const ys = summaries.map(get)
           const span = Math.max(...ys) - Math.min(...ys)
           if (span < 1e-9) { flat++; continue }
           let inc = true
