@@ -17,13 +17,44 @@ import { step, clampState, stepRK45Adaptive } from './integrators'
 import { MODEL_VERSION } from './version'
 
 /** Hard cap on integration steps — a runaway-loop backstop, far above any real run. */
-const MAX_STEPS = 200_000
+export const MAX_STEPS = 200_000
 
-/** Number of integration steps for a given horizon/dt. */
+/**
+ * Number of integration steps for a given horizon/dt.
+ *
+ * V5.4. This used to read `Math.min(MAX_STEPS, ...)`, which SILENTLY SIMULATED A SHORTER
+ * SPAN than the caller asked for. At `horizon 10000, dt 0.01` you got 2,000 months back,
+ * labelled as 10,000, with nothing anywhere reporting the difference — the same defect
+ * class as F2, where a run pinned against a boundary reported success.
+ *
+ * It now throws. A request the engine cannot honour is a caller error, not a numerical
+ * outcome, and it must not be reported through the same channel as `diverged`. Untrusted
+ * settings are clamped at the decode boundary by `sanitizeSettings` so that a corrupt or
+ * crafted share link produces a clamped scenario rather than an exception.
+ */
 export function stepCount(settings: SimSettings): number {
   const dt = Math.max(1e-6, settings.dt)
   const horizon = Math.max(0, settings.horizon)
-  return Math.min(MAX_STEPS, Math.max(1, Math.round(horizon / dt)))
+  const n = Math.max(1, Math.round(horizon / dt))
+  if (n > MAX_STEPS) {
+    throw new RangeError(
+      // 'en-US' pinned: bare toLocaleString() follows the host locale, so the same
+      // failure produced "1 000 000" here and "1,000,000" in CI. Error text that varies
+      // by machine is not text you can grep for or write a test against.
+      `Simulation would need ${n.toLocaleString('en-US')} steps (horizon ${horizon} / dt ${dt}), ` +
+        `above the ${MAX_STEPS.toLocaleString('en-US')} cap. Raise dt or shorten the horizon. ` +
+        `Refusing rather than silently simulating a shorter span (VALIDATION.md V5.4).`,
+    )
+  }
+  return n
+}
+
+/**
+ * Largest horizon that can be simulated at a given dt. Used by `sanitizeSettings` to
+ * clamp untrusted input to something the engine will accept.
+ */
+export function maxHorizonFor(dt: number): number {
+  return MAX_STEPS * Math.max(1e-6, dt)
 }
 
 /**

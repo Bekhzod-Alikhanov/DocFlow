@@ -3,7 +3,7 @@
 **A system-dynamics instrument for the AI incident-documentation paradox.**
 
 [![CI](https://github.com/Bekhzod-Alikhanov/DocFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/Bekhzod-Alikhanov/DocFlow/actions)
-![Tests](https://img.shields.io/badge/tests-568%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-586%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-91.8%25-brightgreen)
 ![Version](https://img.shields.io/badge/model-v0.3.0-blue)
 ![Measured parameters](https://img.shields.io/badge/measured%20parameters-0%20of%20101-orange)
@@ -71,7 +71,7 @@ Full statement, caveats and what would overturn it: **[docs/FINDINGS.md](docs/FI
 | | |
 |---|---|
 | **Production code** | **17,024** lines of TypeScript/TSX (strict mode) |
-| **Tests** | **7,410** lines — 568 specs across 76 files; deterministic, no mocks |
+| **Tests** | **7,620** lines — 586 specs across 77 files; deterministic, no mocks |
 | **Total code** | **24,434** lines across 172 modules |
 | **Pure simulation engine** | **6,955** lines with zero React, DOM, storage, network or clock imports |
 | **Documentation** | **7,831** lines across 30 markdown files, including 12 decision records |
@@ -167,13 +167,14 @@ ordinary unit tests, gates enforce claims *about the project*:
 | **Figure currency** | A committed figure that the model no longer produces |
 | **Pin-cite completeness** | A parameter citing legal authority that never reaches the verification worklist |
 | **Integration order** | Silent loss of RK4 accuracy (asserted ≥ 3.8, not merely logged) |
+| **No silent truncation** | A run quietly simulating a shorter span, or an adaptive step quietly advancing less than asked |
 | **Perf budgets** | Numerical slowdowns surfacing as opaque CI timeouts |
 
 Several assert **defects on purpose** — if the culture loop ever becomes influential at a
 shipped preset, that test fails, and the failure is good news.
 
 ```bash
-npm run coverage   # 568 tests, per-file thresholds
+npm run coverage   # 586 tests, per-file thresholds
 npm run typecheck  # tsc -b, strict
 npm run lint       # eslint
 npm run build      # production bundle

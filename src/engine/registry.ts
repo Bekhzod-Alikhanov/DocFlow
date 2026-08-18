@@ -544,6 +544,47 @@ export function defaultSettings(): SimSettings {
   return { horizon: 120, dt: 0.5, solver: 'rk4' }
 }
 
+/** Bounds for untrusted settings. Wide enough for any real run, narrow enough to be safe. */
+export const SETTINGS_BOUNDS = {
+  dt: { min: 1e-4, max: 12 },
+  horizon: { min: 1, max: 100_000 },
+} as const
+
+/**
+ * Clamp settings arriving from outside the app — a share link, a saved scenario, an
+ * imported file — to something the engine will accept.
+ *
+ * The engine deliberately THROWS on a request it cannot honour (V5.4), which is right for
+ * a caller error but wrong as a response to a corrupt URL: the app would fail to load
+ * rather than degrade. Strict engine, forgiving boundary. Anything non-finite or out of
+ * range falls back to the default rather than being coerced to a neighbouring value,
+ * because a nonsense input should not silently become a plausible one.
+ */
+export function sanitizeSettings(input: Partial<SimSettings> | undefined): SimSettings {
+  const base = defaultSettings()
+  if (!input) return base
+
+  const num = (v: unknown, lo: number, hi: number, fallback: number): number =>
+    typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : fallback
+
+  const dt = num(input.dt, SETTINGS_BOUNDS.dt.min, SETTINGS_BOUNDS.dt.max, base.dt)
+  const horizon = num(
+    input.horizon,
+    SETTINGS_BOUNDS.horizon.min,
+    SETTINGS_BOUNDS.horizon.max,
+    base.horizon,
+  )
+  const solver: SimSettings['solver'] =
+    input.solver === 'euler' || input.solver === 'rk45' || input.solver === 'rk4'
+      ? input.solver
+      : base.solver
+
+  // Final guard: keep the pair inside the engine's step budget, shortening the horizon
+  // rather than silently coarsening dt, since dt controls accuracy.
+  const maxHorizon = 200_000 * dt
+  return { dt, horizon: Math.min(horizon, maxHorizon), solver }
+}
+
 /** Clamp a single parameter to its registry range. */
 export function clampParam(id: ParamKey, value: number): number {
   const spec = PARAM_SPEC_BY_ID[id]

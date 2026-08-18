@@ -271,6 +271,7 @@ Every figure in this document is produced by a test, not typed in by hand.
 | Dimensional consistency, with written waivers | `src/engine/dimensional.test.ts` |
 | Version contract — maths and version cannot drift | `src/engine/versionContract.test.ts` |
 | The audit table agrees with the code | `src/engine/auditCurrency.test.ts` |
+| No silent truncation (V5.4) + empty-stock/zero-hazard boundaries | `src/engine/silentFailure.test.ts` |
 | M3 decision gate — v0.2 vs v0.3 identifiability | `src/engine/identifiabilityBaseline.test.ts` |
 | The boundary figure matches the model | `src/engine/boundaryFigure.test.ts` |
 | Firth estimator, incl. behaviour under separation | `src/engine/calibration/firth.test.ts` |

@@ -15,6 +15,8 @@ export {
   defaultInitState,
   defaultSettings,
   sanitizeParams,
+  sanitizeSettings,
+  SETTINGS_BOUNDS,
   clampParam,
   registryKeySet,
 } from './registry'

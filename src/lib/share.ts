@@ -14,7 +14,7 @@ import {
   sanitizeParams,
   defaultParams,
   defaultInitState,
-  defaultSettings,
+  sanitizeSettings,
 } from '../engine'
 import type { Scenario, Params, State, SimSettings, ParamKey } from '../engine'
 
@@ -134,7 +134,10 @@ export function decodeScenarioFromHash(hash: string): Scenario | null {
     })
     const params: Params = sanitizeParams({ ...defaultParams(), ...raw })
     const init: State = { ...defaultInitState(), ...(data.i ?? {}) }
-    const settings: SimSettings = { ...defaultSettings(), ...(data.s ?? {}) }
+    // Untrusted input: a share link can carry any settings at all. Sanitised rather
+    // than spread, because the engine now refuses an impossible horizon/dt (V5.4) and a
+    // corrupt link must degrade to a clamped scenario, not an exception on load.
+    const settings: SimSettings = sanitizeSettings(data.s)
 
     return {
       id: 'shared',

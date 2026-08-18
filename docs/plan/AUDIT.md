@@ -704,6 +704,39 @@ claimed as done.
 
 ---
 
+## 11c. F22 — Two silent truncations (found 2026-08-18, in v0.3 code)
+
+**Found by reading the code against `VALIDATION.md`, not by any test failing.** V5.4 was
+listed as unimplemented; it was in fact *violated*, in two places.
+
+| Where | What it did |
+|---|---|
+| `stepCount` | `Math.min(MAX_STEPS, …)` returned a **shorter run than requested**, silently. At `horizon 10000, dt 0.01` the caller asked for 10,000 months and received 2,000, labelled 10,000. |
+| `stepRK45Adaptive` | On exhausting its substep budget it returned a state sitting at some `t < dtTotal`. `step()` discards everything but the state, so a **partial advance was indistinguishable from a complete one** — the trajectory continued with a time axis that no longer matched its states. |
+
+Both are the **F2 defect class**: a run that could not do what was asked reporting
+success. That class is invisible to ordinary testing — every assertion passes, on the
+wrong trajectory — which is why it survived a full audit, a validation battery and 568
+tests.
+
+**Fixed.** `stepCount` throws a `RangeError` naming the requested count, the cap, and what
+to change. `AdaptiveResult` gained `complete` and `tReached`; `step()` refuses to return a
+partial advance. A request the engine cannot honour is a caller error and must not be
+reported through the same channel as `diverged`.
+
+**And a matching boundary.** The engine is now strict, so untrusted input needed somewhere
+to be made safe: `sanitizeSettings` clamps anything arriving from a share link, saved
+scenario or import, and `share.ts` no longer spreads decoded settings straight into the
+engine. Without that pairing, a corrupt URL would have turned a silent wrong answer into a
+failure to load — a different defect, not a fix. Non-finite input falls back to the
+default rather than being coerced to a neighbouring value, so nonsense cannot quietly
+become plausible.
+
+`V4.1` (empty stocks) and `V4.6` (zero hazard) were implemented alongside, since the
+boundaries of the state space are where this class hides.
+
+---
+
 ## 12. Verdict, and what it constrains in v0.3
 
 > v0.2 is a **well-engineered implementation of a set of assumptions with no empirical content**, whose

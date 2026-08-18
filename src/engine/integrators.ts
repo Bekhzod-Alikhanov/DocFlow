@@ -68,6 +68,18 @@ const DP_B5 = [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84, 0] as 
 const DP_B4 = [5179 / 57600, 0, 7571 / 16695, 393 / 640, -92097 / 339200, 187 / 2100, 1 / 40] as const
 
 export interface AdaptiveResult {
+  /**
+   * False when the substep budget ran out before the step reached `dtTotal`.
+   *
+   * V5.4, second instance. This routine used to return `{ state: y }` on exhaustion with
+   * `y` sitting at some t < dtTotal, and `step()` discards everything but the state — so
+   * a step that advanced a fraction of the requested dt was indistinguishable from one
+   * that completed. Silent partial progress is worse than a thrown error: the trajectory
+   * carries on with a time axis that no longer matches the states on it.
+   */
+  complete: boolean
+  /** How far the step actually advanced. Equals dtTotal when `complete`. */
+  tReached: number
   state: State
   /** Number of accepted substeps taken across the interval. */
   accepted: number
@@ -167,7 +179,8 @@ export function stepRK45Adaptive(
       // Shrink hard rather than propagate a non-finite state.
       rejected++
       h *= 0.1
-      if (h < hardMin) return { state: y5, accepted, rejected, maxErrorRatio: Infinity, minStep: h }
+      if (h < hardMin)
+        return { state: y5, accepted, rejected, maxErrorRatio: Infinity, minStep: h, complete: false, tReached: t }
       continue
     }
 
@@ -188,12 +201,34 @@ export function stepRK45Adaptive(
     if (h < hardMin) h = hardMin
   }
 
-  return { state: y, accepted, rejected, maxErrorRatio, minStep }
+  return {
+    state: y,
+    accepted,
+    rejected,
+    maxErrorRatio,
+    minStep,
+    complete: t >= dtTotal - 1e-12,
+    tReached: t,
+  }
 }
 
 export function step(s: State, p: Params, dt: number, solver: Solver): State {
   if (solver === 'euler') return stepEuler(s, p, dt)
-  if (solver === 'rk45') return stepRK45Adaptive(s, p, dt).state
+  if (solver === 'rk45') {
+    const r = stepRK45Adaptive(s, p, dt)
+    // `step`'s contract is "advance by dt". If the adaptive stepper could not, saying so
+    // is the only honest option: the caller is about to write this state against a time
+    // that it never reached.
+    if (!r.complete) {
+      throw new RangeError(
+        `Adaptive step did not complete: reached t = ${r.tReached.toPrecision(6)} of ${dt} ` +
+          `after ${r.accepted} accepted and ${r.rejected} rejected substeps ` +
+          `(max error ratio ${r.maxErrorRatio.toPrecision(3)}). The problem is too stiff for ` +
+          `the substep budget at this dt (VALIDATION.md V5.4).`,
+      )
+    }
+    return r.state
+  }
   return stepRK4(s, p, dt)
 }
 
