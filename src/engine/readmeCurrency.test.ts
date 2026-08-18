@@ -27,6 +27,13 @@ import { STOCK_KEYS, LEVER_KEYS } from './types'
 // ALL_PARAM_KEYS is exported from the registry, not from types — importing it from the
 // wrong module yielded `undefined` and silently broke two assertions at once.
 import { PARAM_SPECS, ALL_PARAM_KEYS } from './registry'
+import findingsDoc from '../../docs/FINDINGS.md?raw'
+import pkgRaw from '../../package.json?raw'
+import { privilegeSurvival } from './model'
+import { paramsFromPreset } from './scenario'
+import { PRESET_BY_ID } from './presets'
+
+const pkg = JSON.parse(pkgRaw) as { scripts: Record<string, string> }
 
 /** Parameters retired during v0.3 that no document may present as current. */
 const RETIRED = ['privilege_strength', 'w_tl', 'w_workflow', 'w_safe'] as const
@@ -139,5 +146,65 @@ describe('no document presents a retired parameter as current', () => {
       .filter((l) => l.includes('validate:scenarios'))
       .filter((l) => !/was removed|only re-ran/.test(l))
     expect(live, `README still advertises validate:scenarios:\n${live.join('\n')}`).toEqual([])
+  })
+})
+
+/**
+ * Added with the v0.3.0 README rewrite.
+ *
+ * The rewrite briefly shipped alongside a SECOND README test file, because I did not
+ * check whether one already existed — duplicating a gate is its own small failure, and
+ * these are the assertions worth keeping from it.
+ */
+describe('README result claims match the engine', () => {
+  it('quotes privilege survival correctly for the two named architectures', () => {
+    const health = privilegeSurvival(paramsFromPreset(PRESET_BY_ID.healthcare)).pi
+    const cyber = privilegeSurvival(paramsFromPreset(PRESET_BY_ID.cybersecurity)).pi
+    expect(readme).toContain(`π = ${health.toFixed(3)}`)
+    expect(readme).toContain(`π = ${cyber.toFixed(3)}`)
+  })
+
+  it('quotes the boundary headline consistently with FINDINGS.md', () => {
+    // The README summarises; FINDINGS.md is the source. They must not disagree.
+    for (const claim of ['6 of 216 points', '2.8%', '0.084 to 0.085', '99.2%']) {
+      expect(readme, `README boundary claim ${claim} missing`).toContain(claim)
+      expect(findingsDoc, `FINDINGS.md and README disagree on ${claim}`).toContain(claim)
+    }
+  })
+
+  it('puts the "nothing is measured" statement in the first screenful', () => {
+    // A reader who stops after the badges must still have been told.
+    const head = readme.slice(0, 2000)
+    expect(head).toMatch(/Nothing in this model is measured/)
+    expect(head).toMatch(/measured%20parameters-0/)
+  })
+
+  it('promises no prediction, and says it is not legal advice', () => {
+    expect(readme).toMatch(/no output here is a prediction/i)
+    expect(readme).toMatch(/not legal advice/i)
+  })
+
+  it('links only to documents that exist', () => {
+    const links = [...readme.matchAll(/\]\((docs\/[^)#]+)/g)].map((m) => m[1])
+    expect(links.length).toBeGreaterThan(8)
+    const known = new Set(
+      Object.keys(import.meta.glob('../../docs/**/*.{md,svg}')).map((k) => k.replace('../../', '')),
+    )
+    for (const link of links) {
+      // A trailing slash is a directory link, which GitHub renders as a listing. Accept
+      // it when the directory contains anything.
+      const isDir = link.endsWith('/')
+      const hit = isDir
+        ? [...known].some((k) => k.startsWith(link))
+        : known.has(link)
+      expect(hit, `README links to ${link}, which does not exist`).toBe(true)
+    }
+  })
+
+  it('advertises only npm scripts that exist', () => {
+    for (const script of ['coverage', 'typecheck', 'lint', 'build', 'figures', 'worklist']) {
+      expect(readme, `README should document npm run ${script}`).toContain(`npm run ${script}`)
+      expect(pkg.scripts, `package.json has no ${script} script`).toHaveProperty(script)
+    }
   })
 })
