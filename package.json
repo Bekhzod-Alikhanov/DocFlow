@@ -1,7 +1,7 @@
 {
   "name": "docflow",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "DocFlow — a system-dynamics model of AI incident-documentation suppression. Decision-support / structured reasoning, not forecasting.",
   "engines": {
