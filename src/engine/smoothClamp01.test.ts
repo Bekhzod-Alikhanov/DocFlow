@@ -28,7 +28,12 @@ function observedOrder(presetId: string): { order: number; err: number } {
   const preset = PRESETS.find((p) => p.id === presetId)!
   const p = paramsFromPreset(preset)
   const i = initFromPreset(preset)
-  const ref = integrate(i, p, { horizon: 120, dt: 0.015625, solver: 'rk4' })
+  // Reference at dt = 1/32, four times finer than the finest compared step. That is
+  // ample for a Richardson estimate -- the reference's own error is ~4^2 = 16x below
+  // the finer of the two being compared -- and it costs half what dt = 1/64 did. This
+  // suite runs eight presets, so the saving is worth having: the CI job is shared and
+  // starving the jsdom integration tests of CPU makes their lazy-chunk waits flake.
+  const ref = integrate(i, p, { horizon: 120, dt: 0.03125, solver: 'rk4' })
   const err = (dt: number) => {
     const t = integrate(i, p, { horizon: 120, dt, solver: 'rk4' })
     const a = t.states[t.states.length - 1]

@@ -5,6 +5,20 @@ import App from './App'
 import { useStore } from './state/store'
 import { PARAM_SPEC_BY_ID } from './engine'
 
+/**
+ * How long to wait for a lazily-imported view to resolve.
+ *
+ * This is a module-load wait, not a compute budget, and it was the inner waits rather
+ * than the test's own 30s limit that expired on CI: at 5s each they were tighter than
+ * the test containing them. vitest runs files across all cores with no worker cap, so
+ * this jsdom test shares a 2-4 core runner with the engine's numerical suites and its
+ * dynamic imports resolve whenever the event loop gets a turn. A slowdown in the
+ * ENGINE is caught by the perf guards in diagnostics.test.ts, which assert wall-clock
+ * budgets directly; making a lazy-import wait double as a performance gate only
+ * produces flakes that say nothing about the model.
+ */
+const LAZY_CHUNK_TIMEOUT = 20_000
+
 // Stub the lazy plotly wrapper so jsdom never loads plotly.js.
 vi.mock('./lib/Plot', () => ({ Plot: () => null }))
 
@@ -27,7 +41,7 @@ describe('App happy path', () => {
     // Switch to Scientific → Workbench (lazy) loads and shows the headline.
     fireEvent.click(screen.getByRole('tab', { name: 'scientific' }))
     // Lazy chunk: allow generous time for the Scientific view to import under parallel workers.
-    await screen.findByText('Documented', undefined, { timeout: 5000 })
+    await screen.findByText('Documented', undefined, { timeout: LAZY_CHUNK_TIMEOUT })
 
     // Moving a lever flows through to the store (UI → store → recomputed run).
     const privLabel = PARAM_SPEC_BY_ID['precommit'].label
@@ -49,8 +63,7 @@ describe('App happy path', () => {
 
     // Institutional Design view loads and guided demos hydrate scenario presets.
     fireEvent.click(screen.getByRole('tab', { name: 'Institutional design' }))
-    // Lazy chunk: the Institutional view imports on demand; wait past the 1s default under load.
-    await screen.findByText('What should a lab do now?', undefined, { timeout: 5000 })
+    await screen.findByText('What should a lab do now?', undefined, { timeout: LAZY_CHUNK_TIMEOUT })
     expect(screen.getByText('Policy package builder')).toBeInTheDocument()
     expect(screen.getByText('Chapter 3 narrative')).toBeInTheDocument()
     expect(screen.getByText('Institutional scorecard')).toBeInTheDocument()
