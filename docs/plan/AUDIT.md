@@ -550,6 +550,53 @@ Add a throwaway `src/engine/_audit_diag.test.ts` using only public engine export
 
 ---
 
+## 11b. F19 — The culture loop is closed, and inert (found in M2, v0.3.0)
+
+**This is a finding against my own repair work, not against v0.2.**
+
+F1 was that `dC/dt` was autonomous: the debt → harm → exposure → culture loop described
+in `MODEL.md` did not exist in the code. M2 added the two return arrows and V1.3 gates
+the fix by checking the Jacobian's culture row is no longer zero. That gate passes.
+
+It is also too weak. Measuring the loop's INFLUENCE rather than its presence shows it
+does nothing at any shipped operating point:
+
+| preset | Δ final culture when `psi_E`, `psi_H` are scaled ×10 |
+|---|---|
+| aviation, healthcare, pharma, sr11, nuclear | **exactly 0.00e+0** |
+| cybersecurity, eu-trap, neutral | ~1e-6 |
+
+The cause is saturation, measured not inferred. The raw culture target sits at **3.1–3.6**
+in the five learning presets and **−0.18 to −0.25** in the three chilling ones, against a
+valid range of [0,1]. Every shipped preset is pinned against a bound, so the clamp
+absorbs the entire change. The chill terms themselves respond correctly — 0.073 → 0.727
+under the ×10 scaling — and the clamp then discards it.
+
+**The wiring is not broken.** Pushing further, aviation leaves the learning attractor
+between **×33 and ×36** (C: 0.99991 → 0.826 → 0.534 at ×40 → 0.0005 at ×50). So the
+mechanism is real and reachable; it is simply ~35× away from every operating point the
+model ships with.
+
+**Not fixed, deliberately.** The fix would mean rescaling coefficients until the loop
+became visible — setting a free parameter to produce a qualitative behaviour, which is
+exactly what V11.1 forbids and what `RISKS.md` R4 anticipates in saying that whatever
+the corrected model does is the finding. Gated instead by `cultureLoopInfluence.test.ts`,
+which asserts the defect: if a future change makes the loop live at a shipped preset the
+gate fails, and that failure is good news.
+
+**What it costs.** No DocFlow output currently demonstrates exposure feeding back into
+documentation culture. The structure is present; the behaviour is not observable at any
+shipped preset, and any claim resting on that feedback must say so.
+
+**Read the other way, it is a boundary-mapping result** — the deliverable form the
+epistemic stance calls for (ADR/0001). Stated as a conditional: *the learning equilibrium
+in these five regimes is robust to exposure chill up to roughly 35× the assumed
+coefficient, and tips beyond it.* That is a falsifiable claim about how much fear an
+architecture can absorb, and it is more useful than the loop being visibly active would
+have been.
+
+---
+
 ## 12. Verdict, and what it constrains in v0.3
 
 > v0.2 is a **well-engineered implementation of a set of assumptions with no empirical content**, whose

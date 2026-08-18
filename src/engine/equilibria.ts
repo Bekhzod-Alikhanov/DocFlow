@@ -64,7 +64,44 @@ export function numericalJacobian(s: State, p: Params, eps = 1e-6): Matrix {
   return J
 }
 
-export function classifyStability(eigs: Complex[], tol = 1e-7): StabilityClass {
+/**
+ * Frobenius norm — the scale of a Jacobian, used to size the stability tolerance.
+ */
+export function matrixNorm(a: Matrix): number {
+  let sum = 0
+  for (const row of a) for (const x of row) sum += x * x
+  return Math.sqrt(sum)
+}
+
+/**
+ * Relative floor for "is this eigenvalue really zero?".
+ *
+ * The eigenvalues come from a numerically differentiated Jacobian, so their absolute
+ * accuracy is proportional to ‖J‖ — roughly √(machine epsilon) · ‖J‖ for a central
+ * difference. A fixed tolerance therefore asks the wrong question. It is far too tight
+ * for a stiff system, where an eigenvalue of −1e-6 against ‖J‖ ~ 10 is numerical dust
+ * being reported as a decisive "stable"; and far too loose for a slow subsystem, where
+ * a genuine eigenvalue smaller than the tolerance gets called "marginal".
+ */
+const STABILITY_REL_TOL = 1e-8
+
+/**
+ * Classify an equilibrium from its eigenvalues.
+ *
+ * Pass `jacobianNorm` wherever it is available: the tolerance then scales with the
+ * problem, which is what M2 requires. The fixed fallback is kept only for the handful
+ * of call sites that hold eigenvalues without the matrix they came from, and it is the
+ * old 1e-7 so their behaviour is unchanged.
+ */
+export function classifyStability(
+  eigs: Complex[],
+  opts: { jacobianNorm?: number; tol?: number } = {},
+): StabilityClass {
+  const tol =
+    opts.tol ??
+    (opts.jacobianNorm !== undefined
+      ? Math.max(STABILITY_REL_TOL * opts.jacobianNorm, Number.EPSILON)
+      : 1e-7)
   const maxRe = maxRealPart(eigs)
   const minRe = eigs.reduce((m, e) => Math.min(m, e.re), Infinity)
   if (maxRe < -tol) return 'stable'
@@ -112,7 +149,8 @@ export function findEquilibrium(
   }
 
   const state = vecToState(x)
-  const eigs = eigenvalues(numericalJacobian(state, p))
+  const J = numericalJacobian(state, p)
+  const eigs = eigenvalues(J)
   return {
     state,
     fdoc: computeAux(state, p).f_doc,
@@ -120,7 +158,7 @@ export function findEquilibrium(
     converged: converged && resNorm < tol * 100,
     eigenvalues: eigs,
     maxRealPart: maxRealPart(eigs),
-    stability: classifyStability(eigs),
+    stability: classifyStability(eigs, { jacobianNorm: matrixNorm(J) }),
     C: state.C,
     eTot: computeAux(state, p).E_tot,
   }
@@ -378,7 +416,8 @@ export function findAllEquilibria(p: Params): Equilibrium[] {
 function refineAt(C: number, fast: State, p: Params): Equilibrium {
   const state: State = { ...fast, C }
   const res = stateToVec(derivatives(state, p))
-  const eigs = eigenvalues(numericalJacobian(state, p))
+  const J = numericalJacobian(state, p)
+  const eigs = eigenvalues(J)
   return {
     state,
     fdoc: computeAux(state, p).f_doc,
@@ -386,7 +425,7 @@ function refineAt(C: number, fast: State, p: Params): Equilibrium {
     converged: norm(res) < 1e-5,
     eigenvalues: eigs,
     maxRealPart: maxRealPart(eigs),
-    stability: classifyStability(eigs),
+    stability: classifyStability(eigs, { jacobianNorm: matrixNorm(J) }),
     C,
     eTot: computeAux(state, p).E_tot,
   }

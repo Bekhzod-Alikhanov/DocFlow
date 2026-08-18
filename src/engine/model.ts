@@ -80,6 +80,51 @@ function clamp01(x: number): number {
   return Math.min(1, Math.max(0, x))
 }
 
+/**
+ * A C^∞ stand-in for `clamp01`, used only where the clamped quantity is INSIDE the
+ * right-hand side of a differential equation (V5.1).
+ *
+ * The hard clamp is fine on a readout. It is not fine on `cultureTarget`, and the
+ * measurement showing why is worth recording. Across the eight presets the raw target
+ * ranges over [−0.27, 3.57]: the five learning presets sit near 3.4 and clamp high on
+ * every step, while the three chilling presets hover around zero and cross the kink
+ * repeatedly. Crossing a C⁰ kink inside an RK4 step destroys the method's order, and
+ * that is exactly what was measured — order 4.1 on the five saturated presets against
+ * 1.4, 1.6 and a meaningless −3.9 on the three that cross.
+ *
+ * `softplus(x) − softplus(x − 1)` is the same shape with the corners rounded.
+ *
+ * β = 200 was measured, not guessed, and the first value tried (30) was wrong in a way
+ * worth recording: the deviation from `clamp01` is largest exactly AT the corners
+ * (ln2/β), which is precisely where the chilling presets sit. β = 30 would have moved
+ * the culture target by 2.3e-2 in the regime the model is most often used to reason
+ * about. Sweeping β against the observed RK4 order:
+ *
+ *     β      max |smooth − clamp01|     worst observed order
+ *     30            2.3e-2                      3.90
+ *     100           6.9e-3                      3.96
+ *     200           3.5e-3                      3.97
+ *     400           1.7e-3                      3.98
+ *     1000          6.9e-4                      3.46   ← below the V5.1 gate
+ *     4000          1.7e-4                      1.62   ← indistinguishable from a hard clamp
+ *
+ * Higher β is better on both counts until the rounding radius stops being resolved by
+ * the step, and then it collapses back to the hard-clamp behaviour. 200 sits a factor
+ * of two below the measured knee, which leaves room for the knee to move when dt or
+ * the preset set changes. `smoothClamp01.test.ts` pins both ends of that trade-off.
+ */
+export function smoothClamp01(x: number, beta = SMOOTH_CLAMP_BETA): number {
+  return softplus(x, beta) - softplus(x - 1, beta)
+}
+
+/**
+ * Rounding radius of `smoothClamp01`, as 1/β. Large enough that the corners are
+ * numerically invisible, small enough that RK4 sees a smooth function. Registered as
+ * a structural parameter would be overkill: it has no modelling content and changing
+ * it changes no conclusion, only the integrator's convergence rate.
+ */
+const SMOOTH_CLAMP_BETA = 200
+
 
 // ---------------------------------------------------------------------------
 // Endogenous privilege — v0.3.0 M3b (MODEL_v3_SPEC section 5)
@@ -465,7 +510,11 @@ export function derivativesFromAux(s: State, p: Params, a: Auxiliaries): State {
   // Both are saturating so that unbounded E or harm cannot drive the target
   // arbitrarily negative, and the target is clamped to [0,1] — the stock's own
   // range — so "target" means what the name says.
-  const cultureTarget = clamp01(
+  // v0.3.0 V5.1: smoothClamp01, not clamp01. This expression is inside the RHS of a
+  // differential equation and the chilling presets cross the [0,1] boundary during
+  // integration; a hard corner there costs RK4 two orders of accuracy. See the
+  // smoothClamp01 docblock for the measurement.
+  const cultureTarget = smoothClamp01(
     p.a_jc_c * p.just_culture +
       p.a_sep * p.recipient_enforcer_separation +
       a.safety_wins -

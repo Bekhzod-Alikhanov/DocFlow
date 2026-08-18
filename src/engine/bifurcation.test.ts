@@ -52,9 +52,17 @@ describe('bifurcation: hysteresis (spec §3.4)', () => {
   it('refuses to report hysteresis when the ramp has not relaxed', () => {
     const opts = { steps: 20, metric: 'f_doc' as const, init: initFromPreset(PRESET_BY_ID.neutral) }
 
+    // v0.3.0 V5.1: horizon raised 600 -> 1200 after cultureTarget moved from clamp01 to
+    // smoothClamp01. Rounding the corner slightly weakens the restoring force exactly
+    // where the chilling branch sits, so the slowest ramp steps need longer to settle.
+    // Measured residual against horizon: 600 -> 4.1e-4, 700 -> 3.4e-3, 800 -> 1.9e-3,
+    // 900 -> 2.3e-4, 1200 -> 4.8e-7. The non-monotonicity is not noise: different ramp
+    // steps dominate the maximum at different horizons, and the steps nearest the fold
+    // relax slowest. That is critical slowing down, and it is the reason this guard
+    // exists — a fixed horizon that happens to look converged is not convergence.
     const settled = hysteresis(contested, 'just_culture', {
       ...opts,
-      settings: { horizon: 600, dt: 0.5, solver: 'rk4' },
+      settings: { horizon: 1200, dt: 0.5, solver: 'rk4' },
     })
     const starved = hysteresis(contested, 'just_culture', {
       ...opts,

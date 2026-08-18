@@ -5,12 +5,13 @@ import {
   cultureEquilibria,
   numericalJacobian,
   classifyStability,
+  matrixNorm,
   isBistable,
   stableAttractors,
 } from './equilibria'
 import { defaultParams } from './registry'
 import { paramsFromPreset } from './scenario'
-import { PRESET_BY_ID } from './presets'
+import { PRESET_BY_ID, PRESETS } from './presets'
 import { derivatives } from './model'
 import type { State } from './types'
 
@@ -143,5 +144,50 @@ describe('equilibria: extreme-conditions tests (Sterman, spec §7.1)', () => {
         expect(resid).toBeLessThan(1e-2)
       }
     }
+  })
+})
+
+/**
+ * M2: the stability tolerance scales with ‖J‖.
+ *
+ * A fixed 1e-7 asks the wrong question of a numerically differentiated Jacobian, whose
+ * eigenvalue accuracy is proportional to the matrix's own scale. The same eigenvalue
+ * can be numerical dust in a stiff system and a real slow mode in a gentle one, and a
+ * constant threshold cannot tell those apart.
+ */
+describe('classifyStability tolerance scales with the Jacobian norm', () => {
+  it('computes a Frobenius norm', () => {
+    expect(matrixNorm([[3, 4]])).toBeCloseTo(5, 12)
+    expect(matrixNorm([[1, 0], [0, 1]])).toBeCloseTo(Math.SQRT2, 12)
+    expect(matrixNorm([[0, 0], [0, 0]])).toBe(0)
+  })
+
+  it('calls a tiny eigenvalue marginal in a large system and decisive in a small one', () => {
+    // The discriminating case: one eigenvalue at -1e-6.
+    const eigs = [{ re: -1e-6, im: 0 }, { re: -2, im: 0 }]
+    // Against a Jacobian of norm 1000, -1e-6 is below the noise of the differencing.
+    expect(classifyStability(eigs, { jacobianNorm: 1000 })).toBe('marginal')
+    // Against a norm-1 Jacobian, the same eigenvalue is a real (slow) stable mode.
+    expect(classifyStability(eigs, { jacobianNorm: 1 })).toBe('stable')
+  })
+
+  it('is not vacuous: real preset Jacobians span enough scale to matter', () => {
+    const norms = PRESETS.map((preset) => {
+      const p = paramsFromPreset(preset)
+      const eq = findAllEquilibria(p).filter((e) => e.stability === 'stable')[0]
+      return eq ? matrixNorm(numericalJacobian(eq.state, p)) : 0
+    }).filter((n) => n > 0)
+    expect(norms.length).toBeGreaterThan(0)
+    // If every ‖J‖ were ~1 the scaling would be a no-op dressed up as a fix.
+    expect(Math.max(...norms)).toBeGreaterThan(1)
+  })
+
+  it('still honours an explicit tol, so existing callers are unaffected', () => {
+    const eigs = [{ re: -1e-6, im: 0 }]
+    expect(classifyStability(eigs, { tol: 1e-9 })).toBe('stable')
+    expect(classifyStability(eigs, { tol: 1e-3 })).toBe('marginal')
+    // And the no-argument default is the historical 1e-7.
+    expect(classifyStability([{ re: -1e-8, im: 0 }])).toBe('marginal')
+    expect(classifyStability([{ re: -1e-6, im: 0 }])).toBe('stable')
   })
 })
