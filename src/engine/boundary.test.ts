@@ -26,14 +26,21 @@ import { mapBoundary, regulatoryThreshold, evaluateEnvironment, runArchitecture 
 import { PARAM_SPEC_BY_ID } from './registry'
 
 /**
- * The 216-point map, computed once and shared.
+ * The 216-point map, computed once at module load.
  *
  * Two tests calling `mapBoundary(6)` independently meant 864 simulations for 432 points
- * of information, which timed out under v8 coverage instrumentation. Same lesson as the
- * monotonicity census: do the work once rather than raise the budget.
+ * of information; memoising fixed that. But the first test to touch the memo still paid
+ * the whole 432-simulation cost inside its own 5s budget, which was 1.2s locally and
+ * 5.25s in CI under coverage instrumentation — a failure that said nothing about the code.
+ *
+ * Hoisted to module scope instead of given a bigger timeout. The distinction matters: the
+ * 5s budget exists to catch a SLOWDOWN, and a parameter sweep that was always going to
+ * take seconds is a fixture, not a slowdown. Raising the budget would have blunted the
+ * guard for everything else in the file; moving the work out of it does not. The grid size
+ * is untouched, so every figure in FINDINGS.md still holds.
  */
-let cachedMap: ReturnType<typeof mapBoundary> | null = null
-const boundaryMap = () => (cachedMap ??= mapBoundary(6))
+const BOUNDARY_MAP = mapBoundary(6)
+const boundaryMap = () => BOUNDARY_MAP
 
 describe('the suppression-dominant region', () => {
   it('exists, and is small', () => {
